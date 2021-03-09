@@ -32,3 +32,5 @@ proc test(env, path: string) =
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"
   test "--threads:on", "tests/test_all"
+  test "--threads:off -d:release", "tests/test_all"
+  test "--threads:on -d:release", "tests/test_all"
