@@ -1,0 +1,47 @@
+[[units]]
+  name = "object typename reserved"
+  error = "[1, 8]: Error: get '__MyScalar', expect name without '__' prefix in this context"
+  code = """
+scalar __MyScalar
+"""
+
+[[units]]
+  name = "builtin_scalar_clash"
+  error = "[1, 8]: Error: duplicate name 'Int'"
+  code = """
+scalar Int
+"""
+
+[[units]]
+  name = "custom scalar"
+  code = """
+scalar myScalar
+"""
+
+[[units]]
+  name = "using valid custom scalar in input object field"
+  code = """
+scalar myScalar
+input myinput {
+  value: myScalar = "123"
+}
+"""
+
+[[units]]
+  name = "using valid custom scalar defVal in input object field"
+  error = "[3, 21]: Error: '1123' is an 'Int', expect 'String'"
+  code = """
+scalar myScalar
+input myinput {
+  value: myScalar = 1123
+}
+"""
+
+[[units]]
+  name = "unique directives"
+  error = "[2, 25]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on SCALAR
+scalar MyScalar @mydir @mydir
+"""
+

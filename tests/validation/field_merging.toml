@@ -1,0 +1,459 @@
+[[units]]
+  name = "field name vs field alias merge conflict"
+  error = "[9, 3]: Error: field 'name' have merge conflict: return type mismatch"
+  code = """
+type Query {
+  dog: Dog
+}
+type Dog {
+  name: String
+  color: Int
+}
+fragment mergeIdenticalFields on Dog {
+  name
+  name: color
+}
+{
+  dog {
+    ...mergeIdenticalFields
+  }
+}
+"""
+
+[[units]]
+  name = "merge conflict because alias lie although return type identical"
+  error = "[9, 3]: Error: field 'name' have merge conflict: alias lie about field name"
+  code = """
+type Query {
+  dog: Dog
+}
+type Dog {
+  name: String
+  color: String
+}
+fragment mergeIdenticalFields on Dog {
+  name
+  name: color
+}
+{
+  dog {
+    ...mergeIdenticalFields
+  }
+}
+"""
+
+[[units]]
+  name = "no merge conflict on simple scalar return type"
+  code = """
+type Query {
+  dog: Dog
+}
+type Dog {
+  name: String
+  color: Int
+}
+fragment mergeIdenticalFields on Dog {
+  name
+  name
+}
+{
+  dog {
+    ...mergeIdenticalFields
+  }
+}
+"""
+
+[[units]]
+  name = "no merge conflict on different parent type"
+  code = """
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String
+  meowVolume: Int
+}
+fragment safeDifferingFields on Pet {
+  ... on Dog {
+    volume: barkVolume
+  }
+  ... on Cat {
+    volume: meowVolume
+  }
+}
+type Query {
+  pet: Pet
+}
+{
+  pet {
+    name
+    ...safeDifferingFields
+  }
+}
+"""
+
+[[units]]
+  name = "merge conflict on different return type [Int] vs Int"
+  error = "[14, 5]: Error: field 'volume' have merge conflict: return type mismatch"
+  code = """
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String
+  meowVolume: [Int]
+}
+fragment differentReturnType on Pet {
+  ... on Dog {
+    volume: barkVolume
+  }
+  ... on Cat {
+    volume: meowVolume
+  }
+}
+type Query {
+  pet: Pet
+}
+{
+  pet {
+    name
+    ...differentReturnType
+  }
+}
+"""
+
+[[units]]
+  name = "merge conflict on different return type Int! vs Int"
+  error = "[14, 5]: Error: field 'volume' have merge conflict: return type mismatch"
+  code = """
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String
+  meowVolume: Int!
+}
+fragment differentReturnType on Pet {
+  ... on Dog {
+    volume: barkVolume
+  }
+  ... on Cat {
+    volume: meowVolume
+  }
+}
+type Query {
+  pet: Pet
+}
+{
+  pet {
+    name
+    ...differentReturnType
+  }
+}
+"""
+
+[[units]]
+  name = "merge conflict on different return type String vs Int in inner selection"
+  error = "[18, 5]: Error: field 'volume' have merge conflict: return type mismatch"
+  code = """
+interface Pet {
+  name: String
+}
+type Volume {
+  vol: Int
+  bass: String
+}
+type Dog implements Pet {
+  name: String
+  barkVolume: Volume
+}
+type Cat implements Pet {
+  name: String
+  meowVolume: Volume
+}
+fragment differentReturnType on Pet {
+  ... on Dog {
+    volume: barkVolume {
+      vol
+    }
+  }
+  ... on Cat {
+    volume: meowVolume {
+      vol: bass
+      vol
+    }
+  }
+}
+type Query {
+  pet: Pet
+}
+{
+  pet {
+    name
+    ...differentReturnType
+  }
+}
+"""
+
+[[units]]
+  name = "merge conflict on different parent type and different return type String vs Int"
+  error = "[14, 5]: Error: field 'someValue' have merge conflict: return type mismatch"
+  code = """
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String
+  meowVolume: Int
+}
+fragment conflictingDifferingResponses on Pet {
+  ... on Dog {
+    someValue: name
+  }
+  ... on Cat {
+    someValue: meowVolume
+  }
+}
+{
+  pet {
+    name
+    ...conflictingDifferingResponses
+  }
+}
+"""
+
+[[units]]
+  name = "alias conflicts"
+  error = "[12, 15]: Error: field 'hero' have merge conflict: not identical sets of arguments"
+  code = """
+enum EPS {
+  EMPIRE
+  JEDI
+}
+type Hero {
+  name: String
+}
+type Query {
+  hero(episode: EPS): Hero
+}
+{
+  empireHero: hero(episode: EMPIRE) {
+    name
+  }
+  empireHero: hero(episode: JEDI) {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "query_need_alias"
+  error = "[12, 3]: Error: field 'hero' have merge conflict: not identical sets of arguments"
+  code = """
+enum EPS {
+  EMPIRE
+  JEDI
+}
+type Hero {
+  name: String
+}
+type Query {
+  hero(episode: EPS): Hero
+}
+{
+  hero(episode: EMPIRE) {
+    name
+  }
+  hero(episode: JEDI) {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "fields correctly merge"
+  code = """
+enum DogCommand {
+  SIT
+}
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean
+}
+type Query {
+  dog: Dog
+}
+fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
+  doesKnowCommand(dogCommand: SIT)
+  doesKnowCommand(dogCommand: SIT)
+}
+
+fragment mergeIdenticalFieldsWithIdenticalValues on Dog {
+  doesKnowCommand(dogCommand: $dogCommand)
+  doesKnowCommand(dogCommand: $dogCommand)
+}
+query myquery($dogCommand: DogCommand){
+  dog {
+    ...mergeIdenticalFieldsWithIdenticalValues
+  }
+  dogb: dog {
+    ...mergeIdenticalFieldsWithIdenticalArgs
+  }
+}
+"""
+
+[[units]]
+  name = "safe differing args can merge"
+  code = """
+enum PetCommand {
+  SIT
+  JUMP
+}
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+  doesKnowCommand(dogCommand: PetCommand): Boolean
+}
+type Cat implements Pet {
+  name: String
+  doesKnowCommand(catCommand: PetCommand): Boolean
+}
+type Query {
+  dog: Pet
+}
+fragment safeDifferingArgs on Pet {
+  ... on Dog {
+    doesKnowCommand(dogCommand: SIT)
+  }
+  ... on Cat {
+    doesKnowCommand(catCommand: JUMP)
+  }
+}
+{
+  dog {
+    ...safeDifferingArgs
+  }
+}
+"""
+
+[[units]]
+  name = "conflicting args on values"
+  error = "[13, 3]: Error: field 'doesKnowCommand' have merge conflict: not identical sets of arguments"
+  code = """
+enum PetCommand {
+  SIT
+  HEEL
+}
+type Dog {
+  name: String
+  doesKnowCommand(dogCommand: PetCommand): Boolean
+}
+type Query {
+  dog: Dog
+}
+fragment conflictingArgsOnValues on Dog {
+  doesKnowCommand(dogCommand: SIT)
+  doesKnowCommand(dogCommand: HEEL)
+}
+{
+  dog {
+    ...conflictingArgsOnValues
+  }
+}
+"""
+
+[[units]]
+  name = "conflicting args on values"
+  error = "[13, 3]: Error: field 'doesKnowCommand' have merge conflict: not identical sets of arguments"
+  code = """
+enum PetCommand {
+  SIT
+  HEEL
+}
+type Dog {
+  name: String
+  doesKnowCommand(dogCommand: PetCommand): Boolean
+}
+type Query {
+  dog: Dog
+}
+fragment conflictingArgsValueAndVar on Dog {
+  doesKnowCommand(dogCommand: SIT)
+  doesKnowCommand(dogCommand: $dogCommand)
+}
+query myquery($dogCommand: PetCommand){
+  dog {
+    ...conflictingArgsValueAndVar
+  }
+}
+"""
+
+[[units]]
+  name = "conflicting args with vars"
+  error = "[13, 3]: Error: field 'doesKnowCommand' have merge conflict: not identical sets of arguments"
+  code = """
+enum PetCommand {
+  SIT
+  HEEL
+}
+type Dog {
+  name: String
+  doesKnowCommand(dogCommand: PetCommand): Boolean
+}
+type Query {
+  dog: Dog
+}
+fragment conflictingArgsWithVars on Dog {
+  doesKnowCommand(dogCommand: $varOne)
+  doesKnowCommand(dogCommand: $varTwo)
+}
+query myquery($varOne: PetCommand, $varTwo: PetCommand){
+  dog {
+    ...conflictingArgsWithVars
+  }
+}
+"""
+
+[[units]]
+  name = "differing args"
+  error = "[13, 3]: Error: field 'doesKnowCommand' have merge conflict: not identical sets of arguments"
+  code = """
+enum PetCommand {
+  SIT
+  HEEL
+}
+type Dog {
+  name: String
+  doesKnowCommand(dogCommand: PetCommand = SIT): Boolean
+}
+type Query {
+  dog: Dog
+}
+fragment differingArgs on Dog {
+  doesKnowCommand(dogCommand: SIT)
+  doesKnowCommand
+}
+query myquery {
+  dog {
+    ...differingArgs
+  }
+}
+"""
+

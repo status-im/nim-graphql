@@ -1,0 +1,63 @@
+[[units]]
+  name = "empty enum"
+  error = "[2, 1]: Error: get '}', expect Name"
+  code = """
+enum myenum {
+}
+"""
+
+[[units]]
+  name = "enum_duplicate_value"
+  error = "[4, 3]: Error: duplicate name 'BANANA'"
+  code = """
+enum Fruit {
+  BANANA
+  APPLE
+  BANANA
+}
+"""
+
+[[units]]
+  name = "enum name reserved"
+  error = "[1, 6]: Error: get '__myenum', expect name without '__' prefix in this context"
+  code = """
+enum __myenum {
+  BANANA
+}
+"""
+
+[[units]]
+  name = "invalid enumval 'true'"
+  error = "[2, 3]: Error: get 'true', expect valid enum value"
+  code = """
+enum myenum {
+  true
+}
+"""
+
+[[units]]
+  name = "invalid enumval 'false'"
+  error = "[2, 3]: Error: get 'false', expect valid enum value"
+  code = """
+enum myenum {
+  false
+}
+"""
+
+[[units]]
+  name = "invalid enumval 'null'"
+  error = "[2, 3]: Error: get 'null', expect valid enum value"
+  code = """
+enum myenum {
+  null
+}
+"""
+
+[[units]]
+  name = "is enum value such any other type system artifact?"
+  code = """
+enum myenum {
+  __TEST
+}
+"""
+

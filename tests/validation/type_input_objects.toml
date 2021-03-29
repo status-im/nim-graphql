@@ -1,0 +1,788 @@
+[[units]]
+  name = "input name reserved"
+  error = "[1, 7]: Error: get '__myinput', expect name without '__' prefix in this context"
+  code = """
+input __myinput {
+  name: String
+}
+"""
+
+[[units]]
+  name = "input field name reserved"
+  error = "[2, 3]: Error: get '__name', expect name without '__' prefix in this context"
+  code = """
+input myinput {
+  __name: String
+}
+"""
+
+[[units]]
+  name = "input field return type undefined"
+  error = "[2, 9]: Error: type not defined '__String'"
+  code = """
+input myinput {
+  name: __String
+}
+"""
+
+[[units]]
+  name = "input_field_type_mismatch_iface"
+  error = "[6, 9]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+input myinput {
+  name: Node
+}
+"""
+
+[[units]]
+  name = "input_field_type_mismatch_list"
+  error = "[6, 10]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+input myinput {
+  name: [Node]
+}
+"""
+
+[[units]]
+  name = "input_field_type_mismatch_nonnull"
+  error = "[6, 9]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+input myinput {
+  name: Node!
+}
+"""
+
+[[units]]
+  name = "input_field_type_mismatch_obj"
+  error = "[6, 9]: Error: 'Node' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type Node {
+  name: String
+}
+
+input myinput {
+  name: Node
+}
+"""
+
+[[units]]
+  name = "input_field_type_mismatch_union"
+  error = "[8, 9]: Error: 'NodeUni' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union NodeUni
+
+type Node {
+  name: String
+}
+
+input myinput {
+  name: NodeUni
+}
+"""
+
+[[units]]
+  name = "input_field_type_undefined"
+  error = "[2, 9]: Error: type not defined 'Node'"
+  code = """
+input myinput {
+  name: Node
+}
+"""
+
+[[units]]
+  name = "input_type_empty_list_in_arg"
+  error = "[2, 17]: Error: get ']', expect Name"
+  code = """
+type myquery {
+  combine(arg: []): String
+}
+"""
+
+[[units]]
+  name = "typeref in input object field"
+  code = """
+input myinput {
+  field1: String
+  field2: Boolean
+  field3: ID
+  field4: Float
+  field5: Int
+  field6: [String]
+  field7: [Boolean]
+  field8: [ID]
+  field9: [Float]
+  field10: [Int]
+  field11: String!
+  field12: Boolean!
+  field13: ID!
+  field14: Float!
+  field15: Int!
+  field16: [String]!
+  field17: [Boolean]!
+  field18: [ID]!
+  field19: [Float]!
+  field20: [Int]!
+}
+"""
+
+[[units]]
+  name = "unique input object field name"
+  error = "[3, 3]: Error: duplicate name 'name'"
+  code = """
+input myinput {
+  name: String
+  name: Boolean
+}
+"""
+
+[[units]]
+  name = "input object field type non-null wrap non-null"
+  error = "[2, 16]: Error: get '!', expect Name"
+  code = """
+input myinput {
+  name: String!!
+}
+"""
+
+[[units]]
+  name = "input object field type non-null wrap non-null inside list"
+  error = "[2, 17]: Error: get '!', expect ']'"
+  code = """
+input myinput {
+  name: [String!!]
+}
+"""
+
+[[units]]
+  name = "input object nullable circular reference"
+  code = """
+input Example {
+  self: Example
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object emptyable circular reference"
+  code = """
+input Example {
+  self: [Example!]!
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object non-nullable circular reference"
+  error = "[3, 9]: Error: cyclic reference detected for 'Example'"
+  code = """
+input Example {
+  value: String
+  self: Example!
+}
+"""
+
+[[units]]
+  name = "input object non-nullable indirect circular reference"
+  error = "[7, 10]: Error: cyclic reference detected for 'First'"
+  code = """
+input First {
+  second: Second!
+  value: String
+}
+
+input Second {
+  first: First!
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object nullable indirect circular reference second"
+  code = """
+input First {
+  second: Second
+  value: String
+}
+
+input Second {
+  first: First!
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object nullable indirect circular reference first"
+  code = """
+input First {
+  second: Second!
+  value: String
+}
+
+input Second {
+  first: First
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object nullable indirect circular reference third"
+  code = """
+input First {
+  second: Second!
+  value: String
+}
+
+input Second {
+  third: Third
+  value: String
+}
+
+input Third {
+  first: First!
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object non-nullable indirect circular reference third"
+  error = "[12, 10]: Error: cyclic reference detected for 'First'"
+  code = """
+input First {
+  second: Second!
+  value: String
+}
+
+input Second {
+  third: Third!
+  value: String
+}
+
+input Third {
+  first: First!
+  value: String
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid int <- string"
+  error = "[2, 16]: Error: '123' is a 'String', expect 'Int'"
+  code = """
+input myinput {
+  value: Int = "123"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid int <- float"
+  error = "[2, 16]: Error: '123.0' is a 'Float', expect 'Int'"
+  code = """
+input myinput {
+  value: Int = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid int <- bool"
+  error = "[2, 16]: Error: 'true' is a 'Boolean', expect 'Int'"
+  code = """
+input myinput {
+  value: Int = true
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid int <- int"
+  code = """
+input myinput {
+  value: Int = 123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid int <- null"
+  code = """
+input myinput {
+  value: Int = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid float <- bool"
+  error = "[2, 18]: Error: 'true' is a 'Boolean', expect '{Int, Float}'"
+  code = """
+input myinput {
+  value: Float = true
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid float <- string"
+  error = "[2, 18]: Error: '123.0' is a 'String', expect '{Int, Float}'"
+  code = """
+input myinput {
+  value: Float = "123.0"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid float <- float"
+  code = """
+input myinput {
+  value: Float = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid float <- int"
+  code = """
+input myinput {
+  value: Float = 123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid float <- null"
+  code = """
+input myinput {
+  value: Float = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid boolean <- string"
+  error = "[2, 20]: Error: 'true' is a 'String', expect 'Boolean'"
+  code = """
+input myinput {
+  value: Boolean = "true"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid boolean <- float"
+  error = "[2, 20]: Error: '123.0' is a 'Float', expect 'Boolean'"
+  code = """
+input myinput {
+  value: Boolean = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid boolean <- int"
+  error = "[2, 20]: Error: '123' is an 'Int', expect 'Boolean'"
+  code = """
+input myinput {
+  value: Boolean = 123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid string <- int"
+  error = "[2, 19]: Error: '123' is an 'Int', expect 'String'"
+  code = """
+input myinput {
+  value: String = 123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid string <- float"
+  error = "[2, 19]: Error: '123.0' is a 'Float', expect 'String'"
+  code = """
+input myinput {
+  value: String = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid string <- bool"
+  error = "[2, 19]: Error: 'false' is a 'Boolean', expect 'String'"
+  code = """
+input myinput {
+  value: String = false
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid string <- string"
+  code = """
+input myinput {
+  value: String = "hello"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid string <- null"
+  code = """
+input myinput {
+  value: String = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid ID <- null"
+  code = """
+input myinput {
+  value: ID = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid ID <- string"
+  code = """
+input myinput {
+  value: ID = "123"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid ID <- int"
+  code = """
+input myinput {
+  value: ID = 123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid ID <- neg int"
+  code = """
+input myinput {
+  value: ID = -123
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid ID <- float"
+  error = "[2, 15]: Error: '123.0' is a 'Float', expect '{Int, String}'"
+  code = """
+input myinput {
+  value: ID = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid enum <- float"
+  error = "[6, 19]: Error: '123.0' is a 'Float', expect 'myenum'"
+  code = """
+enum myenum {
+  BANANA
+}
+
+input myinput {
+  value: myenum = 123.0
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid enum <- no enum val"
+  error = "[6, 19]: Error: 'APPLE' is not part of 'myenum'"
+  code = """
+enum myenum {
+  BANANA
+}
+
+input myinput {
+  value: myenum = APPLE
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid enum <- enum"
+  code = """
+enum myenum {
+  BANANA
+}
+
+input myinput {
+  value: myenum = BANANA
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid enum <- null"
+  code = """
+enum myenum {
+  BANANA
+}
+
+input myinput {
+  value: myenum = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid input <- null"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid input <- string"
+  error = "[6, 18]: Error: 'banana' is a 'String', expect 'Input'"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = "banana"
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid input <- input no field"
+  error = "[6, 19]: Error: 'width' is not part of 'fruit'"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = {width: "banana"}
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid input <- {string <- int}"
+  error = "[6, 25]: Error: '123' is an 'Int', expect 'String'"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = {name: 123}
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid input <- null"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid input <- {string <- string}"
+  code = """
+input fruit {
+  name: String
+}
+
+input myinput {
+  value: fruit = {name: "hello"}
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid String! <- null"
+  error = "[2, 3]: Error: the value of 'value' can't be 'Null'"
+  code = """
+input myinput {
+  value: String! = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalid input <- {string! <- null}"
+  error = "[6, 19]: Error: the value of 'name' can't be 'Null'"
+  code = """
+input fruit {
+  name: String!
+}
+
+input myinput {
+  value: fruit = {name: null}
+}
+"""
+
+[[units]]
+  name = "input object field type error"
+  error = "[2, 16]: Error: get Name, expect ']'"
+  code = """
+input myinput {
+  value: [Int, String] = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int] <- null"
+  code = """
+input myinput {
+  value: [Int] = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int] <- [int]"
+  code = """
+input myinput {
+  value: [Int] = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int] <- [int, string]"
+  error = "[2, 25]: Error: 'hello' is a 'String', expect 'Int'"
+  code = """
+input myinput {
+  value: [Int] = [1, 2, "hello"]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int] <- int"
+  code = """
+input myinput {
+  value: [Int] = 1
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [[int]] <- [[int]]"
+  code = """
+input myinput {
+  value: [[Int]] = [[1], [2, 3]]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion invalidvalid [[int]] <- [int]"
+  error = "[2, 3]: Error: the value of 'value' can't be 'List'"
+  code = """
+input myinput {
+  value: [[Int]] = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [[int]] <- int"
+  code = """
+input myinput {
+  value: [[Int]] = 1
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [[int]] <- null"
+  code = """
+input myinput {
+  value: [[Int]] = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int] <- [int, null]"
+  code = """
+input myinput {
+  value: [Int] = [1, 2, null]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int]! <- [int]"
+  code = """
+input myinput {
+  value: [Int]! = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int]! <- null"
+  error = "[2, 3]: Error: the value of 'value' can't be 'Null'"
+  code = """
+input myinput {
+  value: [Int]! = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int]! <- [int, null]"
+  code = """
+input myinput {
+  value: [Int]! = [1, 2, null]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!] <- [int]"
+  code = """
+input myinput {
+  value: [Int!] = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!] <- null"
+  code = """
+input myinput {
+  value: [Int!] = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!] <- [int, null]"
+  error = "[2, 3]: Error: the value of 'value' can't be 'Null'"
+  code = """
+input myinput {
+  value: [Int!] = [1, 2, null]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!]! <- [int]"
+  code = """
+input myinput {
+  value: [Int!]! = [1, 2, 3]
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!]! <- null"
+  error = "[2, 3]: Error: the value of 'value' can't be 'Null'"
+  code = """
+input myinput {
+  value: [Int!]! = null
+}
+"""
+
+[[units]]
+  name = "input object field defVal coercion valid [int!]! <- [int, null]"
+  error = "[2, 3]: Error: the value of 'value' can't be 'Null'"
+  code = """
+input myinput {
+  value: [Int!]! = [1, 2, null]
+}
+"""
+
+[[units]]
+  name = "input object field defVal invalid variable"
+  error = "[2, 16]: Error: get '$', expect literal instead of variable"
+  code = """
+input myinput {
+  value: Int = $wow
+}
+"""
+

@@ -1,0 +1,1185 @@
+[[units]]
+  name = "frag_on_directive"
+  error = "[3, 20]: Error: 'mydir' is a 'directive', expect '{object, interface, union}'"
+  code = """
+directive @mydir on QUERY
+
+fragment myfrag on mydir {
+  name
+}
+"""
+
+[[units]]
+  name = "frag_on_enum"
+  error = "[5, 20]: Error: 'Node' is an 'enum', expect '{object, interface, union}'"
+  code = """
+enum Node {
+  APPLE
+}
+
+fragment myfrag on Node {
+  name
+}
+"""
+
+[[units]]
+  name = "frag_on_input"
+  error = "[5, 20]: Error: 'Node' is an 'input object', expect '{object, interface, union}'"
+  code = """
+input Node {
+  name: String
+}
+
+fragment myfrag on Node {
+  name
+}
+"""
+
+[[units]]
+  name = "frag_on_scalar"
+  error = "[1, 20]: Error: 'Int' is a 'scalar', expect '{object, interface, union}'"
+  code = """
+fragment myfrag on Int {
+  name
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_directive"
+  error = "[4, 7]: Error: type not defined 'mydir'"
+  code = """
+directive @mydir on QUERY
+
+query myquery {
+  ... mydir
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_enum"
+  error = "[6, 7]: Error: type not defined 'fruits'"
+  code = """
+enum fruits {
+  APPLE
+}
+
+query myquery {
+  ... fruits
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_input"
+  error = "[6, 7]: Error: type not defined 'person'"
+  code = """
+input person {
+  name: String
+}
+
+query myquery {
+  ... person
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_interface"
+  error = "[6, 7]: Error: type not defined 'myface'"
+  code = """
+interface myface {
+  name: String
+}
+
+query myquery {
+  ... myface
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_mutation"
+  error = "[6, 7]: Error: 'mymut' is a 'mutation', expect 'fragment'"
+  code = """
+mutation mymut {
+  name
+}
+
+query myquery {
+  ... mymut
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_object"
+  error = "[6, 7]: Error: type not defined 'person'"
+  code = """
+type person {
+  name: String
+}
+
+query myquery {
+  ... person
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_query"
+  error = "[6, 7]: Error: 'myq' is a 'query', expect 'fragment'"
+  code = """
+query myq {
+  name
+}
+
+query myquery {
+  ... myq
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_scalar"
+  error = "[2, 7]: Error: type not defined 'Int'"
+  code = """
+query myquery {
+  ... Int
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_subs"
+  error = "[6, 7]: Error: 'mysubs' is a 'subscription', expect 'fragment'"
+  code = """
+subscription mysubs {
+  name
+}
+
+query myquery {
+  ... mysubs
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_undefined"
+  error = "[2, 7]: Error: type not defined 'mydir'"
+  code = """
+query myquery {
+  ... mydir
+}
+"""
+
+[[units]]
+  name = "frag_spread_on_union"
+  error = "[8, 7]: Error: type not defined 'myuni'"
+  code = """
+union myuni = mytype
+
+type mytype {
+  name: String
+}
+
+query myquery {
+  ... myuni
+}
+"""
+
+[[units]]
+  name = "frag_var_type_mismatch_iface"
+  error = "[9, 24]: Error: 'React' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface React {
+  color: Int
+}
+
+type Person {
+  name: String
+}
+
+fragment myfrag ($arg: React) on Person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "frag_var_type_mismatch_list"
+  error = "[9, 24]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Person {
+  name: String
+}
+
+fragment myfrag($arg: [React]) on Person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "frag_var_type_mismatch_nonnull"
+  error = "[9, 23]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Person {
+  name: String
+}
+
+fragment myfrag($arg: React!) on Person{
+  name: String
+}
+"""
+
+[[units]]
+  name = "frag_var_type_mismatch_obj"
+  error = "[9, 23]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Person {
+  name: String
+}
+
+fragment myfrag($arg: React) on Person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "frag_var_type_mismatch_union"
+  error = "[11, 24]: Error: 'ReactUni' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+union ReactUni = React
+
+type Person {
+  name: String
+}
+
+fragment myfrag ($arg: ReactUni) on Person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "frag_var_type_undefined"
+  error = "[5, 23]: Error: type not defined 'React'"
+  code = """
+type Person {
+  name: String
+}
+
+fragment myfrag($arg: React) on Person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "inline_frag_on_directive"
+  error = "[4, 10]: Error: 'mydir' is a 'directive', expect '{object, interface, union}'"
+  code = """
+directive @mydir on QUERY
+
+query myfrag {
+  ... on mydir {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "inline_frag_on_enum"
+  error = "[6, 10]: Error: 'Node' is an 'enum', expect '{object, interface, union}'"
+  code = """
+enum Node {
+  APPLE
+}
+
+query myfrag {
+  ... on Node {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "inline_frag_on_input"
+  error = "[6, 10]: Error: 'Node' is an 'input object', expect '{object, interface, union}'"
+  code = """
+input Node {
+  name: String
+}
+
+query myfrag {
+  ... on Node {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "inline_frag_on_scalar"
+  error = "[2, 10]: Error: 'String' is a 'scalar', expect '{object, interface, union}'"
+  code = """
+query myfrag {
+  ... on String {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directives on fragment definition"
+  code = """
+directive @mydir on FRAGMENT_DEFINITION
+type Query {
+  name: String
+}
+fragment myfrag on Query @mydir {
+  name
+}
+query myquery {
+  ... myfrag
+}
+"""
+
+[[units]]
+  name = "directives on fragment spread"
+  code = """
+directive @mydir on FRAGMENT_SPREAD
+type Query {
+  name: String
+}
+fragment myfrag on Query {
+  name
+}
+query myquery {
+  ... myfrag @mydir
+}
+"""
+
+[[units]]
+  name = "directives on inline fragment"
+  code = """
+directive @mydir on INLINE_FRAGMENT
+type Query {
+  user: User
+}
+type User {
+  name: String
+}
+query myquery {
+  user {
+    ... on User @mydir {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread on valid types"
+  code = """
+type Query {
+  person: Person
+}
+type Person {
+  name: String
+}
+fragment myfrag on Person {
+  name
+}
+query myquery {
+  person {
+    ... myfrag
+  }
+}
+"""
+
+[[units]]
+  name = "direct cyclic fragment"
+  error = "[6, 7]: Error: cyclic reference detected for 'frag1'"
+  code = """
+type Animal {
+  name: String
+}
+
+fragment frag1 on Animal {
+  ... frag1
+}
+"""
+
+[[units]]
+  name = "indirect cyclic fragment"
+  error = "[14, 7]: Error: cyclic reference detected for 'frag1'"
+  code = """
+type Animal {
+  name: String
+}
+
+type Plant {
+  height: Int
+}
+
+fragment frag1 on Animal {
+  ... frag2
+}
+
+fragment frag2 on Plant {
+  ... frag1
+}
+"""
+
+[[units]]
+  name = "indirect cyclic fragment in selection set"
+  error = "[15, 9]: Error: cyclic reference detected for 'frag1'"
+  code = """
+type Animal {
+  name: String
+}
+
+type Plant {
+  height: Int
+}
+
+fragment frag1 on Animal {
+  ... frag2
+}
+
+fragment frag2 on Plant {
+  trait {
+    ... frag1
+  }
+}
+"""
+
+[[units]]
+  name = "unique fragment field arg"
+  error = "[5, 24]: Error: duplicate name 'name'"
+  code = """
+type User {
+  name: String
+}
+fragment myfrag on User {
+  human(name: "apple", name: "bunny")
+}
+"""
+
+[[units]]
+  name = "unique fragment field arg"
+  error = "[4, 33]: Error: duplicate name 'arg'"
+  code = """
+type User {
+  name: String
+}
+fragment myfrag($arg: Boolean, $arg: String)  on User {
+  human
+}
+"""
+
+[[units]]
+  name = "fragment var type non-null wrap non null"
+  error = "[4, 30]: Error: get '!', expect '$'"
+  code = """
+type User {
+  name: String
+}
+fragment mymut($arg: Boolean!!) on User {
+  human
+}
+"""
+
+[[units]]
+  name = "fragment var type non-null wrap non null inside list"
+  error = "[4, 31]: Error: get '!', expect ']'"
+  code = """
+type User {
+  name: String
+}
+fragment mymut($arg: [Boolean!!]) on User {
+  human
+}
+"""
+
+[[units]]
+  name = "fragment var defVal coercion invalid float <- string"
+  error = "[4, 30]: Error: 'hello' is a 'String', expect '{Int, Float}'"
+  code = """
+type User {
+  name: String
+}
+fragment mymut($arg: Float = "hello") on User {
+  human
+}
+"""
+
+[[units]]
+  name = "fragment var defVal coercion valid float <- float"
+  code = """
+type Query {
+  name(arg: Float): String
+}
+fragment myfrag($arg: Float = 123.0) on Query {
+  name(arg: $arg)
+}
+query myquery {
+  ... myfrag
+}
+"""
+
+[[units]]
+  name = "directive usage in fragment on User on User"
+  error = "[8, 13]: Error: directive 'mydir' doesn't specify 'FIELD' location"
+  code = """
+directive @mydir on QUERY
+type User {
+  name: String
+}
+fragment myfrag on User {
+  ... on User {
+    ... on User {
+      name @mydir
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "cyclic fragment reference inside inline fragment"
+  error = "[7, 9]: Error: cyclic reference detected for 'myfrag'"
+  code = """
+directive @mydir on QUERY
+type User {
+  name: String
+}
+fragment myfrag on User {
+  ... on User {
+    ... myfrag
+  }
+}
+"""
+
+[[units]]
+  name = "unused fragment definition"
+  error = "[4, 10]: Error: 'myfrag' is not used"
+  code = """
+type Query {
+  name: String
+}
+fragment myfrag on Query {
+  name
+}
+"""
+
+[[units]]
+  name = "wrong field in fragment of object"
+  error = "[5, 3]: Error: 'hello' is not part of 'Query'"
+  code = """
+type Query {
+  name: String
+}
+fragment myfrag on Query {
+  hello
+}
+"""
+
+[[units]]
+  name = "wrong field in fragment of interface"
+  error = "[5, 3]: Error: 'hello' is not part of 'Query'"
+  code = """
+interface Query {
+  name: String
+}
+fragment myfrag on Query {
+  hello
+}
+"""
+
+[[units]]
+  name = "wrong field in fragment of union"
+  error = "[6, 3]: Error: 'hello' is not part of 'MyUni'"
+  code = """
+union MyUni = Query
+type Query {
+  name: String
+}
+fragment myfrag on MyUni {
+  hello
+}
+"""
+
+[[units]]
+  name = "alias wrong field in fragment of interface"
+  error = "[5, 9]: Error: 'hello' is not part of 'Query'"
+  code = """
+interface Query {
+  name: String
+}
+fragment myfrag on Query {
+  name: hello
+}
+"""
+
+[[units]]
+  name = "inline fragment of different type from type in scope"
+  error = "[8, 10]: Error: 'Cat' is not part of 'Query'"
+  code = """
+type Query {
+  name: String
+}
+type Cat {
+  color: String
+}
+fragment myfrag on Query {
+  ... on Cat {
+    color
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "inline fragment of different type from type in scope wrong field"
+  error = "[8, 10]: Error: 'Cat' is not part of 'Query'"
+  code = """
+type Query {
+  name: String
+}
+type Cat {
+  color: String
+}
+fragment myfrag on Query {
+  ... on Cat {
+    name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "spread fragment of different type from type in scope"
+  error = "[11, 6]: Error: 'myfrag' is not part of 'Cat'"
+  code = """
+type Query {
+  name: String
+}
+type Cat {
+  color: String
+}
+fragment myfrag on Query {
+  name
+}
+fragment myfrag2 on Cat {
+  ...myfrag
+}
+query myquery {
+  ...myfrag2
+}
+"""
+
+[[units]]
+  name = "selection in fragment of scalar"
+  error = "[6, 5]: Error: 'color' is not part of 'String'"
+  code = """
+type Query {
+  name: String
+}
+fragment myfrag on Query {
+  name {
+    color
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "selection in fragment of enum"
+  error = "[9, 5]: Error: 'apple' is not part of 'Fruit'"
+  code = """
+enum Fruit {
+  apple
+}
+type Query {
+  fruit: Fruit
+}
+fragment myfrag on Query {
+  fruit {
+    apple
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "selection in fragment of object"
+  code = """
+type Person {
+  name: String
+}
+type Query {
+  human: Person
+}
+fragment myfrag on Query {
+  human {
+    name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "selection in fragment of interface"
+  code = """
+interface Person {
+  name: String
+}
+type Query {
+  human: Person
+}
+fragment myfrag on Query {
+  human {
+    name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "selection in fragment of object!"
+  code = """
+type Person {
+  name: String
+}
+type Query {
+  human: Person!
+}
+fragment myfrag on Query {
+  human {
+    name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "selection in fragment of [object]"
+  code = """
+type Person {
+  name: String
+}
+type Query {
+  human: [Person]
+}
+fragment myfrag on Query {
+  human {
+    name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "inline fragment on non member union of field return type"
+  error = "[16, 12]: Error: 'Person' is not part of 'Animal'"
+  code = """
+union Animal = Monkey | Cat
+type Monkey {
+  name: String
+}
+type Cat {
+  color: Int
+}
+type Person {
+  name: String
+}
+type Query {
+  animal: Animal
+}
+fragment myfrag on Query {
+  animal {
+    ... on Person {
+      name
+    }
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "inline fragment on non member union"
+  error = "[15, 10]: Error: 'Person' is not part of 'Animal'"
+  code = """
+union Animal = Monkey | Cat
+type Monkey {
+  name: String
+}
+type Cat {
+  color: Int
+}
+type Person {
+  name: String
+}
+type Query {
+  animal: Animal
+}
+fragment myfrag on Animal {
+  ... on Person {
+      name
+  }
+}
+query myquery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "fragment spread cyclic counter example 144"
+  error = "[19, 6]: Error: cyclic reference detected for 'nameFragment'"
+  code = """
+{
+  dog {
+    ...nameFragment
+  }
+}
+
+type Dog {
+  name: String
+  barkVolume: Int
+}
+
+fragment nameFragment on Dog {
+  name
+  ...barkVolumeFragment
+}
+
+fragment barkVolumeFragment on Dog {
+  barkVolume
+  ...nameFragment
+}
+"""
+
+[[units]]
+  name = "fragment spread cyclic counter example 146"
+  error = "[39, 8]: Error: cyclic reference detected for 'dogFragment'"
+  code = """
+type Query {
+  dog: Dog
+}
+
+type Dog implements Pet {
+  name: String!
+  owner: Human
+}
+
+interface Sentient {
+  name: String!
+}
+
+interface Pet {
+  name: String!
+}
+
+type Human implements Sentient {
+  name: String!
+  pets: [Pet!]
+}
+
+{
+  dog {
+    ...dogFragment
+  }
+}
+
+fragment dogFragment on Dog {
+  name
+  owner {
+    ...ownerFragment
+  }
+}
+
+fragment ownerFragment on Human {
+  name
+  pets {
+    ...dogFragment
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread example 147"
+  code = """
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+
+interface Pet {
+  name: String!
+}
+
+fragment dogFragment on Dog {
+  ... on Dog {
+    barkVolume
+  }
+}
+type Query {
+  dog: Dog
+}
+{
+  dog {
+    ...dogFragment
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread counter example 148"
+  error = "[16, 10]: Error: 'Cat' is not part of 'Dog'"
+  code = """
+interface Pet {
+  name: String!
+}
+
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+
+type Cat implements Pet {
+  name: String!
+  meowVolume: Int
+}
+
+fragment catInDogFragmentInvalid on Dog {
+  ... on Cat {
+    meowVolume
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread example 149"
+  code = """
+interface Pet {
+  name: String!
+}
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+type Query {
+  dog: Dog
+}
+fragment petNameFragment on Pet {
+  name
+}
+fragment interfaceWithinObjectFragment on Dog {
+  ...petNameFragment
+}
+{
+  dog {
+    ...interfaceWithinObjectFragment
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread example 150"
+  code = """
+interface Pet {
+  name: String!
+}
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String!
+  meowVolume: Int
+}
+type Query {
+  cat: CatOrDog
+}
+union CatOrDog = Cat | Dog
+fragment catOrDogNameFragment on CatOrDog {
+  ... on Cat {
+    meowVolume
+  }
+}
+fragment unionWithObjectFragment on Dog {
+  ...catOrDogNameFragment
+}
+{
+  cat {
+    ...unionWithObjectFragment
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread example 151"
+  code = """
+interface Pet {
+  name: String!
+}
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+type Cat implements Pet {
+  name: String!
+  meowVolume: Int
+}
+type Query {
+  cat: Cat
+  dog: Dog
+}
+union CatOrDog = Cat | Dog
+fragment petFragment on Pet {
+  name
+  ... on Dog {
+    barkVolume
+  }
+}
+fragment catOrDogFragment on CatOrDog {
+  ... on Cat {
+    meowVolume
+  }
+}
+{
+  cat {
+    ...catOrDogFragment
+  }
+  dog {
+    ...petFragment
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread counter example 152 A"
+  error = "[12, 10]: Error: 'Dog' is not part of 'Sentient'"
+  code = """
+interface Sentient {
+  name: String!
+}
+interface Pet {
+  name: String!
+}
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+fragment sentientFragment on Sentient {
+  ... on Dog {
+    barkVolume
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread counter example 152 B"
+  error = "[21, 10]: Error: 'Cat' is not part of 'HumanOrAlien'"
+  code = """
+interface Sentient {
+  name: String!
+}
+interface Pet {
+  name: String!
+}
+type Cat implements Pet {
+  name: String!
+  meowVolume: Int
+}
+type Alien implements Sentient {
+  name: String!
+  homePlanet: String
+}
+union HumanOrAlien = Human | Alien
+type Human implements Sentient {
+  name: String!
+  pets: [Pet!]
+}
+fragment humanOrAlienFragment on HumanOrAlien {
+  ... on Cat {
+    meowVolume
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread example 153"
+  code = """
+type Dog implements Pet {
+  name: String!
+  barkVolume: Int
+}
+interface Sentient {
+  name: String!
+}
+interface Pet {
+  name: String!
+}
+type Human implements Sentient {
+  name: String!
+}
+type Query {
+  dog: Dog
+}
+union DogOrHuman = Dog | Human
+fragment unionWithInterface on Pet {
+  ...dogOrHumanFragment
+}
+fragment dogOrHumanFragment on DogOrHuman {
+  ... on Dog {
+    barkVolume
+  }
+}
+{
+  dog {
+    ...unionWithInterface
+  }
+}
+"""
+
+[[units]]
+  name = "fragment spread counter example 154"
+  error = "[8, 6]: Error: 'sentientFragment' is not part of 'Pet'"
+  code = """
+interface Sentient {
+  name: String!
+}
+interface Pet {
+  name: String!
+}
+fragment nonIntersectingInterfaces on Pet {
+  ...sentientFragment
+}
+fragment sentientFragment on Sentient {
+  name
+}
+"""
+

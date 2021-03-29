@@ -1,0 +1,751 @@
+[[units]]
+  name = "directive type reserved"
+  error = "[1, 12]: Error: get '__apple', expect name without '__' prefix in this context"
+  code = """
+directive @__apple on QUERY
+"""
+
+[[units]]
+  name = "directive arg name reserved"
+  error = "[1, 18]: Error: get '__if', expect name without '__' prefix in this context"
+  code = """
+directive @apple(__if: Boolean) on QUERY
+"""
+
+[[units]]
+  name = "directive cyclic reference to itself"
+  error = "[1, 28]: Error: cyclic reference detected for 'mydir'"
+  code = """
+directive @mydir(arg: Int @mydir) on ARGUMENT_DEFINITION
+"""
+
+[[units]]
+  name = "indirect directive cyclic reference"
+  error = "[2, 30]: Error: cyclic reference detected for 'mydir'"
+  code = """
+directive @mydir(arg: Int @nextdir) on ARGUMENT_DEFINITION
+directive @nextdir(arg: Int @mydir) on ARGUMENT_DEFINITION
+"""
+
+[[units]]
+  name = "indirect directive cyclic reference via input object"
+  error = "[3, 16]: Error: cyclic reference detected for 'mydir'"
+  code = """
+directive @mydir(arg: MyInput) on INPUT_OBJECT
+
+input MyInput @mydir {
+  name: String
+}
+"""
+
+[[units]]
+  name = "indirect directive cyclic reference via input object field"
+  error = "[4, 17]: Error: cyclic reference detected for 'mydir'"
+  code = """
+directive @mydir(isTrue: Boolean, arg: MyInput) on INPUT_FIELD_DEFINITION
+
+input MyInput {
+  name: String @mydir
+}
+"""
+
+[[units]]
+  name = "directive arg type mismatch interface"
+  error = "[5, 23]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+directive @mydir(arg: Node) on QUERY
+"""
+
+[[units]]
+  name = "diricetive arg type mismatch list"
+  error = "[5, 24]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+directive @mydir(arg: [Node]) on QUERY
+"""
+
+[[units]]
+  name = "directive arg type mismatch nonnull"
+  error = "[5, 23]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+directive @mydir(arg: Node!) on QUERY
+"""
+
+[[units]]
+  name = "dir_arg_type_mismatch_obj"
+  error = "[5, 23]: Error: 'Node' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type Node {
+  name: String
+}
+
+directive @mydir(arg: Node) on QUERY
+"""
+
+[[units]]
+  name = "dir_arg_type_mismatch_union"
+  error = "[7, 23]: Error: 'NodeUni' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union NodeUni
+
+type Node {
+  name: String
+}
+
+directive @mydir(arg: NodeUni) on QUERY
+"""
+
+[[units]]
+  name = "dir_arg_type_undefined"
+  error = "[1, 23]: Error: type not defined 'Node'"
+  code = """
+directive @mydir(arg: Node) on QUERY
+"""
+
+[[units]]
+  name = "directive_enum_misuse_loc"
+  error = "[3, 15]: Error: directive 'apple' doesn't specify 'ENUM' location"
+  code = """
+directive @apple on QUERY
+
+enum myquery @apple {
+  HELLO
+}
+"""
+
+[[units]]
+  name = "directive_enumval_misuse_loc"
+  error = "[4, 22]: Error: directive 'apple' doesn't specify 'ENUM_VALUE' location"
+  code = """
+directive @apple on QUERY
+
+enum myenum {
+  "HelloDesc" HELLO @apple
+}
+"""
+
+[[units]]
+  name = "directive_iface_field_arg_misuse_loc"
+  error = "[4, 27]: Error: directive 'apple' doesn't specify 'ARGUMENT_DEFINITION' location"
+  code = """
+directive @apple on QUERY
+
+interface myquery {
+  combine(args: [String] @apple): String
+}
+"""
+
+[[units]]
+  name = "directive_iface_field_misuse_loc"
+  error = "[4, 17]: Error: directive 'apple' doesn't specify 'FIELD_DEFINITION' location"
+  code = """
+directive @apple on QUERY
+
+interface myquery {
+  name: String @apple
+}
+"""
+
+[[units]]
+  name = "directive_iface_misuse_loc"
+  error = "[3, 20]: Error: directive 'apple' doesn't specify 'INTERFACE' location"
+  code = """
+directive @apple on QUERY
+
+interface myquery @apple {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directive_input_field_misuse_loc"
+  error = "[4, 21]: Error: directive 'apple' doesn't specify 'INPUT_FIELD_DEFINITION' location"
+  code = """
+directive @apple on QUERY
+
+input Point2D {
+  "THE X" x: Float @apple
+  y: Float
+}
+"""
+
+[[units]]
+  name = "directive_input_misuse_loc"
+  error = "[3, 16]: Error: directive 'apple' doesn't specify 'INPUT_OBJECT' location"
+  code = """
+directive @apple on QUERY
+
+input Point2D @apple {
+  x: Float
+  y: Float
+}
+"""
+
+[[units]]
+  name = "directive_no_loc"
+  error = "[1, 21]: Error: get '!', expect valid directive location"
+  code = """
+directive @apple on !
+"""
+
+[[units]]
+  name = "directive_scalar_misuse_loc"
+  error = "[3, 18]: Error: directive 'apple' doesn't specify 'SCALAR' location"
+  code = """
+directive @apple on QUERY
+
+scalar myScalar @apple
+"""
+
+[[units]]
+  name = "directive_schema_misuse_loc"
+  error = "[3, 9]: Error: directive 'apple' doesn't specify 'SCHEMA' location"
+  code = """
+directive @apple on QUERY
+
+schema @apple {
+  query: myquery
+}
+
+type myquery {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directive_type_field_arg_misuse_loc"
+  error = "[4, 27]: Error: directive 'apple' doesn't specify 'ARGUMENT_DEFINITION' location"
+  code = """
+directive @apple on QUERY
+
+type myquery {
+  combine(args: [String] @apple): String
+}
+"""
+
+[[units]]
+  name = "directive_type_field_misuse_loc"
+  error = "[4, 17]: Error: directive 'apple' doesn't specify 'FIELD_DEFINITION' location"
+  code = """
+directive @apple on QUERY
+
+type myquery {
+  name: String @apple
+}
+"""
+
+[[units]]
+  name = "directive_type_misuse_loc"
+  error = "[3, 15]: Error: directive 'apple' doesn't specify 'OBJECT ' location"
+  code = """
+directive @apple on QUERY
+
+type myquery @apple {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directive_type_no_dir"
+  error = "[3, 15]: Error: type not defined 'banana'"
+  code = """
+directive @apple on QUERY
+
+type myquery @banana {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directive_type_not_dir"
+  error = "[1, 15]: Error: 'Int' is a 'scalar', expect 'directive'"
+  code = """
+type myquery @Int {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directive_union_misuse_loc"
+  error = "[3, 16]: Error: directive 'apple' doesn't specify 'UNION' location"
+  code = """
+directive @apple on QUERY
+
+union myunion @apple = myquery
+
+type myquery {
+  name: String
+}
+"""
+
+[[units]]
+  name = "typeref in directive args"
+  code = """
+directive @mydir(arg: String) on SUBSCRIPTION
+directive @mydir2(arg: [String]) on SUBSCRIPTION
+directive @mydir3(arg: String!) on SUBSCRIPTION
+directive @mydir4(arg: [[String]]) on SUBSCRIPTION
+directive @mydir5(arg: [Int]) on SUBSCRIPTION
+"""
+
+[[units]]
+  name = "directive_fragment_misuse_loc"
+  error = "[7, 26]: Error: directive 'apple' doesn't specify 'FRAGMENT_DEFINITION' location"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+fragment myfrag on User @apple {
+  name
+}
+"""
+
+[[units]]
+  name = "directive_mutation_field_misuse_loc"
+  error = "[13, 11]: Error: directive 'apple' doesn't specify 'FIELD' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Mutation {
+  people: People
+}
+
+mutation myQuery {
+  people {
+    name @apple
+  }
+}
+"""
+
+[[units]]
+  name = "directive_mutation_fragment_inline_misuse_loc"
+  error = "[8, 16]: Error: directive 'apple' doesn't specify 'INLINE_FRAGMENT' location"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+mutation Query {
+  ... on User @apple {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_mutation_fragment_spread_misuse_loc"
+  error = "[12, 7]: Error: type not defined 'myFrag'"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+fragment myfrag on User {
+  name
+}
+
+mutation Query {
+  ... myFrag @apple
+}
+"""
+
+[[units]]
+  name = "directive_mutation_misuse_loc"
+  error = "[3, 19]: Error: directive 'apple' doesn't specify 'MUTATION' location"
+  code = """
+directive @apple on OBJECT
+
+mutation myquery @apple {
+  HELLO
+}
+"""
+
+[[units]]
+  name = "directive_mutation_var_misuse_loc"
+  error = "[11, 29]: Error: directive 'apple' doesn't specify 'VARIABLE_DEFINITION' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Mutation {
+  people: People
+}
+
+mutation myQuery($arg: Int @apple) {
+  people {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_query_field_misuse_loc"
+  error = "[13, 11]: Error: directive 'apple' doesn't specify 'FIELD' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Query {
+  people: People
+}
+
+query myQuery {
+  people {
+    name @apple
+  }
+}
+"""
+
+[[units]]
+  name = "directive_query_fragment_inline_misuse_loc"
+  error = "[8, 16]: Error: directive 'apple' doesn't specify 'INLINE_FRAGMENT' location"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+query Query {
+  ... on User @apple {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_query_fragment_spread_misuse_loc"
+  error = "[12, 7]: Error: type not defined 'myFrag'"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+fragment myfrag on User {
+  name
+}
+
+query Query {
+  ... myFrag @apple
+}
+"""
+
+[[units]]
+  name = "directive_query_misuse_loc"
+  error = "[3, 16]: Error: directive 'apple' doesn't specify 'QUERY' location"
+  code = """
+directive @apple on OBJECT
+
+query myquery @apple {
+  HELLO
+}
+"""
+
+[[units]]
+  name = "directive_query_var_misuse_loc"
+  error = "[11, 26]: Error: directive 'apple' doesn't specify 'VARIABLE_DEFINITION' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Query {
+  people: People
+}
+
+query myQuery($arg: Int @apple) {
+  people {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_subs_field_misuse_loc"
+  error = "[13, 11]: Error: directive 'apple' doesn't specify 'FIELD' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Subscription {
+  people: People
+}
+
+subscription myQuery {
+  people {
+    name @apple
+  }
+}
+"""
+
+[[units]]
+  name = "directive_subs_fragment_inline_misuse_loc"
+  error = "[8, 16]: Error: directive 'apple' doesn't specify 'INLINE_FRAGMENT' location"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+subscription myQuery {
+  ... on User @apple {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_subs_fragment_spread_misuse_loc"
+  error = "[12, 7]: Error: type not defined 'myFrag'"
+  code = """
+directive @apple on OBJECT
+
+type User {
+  name: Int
+}
+
+fragment myfrag on User {
+  name
+}
+
+subscription Query {
+  ... myFrag @apple
+}
+"""
+
+[[units]]
+  name = "directive_subs_var_misuse_loc"
+  error = "[11, 33]: Error: directive 'apple' doesn't specify 'VARIABLE_DEFINITION' location"
+  code = """
+directive @apple on OBJECT
+
+type People {
+  name: String
+}
+
+type Subscription {
+  people: People
+}
+
+subscription myQuery($arg: Int @apple) {
+  people {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directive_subscription_misuse_loc"
+  error = "[3, 23]: Error: directive 'apple' doesn't specify 'SUBSCRIPTION' location"
+  code = """
+directive @apple on OBJECT
+
+subscription myquery @apple {
+  HELLO
+}
+"""
+
+[[units]]
+  name = "unique directive arg name"
+  error = "[4, 29]: Error: duplicate name 'arg'"
+  code = """
+input Node {
+  name: String
+}
+directive @mydir(arg: Node, arg: Node) on QUERY
+"""
+
+[[units]]
+  name = "directive arg type non-null wrap non-null"
+  error = "[1, 28]: Error: get '!', expect Name"
+  code = """
+directive @mydir(arg: Node!!) on QUERY
+"""
+
+[[units]]
+  name = "directive arg type non-null wrap non-null inside list"
+  error = "[1, 29]: Error: get '!', expect ']'"
+  code = """
+directive @mydir(arg: [Node!!]) on QUERY
+"""
+
+[[units]]
+  name = "directive arg defVal coercion invalid string <- int"
+  error = "[1, 32]: Error: '123' is an 'Int', expect 'String'"
+  code = """
+directive @mydir(arg: String = 123) on QUERY
+"""
+
+[[units]]
+  name = "directive arg defVal coercion valid string <- string"
+  code = """
+directive @mydir(arg: String = "hello") on QUERY
+"""
+
+[[units]]
+  name = "directive arg on variable definition must be literal"
+  error = "[5, 33]: Error: get '$', expect literal instead of variable"
+  code = """
+directive @mydir(arg: String = "hello") on VARIABLE_DEFINITION
+type Query {
+  name: String
+}
+query ($var: String @mydir(arg: $myStringVar) ) {
+  name
+}
+"""
+
+[[units]]
+  name = "directive arg on query op using variable must defined"
+  error = "[5, 20]: Error: 'myStringVar' is not part of ':anonymous'"
+  code = """
+directive @mydir(arg: String = "hello") on QUERY
+type Query {
+  name: String
+}
+query @mydir(arg: $myStringVar) {
+  name
+}
+"""
+
+[[units]]
+  name = "directive arg on mutation op using variable must defined"
+  error = "[5, 23]: Error: 'myStringVar' is not part of ':anonymous'"
+  code = """
+directive @mydir(arg: String = "hello") on MUTATION
+type Mutation {
+  name: String
+}
+mutation @mydir(arg: $myStringVar) {
+  name
+}
+"""
+
+[[units]]
+  name = "directive arg on subscription op using variable must defined"
+  error = "[5, 27]: Error: 'myStringVar' is not part of ':anonymous'"
+  code = """
+directive @mydir(arg: String = "hello") on SUBSCRIPTION
+type Subscription {
+  name: String
+}
+subscription @mydir(arg: $myStringVar) {
+  name
+}
+"""
+
+[[units]]
+  name = "directive arg on fragment definition using variable must defined"
+  error = "[5, 39]: Error: 'myStringVar' is not part of ':anonymous'"
+  code = """
+directive @mydir(arg: String = "hello") on FRAGMENT_DEFINITION | FIELD
+type Query {
+  name: String
+}
+fragment myfrag on Query @mydir(arg: $myStringVar) {
+  name
+}
+query {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "directive arg on fragment field using variable must defined"
+  error = "[6, 21]: Error: 'myStringVar' is not part of 'MyQuery'"
+  code = """
+directive @mydir(arg: String = "hello") on FIELD
+type Query {
+  name: String
+}
+fragment myfrag on Query {
+  name @mydir(arg: $myStringVar)
+}
+query MyQuery {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "directive arg object def"
+  error = "[2, 24]: Error: '123' is an 'Int', expect 'String'"
+  code = """
+directive @mydir(arg: String = "hello") on OBJECT
+type Query @mydir(arg: 123) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directives example 1"
+  code = """
+directive @example on FIELD
+schema {
+  query: SomeType
+}
+fragment SomeFragment on SomeType {
+  field @example
+}
+type SomeType {
+  field: String
+}
+{
+  ...SomeFragment
+}
+"""
+
+[[units]]
+  name = "directives example 2"
+  code = """
+directive @example on
+  | FIELD
+  | FRAGMENT_SPREAD
+  | INLINE_FRAGMENT
+"""
+
+[[units]]
+  name = "directives example 3"
+  code = """
+directive @example on FIELD_DEFINITION | ARGUMENT_DEFINITION
+
+type SomeType {
+  field(arg: Int @example): String @example
+}
+"""
+

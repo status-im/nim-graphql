@@ -1,0 +1,685 @@
+[[units]]
+  name = "multiple_subs_noname"
+  error = "[11, 14]: Error: only one 'anonymous operation' allowed"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Subscription {
+  dog: Dog
+}
+subscription {
+  dog {
+    name
+  }
+}
+subscription getName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "subs_var_type_mismatch_iface"
+  error = "[9, 27]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "subs_var_type_mismatch_list"
+  error = "[9, 28]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: [React]) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "subs_var_type_mismatch_nonnull"
+  error = "[9, 27]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: React!) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "subs_var_type_mismatch_obj"
+  error = "[9, 27]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: React) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "subs_var_type_mismatch_union"
+  error = "[11, 27]: Error: 'Node' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union Node = React
+
+type React {
+  color: Int
+}
+
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "subs_var_type_undefined"
+  error = "[5, 27]: Error: type not defined 'Node'"
+  code = """
+type Subscription {
+  name: String
+}
+
+subscription mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "directives on subscription"
+  code = """
+directive @mydir on SUBSCRIPTION
+type Subscription {
+  name: String
+}
+
+subscription mysubs @mydir {
+  name
+}
+"""
+
+[[units]]
+  name = "unique subscription field arg"
+  error = "[2, 24]: Error: duplicate name 'name'"
+  code = """
+subscription mysubs {
+  human(name: "apple", name: "bunny")
+}
+"""
+
+[[units]]
+  name = "unique subscription var name"
+  error = "[1, 36]: Error: duplicate name 'arg'"
+  code = """
+subscription mymut($arg: Boolean, $arg: String) {
+  human
+}
+"""
+
+[[units]]
+  name = "subscription var type non-null wrap non null"
+  error = "[1, 34]: Error: get '!', expect '$'"
+  code = """
+subscription mymut($arg: Boolean!!) {
+  human
+}
+"""
+
+[[units]]
+  name = "subscription var type non-null wrap non null inside list"
+  error = "[1, 35]: Error: get '!', expect ']'"
+  code = """
+subscription mymut($arg: [Boolean!!]) {
+  human
+}
+"""
+
+[[units]]
+  name = "subscription var defVal coercion invalid bool <- string"
+  error = "[1, 37]: Error: 'hello' is a 'String', expect 'Boolean'"
+  code = """
+subscription mysubs($arg: Boolean = "hello") {
+  human
+}
+"""
+
+[[units]]
+  name = "subscription var defVal coercion valid bool <- bool"
+  code = """
+type Subscription {
+  human(arg: Boolean): String
+}
+subscription mysubs($arg: Boolean = true) {
+  human(arg: $arg)
+}
+"""
+
+[[units]]
+  name = "subscription scalar field should have no selection"
+  error = "[6, 5]: Error: 'color' is not part of 'String'"
+  code = """
+type Subscription {
+  name: String
+}
+subscription {
+  name {
+    color
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg example 127 A"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnRequiredArg on Dog {
+  doesKnowCommand(dogCommand: SIT)
+}
+subscription {
+  dog {
+    ... argOnRequiredArg
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg example 127 B"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnOptional on Dog {
+  isHousetrained(atOtherHomes: true)
+}
+subscription {
+  dog {
+    ... argOnOptional
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg counter example 128"
+  error = "[9, 19]: Error: arg 'command' not defined in field 'doesKnowCommand' of 'Dog'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(command: SIT)
+}
+subscription {
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field directive arg counter example 129"
+  error = "[9, 45]: Error: arg 'unless' not defined in directive 'include'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(dogCommand: SIT) @include(unless: false)
+}
+subscription {
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "unique subscription field arg"
+  error = "[10, 31]: Error: duplicate name 'cmd'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(cmd: DogCommand!): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand(cmd: SIT, cmd: DOWN)
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg required not null"
+  error = "[10, 21]: Error: the value of 'dogCommand' can't be 'Null'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg required"
+  error = "[10, 5]: Error: field 'doesKnowCommand' need argument 'dogCommand'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg nullable"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg nullable null"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "subscription field arg value type mismatch"
+  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  code = """
+type Subscription {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+subscription {
+  dog {
+    doesKnowCommand(dogCommand: true)
+  }
+}
+"""
+
+[[units]]
+  name = "only one root selection ok"
+  code = """
+type Subscription {
+  name: String
+}
+
+subscription {
+  name
+}
+"""
+
+[[units]]
+  name = "only one root selection"
+  error = "[6, 14]: Error: only one 'root selection' allowed"
+  code = """
+type Subscription {
+  name: String
+  color: Int
+}
+
+subscription {
+  name
+  color
+}
+"""
+
+[[units]]
+  name = "only one root selection inline fragment"
+  error = "[8, 14]: Error: only one 'root selection' allowed"
+  code = """
+type Subscription {
+  name: String
+  dog: Dog
+}
+type Dog {
+  name: String
+}
+subscription {
+  dog {
+    ... on Dog {
+      name
+    }
+  }
+  name
+}
+"""
+
+[[units]]
+  name = "only one root selection inline fragment ok"
+  code = """
+type Subscription {
+  name: String
+  dog: Dog
+}
+type Dog {
+  name: String
+}
+subscription {
+  dog {
+    ... on Dog {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "only one root selection spread fragment ok"
+  code = """
+type Subscription {
+  name: String
+  color: Int
+}
+fragment dogFragment on Subscription {
+  name
+}
+subscription {
+  ... dogFragment
+}
+"""
+
+[[units]]
+  name = "only one root selection spread fragment"
+  error = "[9, 14]: Error: only one 'root selection' allowed"
+  code = """
+type Subscription {
+  name: String
+  color: Int
+}
+fragment dogFragment on Subscription {
+  name
+  color
+}
+subscription {
+  ... dogFragment
+}
+"""
+
+[[units]]
+  name = "subscription field arg value missing non nullable input object field"
+  error = "[9, 7]: Error: field 'color' of arg 'inp' should not empty"
+  code = """
+type Subscription {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+subscription {
+  dog(inp: {name: "Fido"})
+}
+"""
+
+[[units]]
+  name = "subscription field arg value input object"
+  code = """
+type Subscription {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+subscription {
+  dog(inp: {name: "Fido", color: 123})
+}
+"""
+
+[[units]]
+  name = "subscription field arg value input object field name duplicate"
+  error = "[8, 27]: Error: duplicate name 'name'"
+  code = """
+type Subscription {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+}
+subscription {
+  dog(inp: {name: "Fido", name: "Sasha"})
+}
+"""
+
+[[units]]
+  name = "subscription field arg value input object field non null get null"
+  error = "[8, 13]: Error: the value of 'name' can't be 'Null'"
+  code = """
+type Subscription {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+subscription {
+  dog(inp: {name: null})
+}
+"""
+
+[[units]]
+  name = "type must match, counter example 180"
+  error = "[9, 34]: Error: 'intArg' is an 'Int', expect 'Boolean'"
+  code = """
+type Arguments {
+  booleanArgField(booleanArg: Boolean): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription intCannotGoIntoBoolean($intArg: Int) {
+  arguments {
+    booleanArgField(booleanArg: $intArg)
+  }
+}
+"""
+
+[[units]]
+  name = "list cardinality must be the same, counter example 181"
+  error = "[9, 34]: Error: 'booleanListArg' is a '[Boolean]', expect 'Boolean'"
+  code = """
+type Arguments {
+  booleanArgField(booleanArg: Boolean): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription booleanListCannotGoIntoBoolean($booleanListArg: [Boolean]) {
+  arguments {
+    booleanArgField(booleanArg: $booleanListArg)
+  }
+}
+"""
+
+[[units]]
+  name = "nullability must be respected, counter example 182"
+  error = "[9, 48]: Error: variable 'booleanArg' should not nullable"
+  code = """
+type Arguments {
+  nonNullBooleanArgField(nonNullBooleanArg: Boolean!): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription booleanArgQuery($booleanArg: Boolean) {
+  arguments {
+    nonNullBooleanArgField(nonNullBooleanArg: $booleanArg)
+  }
+}
+"""
+
+[[units]]
+  name = "same rules around nullability apply to both outer types and inner types, example 183"
+  code = """
+type Arguments {
+  booleanListArgField(booleanListArg: [Boolean]): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription nonNullListToList($nonNullBooleanList: [Boolean]!) {
+  arguments {
+    booleanListArgField(booleanListArg: $nonNullBooleanList)
+  }
+}
+"""
+
+[[units]]
+  name = "a nullable list cannot be passed to a non-null list, counter example 184"
+  error = "[9, 53]: Error: variable 'booleanList' should not nullable"
+  code = """
+type Arguments {
+  nonNullBooleanListField(nonNullBooleanListArg: [Boolean]!): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription listToNonNullList($booleanList: [Boolean]) {
+  arguments {
+    nonNullBooleanListField(nonNullBooleanListArg: $booleanList)
+  }
+}
+"""
+
+[[units]]
+  name = "[T] cannot be passed to [T!]"
+  error = "[9, 57]: Error: 'booleanList' is a '[Boolean]', expect '[Boolean!]'"
+  code = """
+type Arguments {
+  booleanListFieldNonNullElem(nonNullBooleanListArg: [Boolean!]): String
+}
+type Subscription {
+  arguments: Arguments
+}
+subscription listToNonNullElemList($booleanList: [Boolean]) {
+  arguments {
+    booleanListFieldNonNullElem(nonNullBooleanListArg: $booleanList)
+  }
+}
+"""
+
+[[units]]
+  name = "non-null with defval to non-null with defval type mismatch"
+  error = "[5, 15]: Error: 'myarg' is an 'Int', expect 'String'"
+  code = """
+type Subscription {
+  hello(arg: String! = "hello"): String
+}
+subscription ($myarg: Int = 123) {
+  hello(arg: $myarg)
+}
+"""
+
+[[units]]
+  name = "non-null with defval to non-null with defval"
+  code = """
+type Subscription {
+  hello(arg: String! = "hello"): String
+}
+subscription ($myarg: String = "123") {
+  hello(arg: $myarg)
+}
+"""
+

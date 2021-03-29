@@ -1,0 +1,73 @@
+[[units]]
+  name = "invalid keyword"
+  error = "[2, 7]: Error: Invalid char '\\195'"
+  code = """
+enum myenum {
+  SCHEÕA
+"""
+
+[[units]]
+  name = "deep recursion in field arg"
+  error = "[2, 36]: Error: recursion limit 25 reached for ValueLiteral"
+  code = """
+{
+  name(is:[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
+"""
+
+[[units]]
+  name = "deep recursion in typeref"
+  error = "[2, 35]: Error: recursion limit 25 reached for TypeDef"
+  code = """
+type mytype {
+  field: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[
+}
+"""
+
+[[units]]
+  name = "deep recursion in selection set"
+  error = "[2, 56]: Error: recursion limit 25 reached for SelectionSet"
+  code = """
+query myquery {
+  field{a{b{c{d{e{a{b{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{x{
+}
+"""
+
+[[units]]
+  name = "max schema elements"
+  error = "[6, 1]: Error: loop limit 3 reached for max schema elements"
+  code = """
+schema {
+  query: abc
+  query: def
+  query: kkk
+  query: mmm
+}
+"""
+
+[[units]]
+  name = "max arguments"
+  error = "[9, 3]: Error: loop limit 32 reached for max arguments"
+  code = """
+type mytype {
+  query(
+    a1:Int, a2:Int, a3:Int, a4:Int, a5:Int, a6:Int, a7:Int
+    a8:Int, a9:Int, a10:Int, a11:Int, a12:Int, a13:Int, a14:Int
+    a15:Int, a16:Int, a17:Int, a18:Int, a19:Int, a20:Int
+    a21:Int, a22:Int, a23:Int, a24:Int, a25:Int, a26:Int
+    a27:Int, a28:Int, a29:Int, a30:Int, a31:Int, a32:Int
+    a33:Int
+  ): String
+}
+"""
+
+[[units]]
+  name = "max enum values"
+  error = "[4, 40]: Error: loop limit 64 reached for max enum values"
+  code = """
+enum myenum {
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu vv ww xx yy zz
+aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu vv ww xx yy zz
+}
+"""
+

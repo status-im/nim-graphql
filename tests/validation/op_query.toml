@@ -1,0 +1,1043 @@
+[[units]]
+  name = "duplicate_op_name"
+  error = "[7, 10]: Error: duplicate name 'dogOperation'"
+  code = """
+query dogOperation {
+  dog {
+    name
+  }
+}
+
+mutation dogOperation {
+  mutateDog {
+    id
+  }
+}
+"""
+
+[[units]]
+  name = "duplicate_query_name"
+  error = "[7, 7]: Error: duplicate name 'getName'"
+  code = """
+query getName {
+  dog {
+    name
+  }
+}
+
+query getName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "empty_query"
+  error = "[6, 1]: Error: get '}', expect Name"
+  code = """
+type Query {
+  name: String
+}
+{
+
+}
+"""
+
+[[units]]
+  name = "multiple_query_noname"
+  error = "[11, 7]: Error: only one 'anonymous operation' allowed"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Query {
+  dog: Dog
+}
+query {
+  dog {
+    name
+  }
+}
+
+query getName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "noname_shorthands"
+  error = "[23, 1]: Error: duplicate name ':anonymous'"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Mutation {
+  dog: Dog
+}
+{
+  dog {
+    name
+  }
+}
+{
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "query_mutation_noname"
+  error = "[14, 7]: Error: only one 'anonymous operation' allowed"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Mutation {
+  dog: Dog
+}
+type Query {
+  dog: Dog
+}
+query {
+  dog {
+    name
+  }
+}
+mutation getName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "query_var_type_mismatch_iface"
+  error = "[9, 21]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Query {
+  name: String
+}
+
+query myquery($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "query_var_type_mismatch_list"
+  error = "[9, 22]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Query {
+  name: String
+}
+
+query myquery($arg: [React]) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "query_var_type_mismatch_nonnull"
+  error = "[9, 21]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Query {
+  name: String
+}
+
+query myquery($arg: React!) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "query_var_type_mismatch_obj"
+  error = "[9, 21]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Query {
+  name: String
+}
+
+query myquery($arg: React) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "query_var_type_mismatch_union"
+  error = "[11, 21]: Error: 'Node' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union Node = React
+
+type React {
+  color: Int
+}
+
+type Query {
+  name: String
+}
+
+query myquery($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "query_var_type_undefined"
+  error = "[5, 21]: Error: type not defined 'Node'"
+  code = """
+type Query {
+  name: String
+}
+
+query myquery($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "typedef_in_executable"
+  error = "[8, 13]: Error: type not defined 'Dog'"
+  code = """
+query getDogName {
+  dog {
+    name
+    color
+  }
+}
+
+extend type Dog {
+  color: String
+}
+"""
+
+[[units]]
+  name = "multiple_query"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Query {
+  dog: Dog
+}
+query getDogName {
+  dog {
+    name
+  }
+}
+query getOwnerName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "selection_query"
+  code = """
+type Dog {
+  name: String
+}
+type Query {
+  dog: Dog
+}
+{
+  dog {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "single_query_noname"
+  code = """
+type Dog {
+  name: String
+}
+type Query {
+  dog: Dog
+}
+query {
+  dog {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "directives on query"
+  code = """
+directive @mydir on QUERY
+type Query {
+  name: String
+}
+
+query myquery @mydir {
+  name
+}
+"""
+
+[[units]]
+  name = "directives on op field"
+  code = """
+directive @mydir on FIELD
+type Query {
+  name: String
+}
+
+type Mutation {
+  name: String
+}
+
+type Subscription {
+  name: String
+}
+
+query myquery {
+  name @mydir
+}
+
+subscription mysub {
+  name @mydir
+}
+
+mutation mymut {
+  name @mydir
+}
+"""
+
+[[units]]
+  name = "directives on variables"
+  code = """
+directive @mydir on VARIABLE_DEFINITION
+type Query {
+  name(arg: String): String
+}
+type Mutation {
+  name(arg: String): String
+}
+type Subscription {
+  name(arg: String): String
+}
+subscription mysubs($arg: String = "hello" @mydir) {
+  name(arg: $arg)
+}
+query myquery($arg: String = "hello" @mydir) {
+  name(arg: $arg)
+}
+mutation mymut($arg: String = "hello" @mydir) {
+  name(arg: $arg)
+}
+"""
+
+[[units]]
+  name = "typeref in operations variables"
+  code = """
+type Query {
+  name(arg: String): String
+  names(arg: [String]): String
+}
+type Mutation {
+  name(arg: Int): String
+  names(arg: [Int]): String
+}
+type Subscription {
+  name(arg: String): String
+  names(arg: [String]): String
+}
+subscription mysubs($arg: String = "hello") {
+  name(arg: $arg)
+}
+subscription mysubs2($arg: String! = "hello") {
+  name(arg: $arg)
+}
+subscription mysubs3($arg: [String] = ["hello"]) {
+  names(arg: $arg)
+}
+subscription mysubs4($arg: [String]! = ["hello"]) {
+  names(arg: $arg)
+}
+query myquery($arg: String = "hello") {
+  name(arg: $arg)
+}
+query myquery2($arg: String! = "hello") {
+  name(arg: $arg)
+}
+query myquery3($arg: [String] = "hello") {
+  names(arg: $arg)
+}
+query myquery4($arg: [String]! = "hello") {
+  names(arg: $arg)
+}
+mutation mymut($arg: Int = 123) {
+  name(arg: $arg)
+}
+mutation mymut2($arg: Int! = 123) {
+  name(arg: $arg)
+}
+mutation mymut3($arg: [Int] = [123]) {
+  names(arg: $arg)
+}
+mutation mymut4($arg: [Int]! = [123]) {
+  names(arg: $arg)
+}
+"""
+
+[[units]]
+  name = "unique query field arg"
+  error = "[2, 24]: Error: duplicate name 'name'"
+  code = """
+query myquery {
+  human(name: "apple", name: "bunny")
+}
+"""
+
+[[units]]
+  name = "unique query var name"
+  error = "[1, 29]: Error: duplicate name 'arg'"
+  code = """
+query mymut($arg: Boolean, $arg: String) {
+  human
+}
+"""
+
+[[units]]
+  name = "query var type non-null wrap non null"
+  error = "[1, 27]: Error: get '!', expect '$'"
+  code = """
+query mymut($arg: Boolean!!) {
+  human
+}
+"""
+
+[[units]]
+  name = "query var type non-null wrap non null inside list"
+  error = "[1, 28]: Error: get '!', expect ']'"
+  code = """
+query mymut($arg: [Boolean!!]) {
+  human
+}
+"""
+
+[[units]]
+  name = "query var defVal coercion invalid bool <- string"
+  error = "[1, 31]: Error: 'hello' is a 'String', expect 'Boolean'"
+  code = """
+query myquery($arg: Boolean = "hello") {
+  human
+}
+"""
+
+[[units]]
+  name = "query var defVal coercion valid bool <- bool"
+  code = """
+type Query {
+  human(arg: Boolean): String
+}
+query myquery($arg: Boolean = true) {
+  human(arg: $arg)
+}
+"""
+
+[[units]]
+  name = "query var defVal must be literal"
+  error = "[1, 31]: Error: get '$', expect literal instead of variable"
+  code = """
+query myquery($arg: Boolean = $defVal) {
+  human
+}
+"""
+
+[[units]]
+  name = "query scalar field should have no selection"
+  error = "[6, 5]: Error: 'color' is not part of 'String'"
+  code = """
+type Query {
+  name: String
+}
+{
+  name {
+    color
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg example 127 A"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnRequiredArg on Dog {
+  doesKnowCommand(dogCommand: SIT)
+}
+{
+  dog {
+    ... argOnRequiredArg
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg example 127 B"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnOptional on Dog {
+  isHousetrained(atOtherHomes: true)
+}
+{
+  dog {
+    ... argOnOptional
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg counter example 128"
+  error = "[9, 19]: Error: arg 'command' not defined in field 'doesKnowCommand' of 'Dog'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(command: SIT)
+}
+{
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "query field directive arg counter example 129"
+  error = "[9, 45]: Error: arg 'unless' not defined in directive 'include'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(dogCommand: SIT) @include(unless: false)
+}
+{
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "unique query field arg"
+  error = "[10, 31]: Error: duplicate name 'cmd'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(cmd: DogCommand!): Boolean!
+}
+{
+  dog {
+    doesKnowCommand(cmd: SIT, cmd: DOWN)
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg required not null"
+  error = "[10, 21]: Error: the value of 'dogCommand' can't be 'Null'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+{
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg required"
+  error = "[10, 5]: Error: field 'doesKnowCommand' need argument 'dogCommand'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+{
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg nullable"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+{
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg nullable null"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+{
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg value type mismatch"
+  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  code = """
+type Query {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+{
+  dog {
+    doesKnowCommand(dogCommand: true)
+  }
+}
+"""
+
+[[units]]
+  name = "query field arg value missing non nullable input object field"
+  error = "[9, 7]: Error: field 'color' of arg 'inp' should not empty"
+  code = """
+type Query {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+{
+  dog(inp: {name: "Fido"})
+}
+"""
+
+[[units]]
+  name = "query field arg value input object"
+  code = """
+type Query {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+query {
+  dog(inp: {name: "Fido", color: 123})
+}
+"""
+
+[[units]]
+  name = "query field arg value input object field name duplicate"
+  error = "[8, 27]: Error: duplicate name 'name'"
+  code = """
+type Query {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+}
+query {
+  dog(inp: {name: "Fido", name: "Sasha"})
+}
+"""
+
+[[units]]
+  name = "query field arg value input object field non null get null"
+  error = "[8, 13]: Error: the value of 'name' can't be 'Null'"
+  code = """
+type Query {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+query {
+  dog(inp: {name: null})
+}
+"""
+
+[[units]]
+  name = "query var uses not defined"
+  error = "[5, 15]: Error: 'color' is not part of ':anonymous'"
+  code = """
+type Query {
+  dog(color: Int): String
+}
+query {
+  dog(color: $color)
+}
+"""
+
+[[units]]
+  name = "query var not used"
+  error = "[4, 9]: Error: 'color' is not used"
+  code = """
+type Query {
+  dog(color: Int): String
+}
+query ($color: Int) {
+  dog(color: 123)
+}
+"""
+
+[[units]]
+  name = "query var used"
+  code = """
+type Query {
+  dog(color: Int): String
+}
+query ($color: Int = 123) {
+  dog(color: $color)
+}
+"""
+
+[[units]]
+  name = "query var used in spread fragment"
+  code = """
+type Query {
+  dog(color: Int): String
+}
+fragment myfrag on Query {
+  dog(color: $color)
+}
+query ($color: Int = 123) {
+  ...myfrag
+}
+"""
+
+[[units]]
+  name = "query var used in inline fragment"
+  code = """
+type Query {
+  dog(color: Int): String
+}
+query ($color: Int = 123) {
+  ... on Query {
+    dog(color: $color)
+  }
+}
+"""
+
+[[units]]
+  name = "query var enum used"
+  code = """
+enum Fruit {
+  Banana
+}
+type Query {
+  dog(color: Fruit): String
+}
+query ($color: Fruit = Banana) {
+  dog(color: $color)
+}
+"""
+
+[[units]]
+  name = "query var enum used wrong value"
+  error = "[8, 15]: Error: 'color' is a 'String', expect 'Fruit'"
+  code = """
+enum Fruit {
+  Banana
+}
+type Query {
+  dog(color: Fruit): String
+}
+query ($color: String = "hello") {
+  dog(color: $color)
+}
+"""
+
+[[units]]
+  name = "query var input object used"
+  code = """
+input Fruit {
+  name: String
+}
+type Query {
+  dog(color: Fruit): String
+}
+query ($color: Fruit = {name: "Banana"}) {
+  dog(color: $color)
+}
+"""
+
+[[units]]
+  name = "query var input object used in spread fragment not defined"
+  error = "[13, 33]: Error: 'atOtherHomes' is not part of 'housetrainedQueryTwoNotDefined'"
+  code = """
+type Query {
+  dog: Dog
+}
+type Dog {
+  isHousetrained(atOtherHomes: Boolean): Boolean
+}
+query housetrainedQueryTwoNotDefined {
+  dog {
+    ...isHousetrainedFragment
+  }
+}
+fragment isHousetrainedFragment on Dog {
+  isHousetrained(atOtherHomes: $atOtherHomes)
+}
+"""
+
+[[units]]
+  name = "query var input object used in spread fragment not defined"
+  error = "[8, 3]: Error: field 'dog' return type is 'Dog' requires selection set"
+  code = """
+type Query {
+  dog: Dog
+}
+type Dog {
+  name: String
+}
+{
+  dog
+}
+"""
+
+[[units]]
+  name = "query var input object used in spread fragment not defined"
+  code = """
+type Query {
+  dog: Pet
+}
+interface Pet {
+  name: String
+}
+type Dog implements Pet {
+  name: String
+}
+type Cat implements Pet {
+  name: String
+}
+{
+  dog {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "query var input object used in spread fragment not defined"
+  code = """
+union Pet = Dog | Cat
+type Query {
+  dog: Pet
+}
+type Dog {
+  name: String
+}
+type Cat {
+  name: String
+}
+{
+  dog {
+    ... on Dog {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "query with comments"
+  code = """
+type Hero {
+  name: String
+  friends: Hero
+}
+type Query {
+  hero: Hero
+}
+{
+  hero {
+    name
+    # Queries can have comments!
+    friends {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "query with list"
+  code = """
+type Human {
+  name: String
+}
+type Ship {
+  id: ID
+  commander: Human
+}
+type Query {
+  shipsselection(ids: [Int]): Ship
+}
+{
+  shipsselection(ids:[44,45]) {
+    id
+    commander {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "query with directives"
+  code = """
+enum Episode {
+  BANANA
+  APPLE
+}
+type Hero {
+  name: String
+  friends: Hero
+}
+type Query {
+  hero(episode: Episode): Hero
+}  
+query Hero($episode: Episode, $myBoolVar: Boolean!) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $myBoolVar) {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "schema with descriptions"
+  code = """
+"A simple GraphQL schema which is well described."
+type Query {
+  "Translates a string from a given language into a different language."
+  translate(
+    "The original language that `text` is provided in."
+    fromLanguage: Language
+
+    "The translated language to be returned."
+    toLanguage: Language
+
+    "The text to be translated."
+    text: String
+  ): String
+}
+
+"The set of languages supported by `translate`."
+enum Language {
+  "English"
+  EN
+
+  "French"
+  FR
+
+  "Chinese"
+  CH
+}
+"""
+

@@ -1,0 +1,497 @@
+[[units]]
+  name = "interface name reserved"
+  error = "[1, 11]: Error: get '__person', expect name without '__' prefix in this context"
+  code = """
+interface __person {
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface field reserved name"
+  error = "[2, 3]: Error: get '__name', expect name without '__' prefix in this context"
+  code = """
+interface Hello {
+  __name: String
+}
+"""
+
+[[units]]
+  name = "interface field typename reserved"
+  error = "[2, 9]: Error: type not defined '__String'"
+  code = """
+interface Hello {
+  name: __String
+}
+"""
+
+[[units]]
+  name = "interface field arg name reserved"
+  error = "[2, 8]: Error: get '__onevar', expect name without '__' prefix in this context"
+  code = """
+interface Hello {
+  name(__onevar: String): String
+}
+"""
+
+[[units]]
+  name = "interface field arg typename reserved"
+  error = "[2, 16]: Error: type not defined '__String'"
+  code = """
+interface Hello {
+  name(onevar: __String): String
+}
+"""
+
+[[units]]
+  name = "interface arg_type_mismatch_iface"
+  error = "[6, 13]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+interface Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "interface arg_type_mismatch_list"
+  error = "[6, 14]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+interface Person {
+  name(arg: [Node]): String
+}
+"""
+
+[[units]]
+  name = "interface arg_type_mismatch_nonnull"
+  error = "[6, 13]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+interface Person {
+  name(arg: Node!): String
+}
+
+"""
+
+[[units]]
+  name = "interface arg_type_mismatch_obj"
+  error = "[6, 13]: Error: 'Node' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type Node {
+  name: String
+}
+
+interface Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "interface arg_type_mismatch_union"
+  error = "[8, 13]: Error: 'NodeUni' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union NodeUni
+
+type Node {
+  name: String
+}
+
+interface Person {
+  name(arg: NodeUni): String
+}
+
+"""
+
+[[units]]
+  name = "interface arg_type_undefined"
+  error = "[2, 13]: Error: type not defined 'Node'"
+  code = """
+interface Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "interface field_type_mismatch"
+  error = "[6, 9]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+interface Query {
+  name: myinput
+}
+"""
+
+[[units]]
+  name = "interface field_type_mismatch_list"
+  error = "[6, 10]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+interface Query {
+  name: [myinput]
+}
+"""
+
+[[units]]
+  name = "interface field_type_mismatch_nonnull"
+  error = "[6, 9]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+interface Query {
+  name: myinput!
+}
+"""
+
+[[units]]
+  name = "interface field_type_undefined"
+  error = "[2, 9]: Error: type not defined 'myinput'"
+  code = """
+interface Query {
+  name: myinput
+}
+"""
+
+[[units]]
+  name = "interface imp_no_iface"
+  error = "[1, 27]: Error: type not defined 'Named'"
+  code = """
+interface Node implements Named {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface imp_not_iface"
+  error = "[1, 27]: Error: 'Named' is a 'scalar', expect 'interface'"
+  code = """
+interface Node implements Named {
+  id: ID!
+  name: String
+}
+
+scalar Named
+"""
+
+[[units]]
+  name = "interface_cyclic"
+  error = "[1, 11]: Error: cyclic reference detected for 'Node'"
+  code = """
+interface Node implements Named & Node {
+  id: ID!
+  name: String
+}
+
+interface Named implements Node & Named {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface_cyclic_indirect"
+  error = "[1, 11]: Error: cyclic reference detected for 'Node'"
+  code = """
+interface Node implements Named {
+  id: ID!
+  name: String
+}
+
+interface Named implements Banana {
+  id: ID!
+  name: String
+}
+
+interface Banana implements Node {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface_no_cyclic"
+  code = """
+interface Node implements Named {
+  id: ID!
+  name: String
+}
+
+interface Named implements Banana {
+  id: ID!
+  name: String
+}
+
+interface Banana {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface implements unique interface"
+  error = "[6, 35]: Error: duplicate name 'Named'"
+  code = """
+interface Named {
+  id: ID!
+  name: String
+}
+
+interface Node implements Named & Named {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "typeref in interface field args"
+  code = """
+interface Character {
+  field1(arg1: String, arg2: Int): Boolean
+  field2(arg1: String!, arg2: [Int]): String
+  field3(arg1: String, arg2: Boolean): Int
+}
+"""
+
+[[units]]
+  name = "typeref in interface field"
+  code = """
+type Person {
+  name: String
+}
+
+interface Character {
+  field1(arg1: String, arg2: Int): Boolean
+  field2(arg1: String!, arg2: [Int]): String!
+  field3(arg1: String, arg2: Boolean): [Int]
+  field4: [[String]]
+}
+"""
+
+[[units]]
+  name = "unique interface field name"
+  error = "[3, 3]: Error: duplicate name 'name'"
+  code = """
+interface Person {
+  name: String
+  name: Boolean
+}
+"""
+
+[[units]]
+  name = "unique interface field arg name"
+  error = "[5, 21]: Error: duplicate name 'apple'"
+  code = """
+input Node {
+  name: String
+}
+interface Person {
+  name(apple: Node, apple: Node): String
+}
+"""
+
+[[units]]
+  name = "interface arg type non-null wrap non-null"
+  error = "[2, 22]: Error: get '!', expect Name"
+  code = """
+interface Query {
+  human(name: String!!): String
+}
+"""
+
+[[units]]
+  name = "interface field type non-null wrap non-null"
+  error = "[2, 31]: Error: get '!', expect Name"
+  code = """
+interface Query {
+  human(name: String): String!!
+}
+"""
+
+[[units]]
+  name = "interface arg type non-null wrap non-null inside list"
+  error = "[2, 23]: Error: get '!', expect ']'"
+  code = """
+interface Query {
+  human(name: [String!!]): String
+}
+"""
+
+[[units]]
+  name = "interface field type non-null wrap non-null inside list"
+  error = "[2, 32]: Error: get '!', expect ']'"
+  code = """
+interface Query {
+  human(name: String): [String!!]
+}
+"""
+
+[[units]]
+  name = "interface field arg defVal coercion invalid int <- string"
+  error = "[2, 21]: Error: '123' is a 'String', expect 'Int'"
+  code = """
+interface Query {
+  human(name: Int = "123"): String
+}
+"""
+
+[[units]]
+  name = "interface field arg defVal coercion valid int <- int"
+  code = """
+interface Query {
+  human(name: Int = 123): String
+}
+"""
+
+[[units]]
+  name = "interface implements interfaces"
+  code = """
+interface Fruit {
+  name: String
+}
+
+interface Plant {
+  leaves: Int
+}
+
+interface Querio implements Fruit & Plant {
+  name: String
+  leaves: Int
+}
+"""
+
+[[units]]
+  name = "interface implements interfaces missing field"
+  error = "[6, 3]: Error: 'leaves' is not part of 'Querio'"
+  code = """
+interface Fruit {
+  name: String
+}
+
+interface Plant {
+  leaves: Int
+}
+
+interface Querio implements Fruit & Plant {
+  name: String
+}
+"""
+
+[[units]]
+  name = "interface field arg missing non null input object field"
+  error = "[6, 8]: Error: field 'color' of arg 'inp' should not empty"
+  code = """
+input ComplexInput {
+  name: String
+  color: Int!
+}
+interface Fruit {
+  name(inp: ComplexInput = {name: "Fido"}): String
+}
+
+"""
+
+[[units]]
+  name = "interface field arg non null input object field get null"
+  error = "[6, 43]: Error: the value of 'color' can't be 'Null'"
+  code = """
+input ComplexInput {
+  name: String
+  color: Int!
+}
+interface Fruit {
+  name(inp: ComplexInput = {name: "Fido", color: null}): String
+}
+
+"""
+
+[[units]]
+  name = "bussiness interface"
+  code = """
+interface NamedEntity {
+  name: String
+}
+
+interface ValuedEntity {
+  value: Int
+}
+
+type Person implements NamedEntity {
+  name: String
+  age: Int
+}
+
+type Business implements NamedEntity & ValuedEntity {
+  name: String
+  value: Int
+  employeeCount: Int
+}
+"""
+
+[[units]]
+  name = "validation example"
+  code = """
+type Query {
+  dog: Dog
+}
+
+enum DogCommand { SIT, DOWN, HEEL }
+
+type Dog implements Pet {
+  name: String!
+  nickname: String
+  barkVolume: Int
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+  owner: Human
+}
+
+interface Sentient {
+  name: String!
+}
+
+interface Pet {
+  name: String!
+}
+
+type Alien implements Sentient {
+  name: String!
+  homePlanet: String
+}
+
+type Human implements Sentient {
+  name: String!
+  pets: [Pet!]
+}
+
+enum CatCommand { JUMP }
+
+type Cat implements Pet {
+  name: String!
+  nickname: String
+  doesKnowCommand(catCommand: CatCommand!): Boolean!
+  meowVolume: Int
+}
+
+union CatOrDog = Cat | Dog
+union DogOrHuman = Dog | Human
+union HumanOrAlien = Human | Alien
+"""
+
