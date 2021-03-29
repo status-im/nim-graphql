@@ -7,8 +7,11 @@
 # This file may not be copied, modified, or distributed except according to
 # those terms.
 
-{. warning[UnusedImport]:off .}
+type
+  Pos* = object
+    line*: uint16
+    col*: uint16
 
-import
-  test_lexer,
-  test_parser
+  LoopGuard* = object
+    maxLoop*: int
+    desc*: string
