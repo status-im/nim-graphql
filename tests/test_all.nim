@@ -11,4 +11,5 @@
 
 import
   test_lexer,
-  test_parser
+  test_parser,
+  test_validation
