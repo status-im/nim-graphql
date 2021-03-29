@@ -14,7 +14,7 @@ version       = "0.1.0"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
-skipDirs      = @["tests", "resources"]
+skipDirs      = @["tests", "resources", "fuzzer"]
 
 requires "nim >= 1.2.0",
          "faststreams",
