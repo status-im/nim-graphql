@@ -1,0 +1,73 @@
+[[units]]
+  name = "union name reserved"
+  error = "[1, 7]: Error: get '__myuni', expect name without '__' prefix in this context"
+  code = """
+union __myuni = mytype | myobj
+
+type mytype {
+  name: String
+}
+
+type myobj {
+  color: Int
+}
+"""
+
+[[units]]
+  name = "union member not exists"
+  error = "[6, 15]: Error: type not defined 'Meong'"
+  code = """
+interface Named {
+  id: ID!
+  name: String
+}
+
+union MyUni = Meong
+"""
+
+[[units]]
+  name = "union member not object"
+  error = "[6, 15]: Error: 'Named' is an 'interface', expect 'object'"
+  code = """
+interface Named {
+  id: ID!
+  name: String
+}
+
+union MyUni = Named
+"""
+
+[[units]]
+  name = "union member object"
+  code = """
+type Named {
+  id: ID!
+  name: String
+}
+
+union MyUni = Named
+"""
+
+[[units]]
+  name = "unique union members"
+  error = "[6, 23]: Error: duplicate name 'Named'"
+  code = """
+type Named {
+  id: ID!
+  name: String
+}
+
+union MyUni = Named | Named
+"""
+
+[[units]]
+  name = "unique directives"
+  error = "[5, 21]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on UNION
+type Named {
+  name: String
+}
+union MyUni @mydir @mydir = Named
+"""
+

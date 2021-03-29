@@ -1,0 +1,75 @@
+[[units]]
+  name = "only_one_schema"
+  error = "[6, 1]: Error: duplicate name 'schema'"
+  code = """
+schema {
+  query: myquery
+}
+
+"invalid second schema"
+schema {
+  query: myquery
+}
+
+type myquery {
+  name: String
+}
+"""
+
+[[units]]
+  name = "schema_bad_op"
+  error = "[2, 3]: Error: get 'badop', expect valid operation names"
+  code = """
+schema {
+  badop: opname
+}
+"""
+
+[[units]]
+  name = "schema_empty_op"
+  error = "[3, 1]: Error: get '}', expect valid operation names"
+  code = """
+schema {
+
+}
+"""
+
+[[units]]
+  name = "schema_op_no_op_list"
+  error = "[2, 1]: Error: get EOF, expect '{'"
+  code = """
+schema
+"""
+
+[[units]]
+  name = "schema_op_not_exists"
+  error = "[2, 10]: Error: type not defined 'opname'"
+  code = """
+schema {
+  query: opname
+}
+"""
+
+[[units]]
+  name = "schema_op_not_object"
+  error = "[2, 10]: Error: 'myquery' is a 'scalar', expect 'object'"
+  code = """
+schema {
+  query: myquery
+}
+
+scalar myquery
+"""
+
+[[units]]
+  name = "schema_simple"
+  code = """
+schema {
+  query: opname
+}
+
+type opname {
+  human: String
+}
+"""
+

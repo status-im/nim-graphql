@@ -1,0 +1,713 @@
+[[units]]
+  name = "multiple_mutation_noname"
+  error = "[11, 10]: Error: only one 'anonymous operation' allowed"
+  code = """
+type Human {
+  name: String
+}
+type Dog {
+  name: String
+  owner: Human
+}
+type Mutation {
+  dog: Dog
+}
+mutation {
+  dog {
+    name
+  }
+}
+mutation getName {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_mismatch_iface"
+  error = "[9, 23]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_mismatch_list"
+  error = "[9, 24]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: [React]) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_mismatch_nonnull"
+  error = "[9, 23]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: React!) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_mismatch_obj"
+  error = "[9, 23]: Error: 'React' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type React {
+  color: Int
+}
+
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: React) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_mismatch_union"
+  error = "[11, 23]: Error: 'Node' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union Node = React
+
+type React {
+  color: Int
+}
+
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "mutation_var_type_undefined"
+  error = "[5, 23]: Error: type not defined 'Node'"
+  code = """
+type Mutation {
+  name: String
+}
+
+mutation mysubs($arg: Node) {
+  name: String
+}
+"""
+
+[[units]]
+  name = "noname_queries"
+  error = "[7, 7]: Error: duplicate name ':anonymous'"
+  code = """
+query {
+  dog {
+    name
+  }
+}
+
+query {
+  dog {
+    owner {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "directives on mutation"
+  code = """
+directive @mydir on MUTATION
+type Mutation {
+  name: String
+}
+
+mutation mymut @mydir {
+  name
+}
+"""
+
+[[units]]
+  name = "unique mutation field arg"
+  error = "[2, 24]: Error: duplicate name 'name'"
+  code = """
+mutation mymut {
+  human(name: "apple", name: "bunny")
+}
+"""
+
+[[units]]
+  name = "unique mutation var name"
+  error = "[1, 32]: Error: duplicate name 'arg'"
+  code = """
+mutation mymut($arg: Boolean, $arg: String) {
+  human
+}
+"""
+
+[[units]]
+  name = "mutation var type non-null wrap non null"
+  error = "[1, 30]: Error: get '!', expect '$'"
+  code = """
+mutation mymut($arg: Boolean!!) {
+  human
+}
+"""
+
+[[units]]
+  name = "mutation var type non-null wrap non null inside list"
+  error = "[1, 31]: Error: get '!', expect ']'"
+  code = """
+mutation mymut($arg: [Boolean!!]) {
+  human
+}
+"""
+
+[[units]]
+  name = "mutation var defVal coercion invalid bool <- string"
+  error = "[1, 32]: Error: 'hello' is a 'String', expect 'Boolean'"
+  code = """
+mutation mymut($arg: Boolean = "hello") {
+  human
+}
+"""
+
+[[units]]
+  name = "mutation var defVal coercion valid bool <- bool"
+  code = """
+type Mutation {
+  human(arg: Boolean): String
+}
+mutation mymut($arg: Boolean = true) {
+  human(arg: $arg)
+}
+"""
+
+[[units]]
+  name = "mutation field arg example 127 A"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnRequiredArg on Dog {
+  doesKnowCommand(dogCommand: SIT)
+}
+mutation {
+  dog {
+    ... argOnRequiredArg
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg example 127 B"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+  isHousetrained(atOtherHomes: Boolean): Boolean!
+}
+fragment argOnOptional on Dog {
+  isHousetrained(atOtherHomes: true)
+}
+mutation {
+  dog {
+    ... argOnOptional
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg counter example 128"
+  error = "[9, 19]: Error: arg 'command' not defined in field 'doesKnowCommand' of 'Dog'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(command: SIT)
+}
+mutation {
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field directive arg counter example 129"
+  error = "[9, 45]: Error: arg 'unless' not defined in directive 'include'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+fragment invalidArgName on Dog {
+  doesKnowCommand(dogCommand: SIT) @include(unless: false)
+}
+mutation {
+  dog {
+    ... invalidArgName
+  }
+}
+"""
+
+[[units]]
+  name = "unique mutation field arg"
+  error = "[10, 31]: Error: duplicate name 'cmd'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(cmd: DogCommand!): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand(cmd: SIT, cmd: DOWN)
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg required not null"
+  error = "[10, 21]: Error: the value of 'dogCommand' can't be 'Null'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg required"
+  error = "[10, 5]: Error: field 'doesKnowCommand' need argument 'dogCommand'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand!): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg nullable"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg nullable null"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand(dogCommand: null)
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg value type mismatch"
+  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  code = """
+type Mutation {
+  dog: Dog
+}
+enum DogCommand { SIT, DOWN, HEEL }
+type Dog {
+  doesKnowCommand(dogCommand: DogCommand): Boolean!
+}
+mutation {
+  dog {
+    doesKnowCommand(dogCommand: true)
+  }
+}
+"""
+
+[[units]]
+  name = "mutation field arg value missing non nullable input object field"
+  error = "[9, 7]: Error: field 'color' of arg 'inp' should not empty"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+mutation {
+  dog(inp: {name: "Fido"})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+  color: Int!
+}
+mutation {
+  dog(inp: {name: "Fido", color: 123})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field name duplicate"
+  error = "[8, 27]: Error: duplicate name 'name'"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String
+}
+mutation {
+  dog(inp: {name: "Fido", name: "Sasha"})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null get null"
+  error = "[8, 13]: Error: the value of 'name' can't be 'Null'"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation {
+  dog(inp: {name: null})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get rt var string"
+  error = "[8, 20]: Error: variable 'myStringVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myStringVar: String) {
+  dog(inp: {name: $myStringVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get rt var int"
+  error = "[8, 20]: Error: variable 'myIntVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myIntVar: String) {
+  dog(inp: {name: $myIntVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get rt var null"
+  error = "[8, 20]: Error: variable 'myNullVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myNullVar: String) {
+  dog(inp: {name: $myNullVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get no rt use defVal"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myVar: String = "Hello") {
+  dog(inp: {name: $myVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get no rt use defVal from input object"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String! = "hello"
+}
+mutation($myVar: String) {
+  dog(inp: {name: $myVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable no rt"
+  code = """
+type Mutation {
+  dog(inp: String): String
+}
+mutation($myVar: String) {
+  dog(inp: $myVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable no rt defval null on non nullable string"
+  error = "[5, 13]: Error: variable 'myVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: String!): String
+}
+mutation($myVar: String = null) {
+  dog(inp: $myVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable no rt not defval on non nullable string"
+  error = "[5, 13]: Error: variable 'myVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: String!): String
+}
+mutation($myVar: String) {
+  dog(inp: $myVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable no rt has defVal"
+  code = """
+type Mutation {
+  dog(inp: String): String
+}
+mutation($myVar: String = "hello") {
+  dog(inp: $myVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable rt string"
+  code = """
+type Mutation {
+  dog(inp: String): String
+}
+mutation($myStringVar: String) {
+  dog(inp: $myStringVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value variable rt int"
+  error = "[0, 0]: Error: '567' is an 'Int', expect 'String'"
+  code = """
+type Mutation {
+  dog(inp: String): String
+}
+mutation($myIntVar: String) {
+  dog(inp: $myIntVar)
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field nullable string get no rt defVal null"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String = null
+}
+mutation($myVar: String) {
+  dog(inp: {name: $myVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object field non null string get no rt no defVal"
+  error = "[8, 20]: Error: variable 'myVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myVar: String) {
+  dog(inp: {name: $myVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value input object and var type incompatible"
+  error = "[8, 20]: Error: variable 'myVar' should not nullable"
+  code = """
+type Mutation {
+  dog(inp: ComplexInput): String
+}
+input ComplexInput {
+  name: String!
+}
+mutation($myVar: Int) {
+  dog(inp: {name: $myVar})
+}
+"""
+
+[[units]]
+  name = "mutation field arg value and var type incompatible"
+  error = "[5, 13]: Error: 'myVar' is an 'Int', expect 'String'"
+  code = """
+type Mutation {
+  dog(inp: String): String
+}
+mutation($myVar: Int) {
+  dog(inp: $myVar)
+}
+"""
+
+[[units]]
+  name = "mutation with vars: review star wars movie"
+  code = """
+# The episodes in the Star Wars trilogy
+enum Episode {
+  # Star Wars Episode IV: A New Hope, released in 1977.
+  NEWHOPE
+
+  # Star Wars Episode V: The Empire Strikes Back, released in 1980.
+  EMPIRE
+
+  # Star Wars Episode VI: Return of the Jedi, released in 1983.
+  JEDI
+}
+# Represents a review for a movie
+type Review {
+  # The movie
+  episode: Episode
+
+  # The number of stars this review gave, 1-5
+  stars: Int!
+
+  # Comment about the movie
+  commentary: String
+}
+# The input object sent when someone is creating a new review
+input ReviewInput {
+  # 0-5 stars
+  stars: Int!
+
+  # Comment about the movie, optional
+  commentary: String
+
+  # Favorite color, optional
+  favorite_color: ColorInput
+}
+# The input object sent when passing in a color
+input ColorInput {
+  red: Int!
+  green: Int!
+  blue: Int!
+}
+# The mutation type, represents all updates we can make to our data
+type Mutation {
+  createReview(episode: Episode, review: ReviewInput!): Review
+}
+"""
+

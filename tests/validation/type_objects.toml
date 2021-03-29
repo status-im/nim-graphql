@@ -1,0 +1,832 @@
+[[units]]
+  name = "object typename reserved"
+  error = "[1, 6]: Error: get '__Query', expect name without '__' prefix in this context"
+  code = """
+type __Query {
+  name: String
+}
+"""
+
+[[units]]
+  name = "object field reserved name"
+  error = "[2, 3]: Error: get '__name', expect name without '__' prefix in this context"
+  code = """
+type Hello {
+  __name: String
+}
+"""
+
+[[units]]
+  name = "object field typename reserved"
+  error = "[2, 9]: Error: type not defined '__String'"
+  code = """
+type Hello {
+  name: __String
+}
+"""
+
+[[units]]
+  name = "object field arg name reserved"
+  error = "[2, 8]: Error: get '__onevar', expect name without '__' prefix in this context"
+  code = """
+type Hello {
+  name(__onevar: String): String
+}
+"""
+
+[[units]]
+  name = "object field arg typename reserved"
+  error = "[2, 16]: Error: type not defined '__String'"
+  code = """
+type Hello {
+  name(onevar: __String): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_mismatch_iface"
+  error = "[6, 13]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_mismatch_list"
+  error = "[6, 14]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Person {
+  name(arg: [Node]): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_mismatch_nonnull"
+  error = "[6, 13]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
+  code = """
+interface Node {
+  name: String
+}
+
+type Person {
+  name(arg: Node!): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_mismatch_obj"
+  error = "[6, 13]: Error: 'Node' is an 'object', expect '{scalar, enum, input object}'"
+  code = """
+type Node {
+  name: String
+}
+
+type Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_mismatch_union"
+  error = "[8, 13]: Error: 'NodeUni' is a 'union', expect '{scalar, enum, input object}'"
+  code = """
+union NodeUni
+
+type Node {
+  name: String
+}
+
+type Person {
+  name(arg: NodeUni): String
+}
+"""
+
+[[units]]
+  name = "obj_arg_type_undefined"
+  error = "[2, 13]: Error: type not defined 'Node'"
+  code = """
+type Person {
+  name(arg: Node): String
+}
+"""
+
+[[units]]
+  name = "obj_field_type_mismatch"
+  error = "[6, 9]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+type Query {
+  name: myinput
+}
+"""
+
+[[units]]
+  name = "obj_field_type_mismatch_list"
+  error = "[6, 10]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+type Query {
+  name: [myinput]
+}
+"""
+
+[[units]]
+  name = "obj_field_type_mismatch_nonnull"
+  error = "[6, 9]: Error: 'myinput' is an 'input object', expect '{scalar, object, interface, union, enum}'"
+  code = """
+input myinput {
+  name: String
+}
+
+type Query {
+  name: myinput!
+}
+"""
+
+[[units]]
+  name = "obj_field_type_undefined"
+  error = "[2, 9]: Error: type not defined 'myinput'"
+  code = """
+type Query {
+  name: myinput
+}
+"""
+
+[[units]]
+  name = "obj_imp_no_iface"
+  error = "[1, 22]: Error: type not defined 'Named'"
+  code = """
+type Node implements Named {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "obj_imp_not_iface"
+  error = "[1, 22]: Error: 'Int' is a 'scalar', expect 'interface'"
+  code = """
+type Node implements Int {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "obj_imp_self"
+  error = "[6, 30]: Error: 'Node' is an 'object', expect 'interface'"
+  code = """
+interface Named {
+  id: ID!
+  name: String
+}
+
+type Node implements Named & Node {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "object implements unique interface"
+  error = "[6, 30]: Error: duplicate name 'Named'"
+  code = """
+interface Named {
+  id: ID!
+  name: String
+}
+
+type Node implements Named & Named {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "object_no_field"
+  error = "[3, 1]: Error: get '}', expect Name"
+  code = """
+type Query {
+
+}
+"""
+
+[[units]]
+  name = "empty_list_in_object"
+  error = "[2, 10]: Error: get ']', expect Name"
+  code = """
+type myquery {
+  list: []
+}
+"""
+
+[[units]]
+  name = "empty_matrix_in_object"
+  error = "[2, 11]: Error: get ']', expect Name"
+  code = """
+type myquery {
+  list: [[]]
+}
+"""
+
+[[units]]
+  name = "list_in_object"
+  code = """
+type myquery {
+  list: [Int]
+  matrix: [[Int]]
+  combine(args: [String]): String
+}
+"""
+
+[[units]]
+  name = "obj_imp_iface"
+  code = """
+interface Node {
+  id: ID!
+  name: String
+}
+
+type Named implements Node {
+  id: ID!
+  name: String
+}
+"""
+
+[[units]]
+  name = "typeref in object field args"
+  code = """
+type Character {
+  field1(arg1: String, arg2: Int): Boolean
+  field2(arg1: String!, arg2: [Int]): String
+  field3(arg1: String, arg2: Boolean): Int
+}
+"""
+
+[[units]]
+  name = "typeref in object field"
+  code = """
+type Person {
+  name: String
+}
+
+type Character {
+  field1(arg1: String, arg2: Int): Boolean
+  field2(arg1: String!, arg2: [Int]): String!
+  field3(arg1: String, arg2: Boolean): [Int]
+  field4: [[String]]
+  field5: Person
+  field6: Person!
+  field7: [Person]
+  field8: [Person]!
+}
+"""
+
+[[units]]
+  name = "simple object"
+  code = """
+type MyType
+"""
+
+[[units]]
+  name = "simple object with directive"
+  code = """
+directive @mydir on OBJECT
+type MyType @mydir
+"""
+
+[[units]]
+  name = "simple object implement interface"
+  code = """
+interface myface {
+  name: String
+}
+type MyType implements myface {
+  name: String
+}
+"""
+
+[[units]]
+  name = "unique object field name"
+  error = "[3, 3]: Error: duplicate name 'name'"
+  code = """
+type Person {
+  name: String
+  name: Boolean
+}
+"""
+
+[[units]]
+  name = "unique object field arg name"
+  error = "[5, 21]: Error: duplicate name 'apple'"
+  code = """
+input Node {
+  name: String
+}
+type Person {
+  name(apple: Node, apple: Node): String
+}
+"""
+
+[[units]]
+  name = "object arg type non-null wrap non-null"
+  error = "[2, 22]: Error: get '!', expect Name"
+  code = """
+type Query {
+  human(name: String!!): String
+}
+"""
+
+[[units]]
+  name = "object field type non-null wrap non-null"
+  error = "[2, 31]: Error: get '!', expect Name"
+  code = """
+type Query {
+  human(name: String): String!!
+}
+"""
+
+[[units]]
+  name = "object arg type non-null wrap non-null inside list"
+  error = "[2, 23]: Error: get '!', expect ']'"
+  code = """
+type Query {
+  human(name: [String!!]): String
+}
+"""
+
+[[units]]
+  name = "object field type non-null wrap non-null inside list"
+  error = "[2, 32]: Error: get '!', expect ']'"
+  code = """
+type Query {
+  human(name: String): [String!!]
+}
+"""
+
+[[units]]
+  name = "object field arg defVal coercion invalid int <- string"
+  error = "[2, 21]: Error: '123' is a 'String', expect 'Int'"
+  code = """
+type Query {
+  human(name: Int = "123"): String
+}
+"""
+
+[[units]]
+  name = "object field arg defVal coercion valid int <- int"
+  code = """
+type Query {
+  human(name: Int = 123): String
+}
+"""
+
+[[units]]
+  name = "object implements interfaces"
+  code = """
+interface Fruit {
+  name: String
+}
+
+interface Plant {
+  leaves: Int
+}
+
+type Query implements Fruit & Plant {
+  name: String
+  leaves: Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces missing field"
+  error = "[6, 3]: Error: 'leaves' is not part of 'Query'"
+  code = """
+interface Fruit {
+  name: String
+}
+
+interface Plant {
+  leaves: Int
+}
+
+type Query implements Fruit & Plant {
+  name: String
+}
+"""
+
+[[units]]
+  name = "object implements interfaces missing arg"
+  error = "[6, 3]: Error: field 'leaves' need argument 'name'"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves: Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: String): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field extra arg non nullable"
+  error = "[6, 24]: Error: the value of 'color' can't be 'Null'"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: String, color: Int!): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field extra arg nullable"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: String, color: Int): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg not same type: String vs Int"
+  error = "[2, 10]: Error: arg 'name' of field 'leaves' type mismatch with 'Plant'"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: Int): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg not same type: String vs [Int]"
+  error = "[2, 10]: Error: arg 'name' of field 'leaves' type mismatch with 'Plant'"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: [Int]): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg not same type: [String] vs [Int]"
+  error = "[2, 10]: Error: arg 'name' of field 'leaves' type mismatch with 'Plant'"
+  code = """
+interface Plant {
+  leaves(name: [String]): Int
+}
+
+type Query implements Plant {
+  leaves(name: [Int]): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg not same type: [String] vs Int!"
+  error = "[2, 10]: Error: arg 'name' of field 'leaves' type mismatch with 'Plant'"
+  code = """
+interface Plant {
+  leaves(name: [String]): Int
+}
+
+type Query implements Plant {
+  leaves(name: Int!): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg same type: String vs String"
+  code = """
+interface Plant {
+  leaves(name: String): Int
+}
+
+type Query implements Plant {
+  leaves(name: String): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg same type: [String] vs [String]"
+  code = """
+interface Plant {
+  leaves(name: [String]): Int
+}
+
+type Query implements Plant {
+  leaves(name: [String]): Int
+}
+"""
+
+[[units]]
+  name = "object implements interfaces field arg same type: String! vs String!"
+  code = """
+interface Plant {
+  leaves(name: String!): Int
+}
+
+type Query implements Plant {
+  leaves(name: String!): Int
+}
+"""
+
+[[units]]
+  name = "object field type is an interface"
+  code = """
+interface Plant {
+  leaves(name: String!): Int
+}
+
+type Query {
+  plant: Plant
+}
+"""
+
+[[units]]
+  name = "object implements two level interface missing first level fields"
+  error = "[2, 3]: Error: 'leaves' is not part of 'Tree'"
+  code = """
+interface Plant {
+  leaves: Int
+}
+
+interface Tree implements Plant {
+  roots: Int
+}
+
+type Query implements Tree {
+  leaves: Int
+}
+"""
+
+[[units]]
+  name = "object implements two level interface missing second level fields"
+  error = "[7, 3]: Error: 'leaves' is not part of 'Query'"
+  code = """
+interface Plant {
+  leaves: Int
+}
+
+interface Tree implements Plant {
+  roots: Int
+  leaves: Int
+}
+
+type Query implements Tree {
+  roots: Int
+}
+"""
+
+[[units]]
+  name = "object implements two level interface"
+  code = """
+interface Plant {
+  leaves: Int
+}
+
+interface Tree implements Plant {
+  roots: Int
+  leaves: Int
+}
+
+type Query implements Tree {
+  roots: Int
+  leaves: Int
+}
+"""
+
+[[units]]
+  name = "object implements interface with union field but it's type is not union member"
+  error = "[16, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+union MyUni = Leaf
+
+type Leaf {
+  color: Int
+}
+
+type Root {
+  color: Int
+}
+
+interface Tree {
+  leaves: MyUni
+}
+
+type Query implements Tree {
+  leaves: Root
+}
+"""
+
+[[units]]
+  name = "object implements interface with union field"
+  code = """
+union MyUni = Leaf
+
+type Leaf {
+  color: Int
+}
+
+interface Tree {
+  leaves: MyUni
+}
+
+type Query implements Tree {
+  leaves: Leaf
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field"
+  code = """
+interface Leaf {
+  color: Int
+}
+
+interface Tree {
+  leaves: Leaf
+}
+
+type MyLeaf implements Leaf {
+  color: Int
+}
+
+type Query implements Tree {
+  leaves: MyLeaf
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field but it's type is not implements"
+  error = "[14, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+interface Leaf {
+  color: Int
+}
+
+interface Tree {
+  leaves: Leaf
+}
+
+type MyLeaf {
+  color: Int
+}
+
+type Query implements Tree {
+  leaves: MyLeaf
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field incompatible String - Int"
+  error = "[6, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+interface Tree {
+  leaves: Int
+}
+
+type Query implements Tree {
+  leaves: String
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field incompatible [String] - [Int]"
+  error = "[6, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+interface Tree {
+  leaves: [Int]
+}
+
+type Query implements Tree {
+  leaves: [String]
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field incompatible String! - Int!"
+  error = "[6, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+interface Tree {
+  leaves: Int!
+}
+
+type Query implements Tree {
+  leaves: String!
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field compatible String - String"
+  code = """
+interface Tree {
+  leaves: String
+}
+
+type Query implements Tree {
+  leaves: String
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field compatible [String] - [String]"
+  code = """
+interface Tree {
+  leaves: [String]
+}
+
+type Query implements Tree {
+  leaves: [String]
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field compatible String! - String!"
+  code = """
+interface Tree {
+  leaves: String!
+}
+
+type Query implements Tree {
+  leaves: String!
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field incompatible String! - String"
+  error = "[6, 3]: Error: 'leaves' has incompatible type with 'Tree'"
+  code = """
+interface Tree {
+  leaves: String!
+}
+
+type Query implements Tree {
+  leaves: String
+}
+"""
+
+[[units]]
+  name = "object implements interface with interface field compatible String - String!"
+  code = """
+interface Tree {
+  leaves: String
+}
+
+type Query implements Tree {
+  leaves: String!
+}
+"""
+
+[[units]]
+  name = "object implements two interfaces with same field but different return type"
+  error = "[8, 3]: Error: 'leaves' has incompatible type with 'TreeB'"
+  code = """
+interface TreeA {
+  leaves: String
+}
+interface TreeB {
+  leaves: Int
+}
+type Query implements TreeA & TreeB {
+  leaves: String
+}
+"""
+

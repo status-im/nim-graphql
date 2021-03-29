@@ -1,0 +1,248 @@
+[[units]]
+  name = "ext_schema_not_defined"
+  error = "[1, 8]: Error: type not defined 'schema'"
+  code = """
+extend schema @deprecated
+"""
+
+[[units]]
+  name = "ext_type_mismatch"
+  error = "[3, 15]: Error: 'Abc' is a 'union', expect 'scalar'"
+  code = """
+union Abc = Int | String
+
+extend scalar Abc
+"""
+
+[[units]]
+  name = "ext_type_not_defined"
+  error = "[1, 15]: Error: type not defined 'abc'"
+  code = """
+extend scalar abc @deprecated
+"""
+
+[[units]]
+  name = "counter example 101"
+  error = "[8, 13]: Error: type not defined 'Dog'"
+  code = """
+query getDogName {
+  dog {
+    name
+    color
+  }
+}
+
+extend type Dog {
+  color: String
+}
+"""
+
+[[units]]
+  name = "extend scalar directive"
+  code = """
+directive @mydir on SCALAR
+scalar myScalar
+extend scalar myScalar @mydir
+"""
+
+[[units]]
+  name = "extend scalar directive non repeatable"
+  error = "[3, 25]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on SCALAR
+scalar myScalar @mydir
+extend scalar myScalar @mydir
+"""
+
+[[units]]
+  name = "extend scalar directive repeatable"
+  code = """
+directive @mydir repeatable on SCALAR
+scalar myScalar @mydir
+extend scalar myScalar @mydir
+"""
+
+[[units]]
+  name = "extend schema directive"
+  code = """
+directive @mydir on SCHEMA
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+extend schema @mydir
+"""
+
+[[units]]
+  name = "extend schema directive non repeatable"
+  error = "[8, 16]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on SCHEMA
+schema @mydir {
+  query: Query
+}
+type Query {
+  name: String
+}
+extend schema @mydir
+"""
+
+[[units]]
+  name = "extend schema directive repeatable"
+  code = """
+directive @mydir repeatable on SCHEMA
+schema @mydir {
+  query: Query
+}
+type Query {
+  name: String
+}
+extend schema @mydir
+"""
+
+[[units]]
+  name = "extend schema op collision"
+  error = "[8, 3]: Error: duplicate name 'query'"
+  code = """
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+extend schema {
+  query: Query
+}
+"""
+
+[[units]]
+  name = "extend schema op"
+  code = """
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+type Mutation {
+  name: String
+}
+extend schema {
+  mutation: Mutation
+}
+"""
+
+[[units]]
+  name = "extend object dir non repeatable"
+  error = "[5, 20]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on OBJECT
+type Query @mydir {
+  name: String
+}
+extend type Query @mydir
+"""
+
+[[units]]
+  name = "extend object dup field"
+  error = "[5, 3]: Error: duplicate name 'name'"
+  code = """
+type Query {
+  name: String
+}
+extend type Query {
+  name: String
+}
+"""
+
+[[units]]
+  name = "extend interface dir non repeatable"
+  error = "[5, 25]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on INTERFACE
+interface Query @mydir {
+  name: String
+}
+extend interface Query @mydir
+"""
+
+[[units]]
+  name = "extend interface dup field"
+  error = "[5, 3]: Error: duplicate name 'name'"
+  code = """
+interface Query {
+  name: String
+}
+extend interface Query {
+  name: String
+}
+"""
+
+[[units]]
+  name = "extend union dir non repeatable"
+  error = "[3, 21]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on UNION
+union myUni @mydir
+extend union myUni @mydir
+"""
+
+[[units]]
+  name = "extend union dup field"
+  error = "[5, 22]: Error: duplicate name 'Dog'"
+  code = """
+union myUni = Dog
+type Dog {
+  name: String
+}
+extend union myUni = Dog
+"""
+
+[[units]]
+  name = "extend enum dir non repeatable"
+  error = "[5, 21]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on ENUM
+enum myenum @mydir {
+  BANANA
+}
+extend enum myenum @mydir
+"""
+
+[[units]]
+  name = "extend enum dup field"
+  error = "[5, 3]: Error: duplicate name 'BANANA'"
+  code = """
+enum myenum {
+  BANANA
+}
+extend enum myenum {
+  BANANA
+}
+"""
+
+[[units]]
+  name = "extend input object dir non repeatable"
+  error = "[5, 23]: Error: duplicate name 'mydir'"
+  code = """
+directive @mydir on INPUT_OBJECT
+input myinput @mydir {
+  name: String
+}
+extend input myinput @mydir
+"""
+
+[[units]]
+  name = "extend input object dup field"
+  error = "[5, 3]: Error: duplicate name 'name'"
+  code = """
+input myinput {
+  name: String
+}
+extend input myinput {
+  name: String
+}
+"""
+
