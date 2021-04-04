@@ -9,6 +9,7 @@
 
 import
   std/[tables, hashes],
+  stew/results,
   ./types, ./names
 
 type
@@ -26,7 +27,6 @@ type
     nkInput             = "Input"
     nkVariable          = "Variable"
     nkMap               = "Map"
-    nkCustomScalar      = "CustomScalar"
 
     nkName              = "Name"
     nkSym               = "Symbol"
@@ -79,7 +79,7 @@ type
     of nkInt: intVal*: string
     of nkFloat: floatVal*: string
     of nkBoolean: boolVal*: bool
-    of nkString, nkCustomScalar:
+    of nkString:
       stringVal*: string
     of nkEnum, nkVariable, nkName, nkNamedType:
       name*: Name
@@ -134,14 +134,10 @@ type
     dlINPUT_OBJECT           = "INPUT_OBJECT"
     dlINPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION"
 
-  ScalarParam* = object
-    outNode*: Node
-    expectedTypes*: set[NodeKind]
-
-  ScalarProc* = proc(node: Node, output: var ScalarParam): bool
+  ScalarResult* = Result[Node, string]
+  ScalarProc* = proc(node: Node): ScalarResult
 
   ScalarRef* = ref ScalarObj
-
   ScalarObj* = object
     parseLit*: ScalarProc
 
@@ -174,7 +170,7 @@ type
     root*: Node
 
 const
-  BasicNodes*  = { nkInt, nkFloat, nkBoolean, nkString, nkSym, nkCustomScalar, nkNull }
+  BasicNodes*  = { nkInt, nkFloat, nkBoolean, nkString, nkSym, nkNull }
   NamedNodes*  = { nkEnum, nkVariable, nkName, nkNamedType }
   NoSonsNodes* = BasicNodes + NamedNodes
   TypeNodes*   = { nkNamedType, nkListType, nkNonNullType }
@@ -268,7 +264,7 @@ proc treeTraverse(n: Node; res: var string; level = 0; indented = false) =
     res.add(" " & $n.intVal)
   of nkFloat:
     res.add(" " & $n.floatVal)
-  of nkString, nkCustomScalar:
+  of nkString:
     res.add(" " & $n.stringVal)
   of nkEnum, nkVariable, nkName, nkNamedType:
     res.add(" " & $n.name)
@@ -302,7 +298,7 @@ proc `$`*(n: Node): string =
     result = $n.intVal
   of nkFloat:
     result = $n.floatVal
-  of nkString, nkCustomScalar:
+  of nkString:
     result = $n.stringVal
   of nkEnum, nkVariable, nkName, nkNamedType:
     result = $n.name

@@ -9,6 +9,7 @@
 
 import
   std/[os, strutils], unittest,
+  stew/results,
   faststreams/inputs, toml_serialization,
   ../graphql/[parser, api],
   ../graphql/common/errors,
@@ -32,16 +33,11 @@ type
 const
   caseFolder = "tests" / "validation"
 
-proc scalarMyScalar(node: Node, param: var ScalarParam): bool =
-  param.expectedTypes = {nkString}
+proc scalarMyScalar(node: Node): ScalarResult =
   if node.kind == nkString:
-    param.outNode = Node(
-      pos: node.pos,
-      kind: nkCustomScalar,
-      stringVal: node.stringVal
-    )
-    return true
-  return false
+    ok(node)
+  else:
+    err("expect string, but got '$1'" % [$node.kind])
 
 template setupContext() =
   var stream = unsafeMemoryInput(unit.code)
@@ -51,13 +47,13 @@ template setupContext() =
   ctx.addVar("myIntVar", 567)
   ctx.addVar("myNullVar")
   ctx.addVar("myBoolVar", true)
-    
+
   var parser {.inject.} = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
   var doc {.inject.}: FullDocument
   parseDocument(parser, doc)
   stream.close()
-  
+
 proc escape(x: string): string =
   result.add '"'
   for c in x:
@@ -83,7 +79,7 @@ proc writeUnit(f: File, unit: Unit) =
   f.write("  code = \"\"\"\n")
   f.write(unit.code)
   f.write("\"\"\"\n\n")
-  
+
 proc runConverter(unit: var Unit) =
   setupContext()
   if parser.error != errNone:
@@ -181,7 +177,7 @@ when isMainModule:
       createDir(conf.convertPath)
       convertCases(conf.convertPath)
       return
-      
+
     if conf.testFile.len == 0:
       validateCases()
       validateSchemas()

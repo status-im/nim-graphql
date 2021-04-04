@@ -8,62 +8,53 @@
 # those terms.
 
 import
+  std/strutils,
+  stew/results,
   ../common/[ast]
 
-proc scalarInt(node: Node, param: var ScalarParam): bool =
+proc scalarInt(node: Node): ScalarResult =
   # TODO: validate 32 bit int
-  param.expectedTypes = {nkInt}
   if node.kind == nkInt:
-    param.outNode = node
-    return true
-  return false
-
-proc scalarFloat(node: Node, param: var ScalarParam): bool =
-  # TODO: validate 64 bit float
-  param.expectedTypes = {nkInt, nkFloat}
-  case node.kind
-  of nkInt:
-    param.outNode = Node(pos: node.pos, kind: nkFloat, floatVal: node.intVal)
-    return true
-  of nkFloat:
-    param.outNode = node
-    return true
+    ok(node)
   else:
-    return false
+    err("expect int, but got '$1'" % [$node.kind])
 
-proc scalarString(node: Node, param: var ScalarParam): bool =
-  param.expectedTypes = {nkString}
-  if node.kind == nkString:
-    param.outNode = node
-    return true
-  return false
-
-proc scalarBoolean(node: Node, param: var ScalarParam): bool =
-  param.expectedTypes = {nkBoolean}
-  if node.kind == nkBoolean:
-    param.outNode = node
-    return true
-  return false
-
-proc scalarID(node: Node, param: var ScalarParam): bool =
-  param.expectedTypes = {nkInt, nkString}
+proc scalarFloat(node: Node): ScalarResult =
+  # TODO: validate 64 bit float
   case node.kind
   of nkInt:
-    param.outNode = Node(
+    let n = Node(pos: node.pos, kind: nkFloat, floatVal: node.intVal)
+    ok(n)
+  of nkFloat:
+    ok(node)
+  else:
+    err("expect int or float, but got '$1'" % [$node.kind])
+
+proc scalarString(node: Node): ScalarResult =
+  if node.kind == nkString:
+    ok(node)
+  else:
+    err("expect string, but got '$1'" % [$node.kind])
+
+proc scalarBoolean(node: Node): ScalarResult =
+  if node.kind == nkBoolean:
+    ok(node)
+  else:
+    err("expect boolean, but got '$1'" % [$node.kind])
+
+proc scalarID(node: Node): ScalarResult =
+  case node.kind
+  of nkInt:
+    let n = Node(
       pos: node.pos,
-      kind: nkCustomScalar,
+      kind: nkString,
       stringVal: node.intVal
     )
-    return true
+    ok(n)
   of nkString:
-    param.outNode = Node(
-      pos: node.pos,
-      kind: nkCustomScalar,
-      stringVal: node.stringVal
-    )
-    return true
+    ok(node)
   else:
-    return false
+    err("expect int or string, but got '$1'" % [$node.kind])
 
 const
   builtinScalars* = {

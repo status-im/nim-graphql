@@ -9,6 +9,7 @@
 
 import
   std/[tables, sets, os],
+  stew/results,
   ./common/[ast, names, errors, ast_helper],
   ./context
 
@@ -337,12 +338,10 @@ proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; 
       let scalar = ctx.getScalar(sym)
       invalid scalar.isNil:
         ctx.error(ErrNoImpl, locType, "scalar")
-      var outVal = ScalarParam(outNode: ctx.emptyNode)
-      invalid not scalar.parseLit(inVal, outVal):
-        ctx.error(ErrTypeMismatch, inVal, inVal.kind, $$outVal.expectedTypes)
-      invalid outVal.outNode.kind == nkEmpty:
-        ctx.error("custom scalar expected to return valid node " & $sym.name)
-      parent[idx] = outVal.outNode
+      let res = scalar.parseLit(inVal)
+      invalid res.isErr:
+        ctx.error(ErrScalarError, inVal, res.error)
+      parent[idx] = res.get()
     of skEnum:
       visit coerceEnum(sym, inVal):
     of skInputObject:
@@ -977,7 +976,7 @@ proc litEquals(a, b: Node): bool =
     return a.intVal == b.intVal
   of nkFloat:
     return a.floatVal == b.floatVal
-  of nkString, nkCustomScalar:
+  of nkString:
     return a.stringVal == b.stringVal
   of nkEnum, nkVariable, nkName, nkNamedType:
     return a.name == b.name

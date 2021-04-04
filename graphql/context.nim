@@ -36,6 +36,7 @@ type
     ErrDirArgUndefined
     ErrMergeConflict
     ErrOperationNotFound
+    ErrScalarError
 
   FieldForName* = ref FieldForNameObj
   FieldForNameObj* = object
@@ -188,5 +189,7 @@ proc error*(ctx: ContextRef, err: ContextError, node: Node, msg: varargs[string,
     ctx.err.message = "arg '$1' not defined in directive '$2'" % [$node, msg[0]]
   of ErrMergeConflict:
     ctx.err.message = "field '$1' have merge conflict: $2" % [$node, msg[0]]
+  of ErrScalarError:
+    ctx.err.message = "scalar '$1': $2" % [$node, msg[0]]
   else:
     discard
