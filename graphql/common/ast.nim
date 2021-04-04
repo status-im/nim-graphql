@@ -25,6 +25,7 @@ type
     nkList              = "List"
     nkInput             = "Input"
     nkVariable          = "Variable"
+    nkMap               = "Map"
     nkCustomScalar      = "CustomScalar"
 
     nkName              = "Name"
@@ -84,6 +85,8 @@ type
       name*: Name
     of nkSym:
       sym*: Symbol
+    of nkMap:
+      map*: seq[(string, Node)]
     else:
       sons*: seq[Node]
 
@@ -215,6 +218,9 @@ proc newSymNode*(sym: Symbol, pos = Pos()): Node =
 template `<-`*(n, son: Node) =
   n.sons.add son
 
+template add*(n, son: Node) =
+  n.sons.add son
+
 template len*(n: Node): int =
   n.sons.len
 
@@ -224,6 +230,9 @@ template `[]`*(n: Node, i: int): Node =
 template `[]=`*(n: Node, i: int, x: Node) =
   n.sons[i] = x
 
+template `[]=`*(n: Node, k: string, v: Node) =
+  n.map.add((k, v))
+
 iterator items*(n: Node): Node =
   for x in n.sons:
     yield x
@@ -232,12 +241,19 @@ iterator pairs*(n: Node): (int, Node) =
   for i in 0 ..< n.sons.len:
     yield (i, n.sons[i])
 
+iterator mapPair*(n: Node): (string, Node) =
+  for i in 0 ..< n.map.len:
+    yield n.map[i]
+
 proc treeTraverse(n: Node; res: var string; level = 0; indented = false) =
+  proc indent(res: var string, level: int) =
+    for i in 0 .. level-1:
+      res.add("  ")
+
   if level > 0:
     if indented:
       res.add("\n")
-      for i in 0 .. level-1:
-        res.add("  ")
+      indent(res, level)
     else:
       res.add(" ")
 
@@ -258,6 +274,14 @@ proc treeTraverse(n: Node; res: var string; level = 0; indented = false) =
     res.add(" " & $n.name)
   of nkSym:
     res.add(" " & $n.sym.name)
+  of nkMap:
+    res.add("\n")
+    for k, v in n.mapPair:
+      if indented:
+        indent(res, level)
+      res.add(" " & k & ": ")
+      treeTraverse(v, res, level+1, false)
+      res.add("\n")
   else:
     for j in 0 ..< n.len:
       n[j].treeTraverse(res, level+1, indented)
