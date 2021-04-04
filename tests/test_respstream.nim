@@ -73,6 +73,19 @@ proc suite1() =
           n.write(123)
       check n.getOutput() == "[\"hello\",true,123,123.4,null,{\"one\":123}]"
 
+    test "write objects in array":
+      var n = newJsonRespStream()
+      respList(n):
+        respMap(n):
+          n.fieldName("hello")
+          n.write(true)
+          n.fieldName("world")
+          n.writeNull()
+        respMap(n):
+          n.fieldName("one")
+          n.write(123)
+      check n.getOutput() == "[{\"hello\":true,\"world\":null},{\"one\":123}]"
+
     test "write object":
       var n = newJsonRespStream()
       respMap(n):

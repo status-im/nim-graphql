@@ -34,26 +34,6 @@ template top(x: seq[State], s: State) =
 template append(s: untyped) =
   x.stream.write s
 
-proc beginList*(x: JsonRespStream) =
-  if x.stack.top == StateList:
-    append ','
-  append '['
-  x.stack.add StateBeginList
-
-proc endList*(x: JsonRespStream) =
-  discard x.stack.pop
-  append ']'
-
-proc beginMap*(x: JsonRespStream) =
-  if x.stack.top == StateList:
-    append ','
-  append '{'
-  x.stack.add StateBeginMap
-
-proc endMap*(x: JsonRespStream) =
-  discard x.stack.pop
-  append '}'
-
 proc writeSeparator(x: JsonRespStream) =
   let top = x.stack.top
   case top
@@ -62,6 +42,24 @@ proc writeSeparator(x: JsonRespStream) =
   of StateBeginList:
     x.stack.top(StateList)
   else: discard
+
+proc beginList*(x: JsonRespStream) =
+  writeSeparator(x)
+  append '['
+  x.stack.add StateBeginList
+
+proc endList*(x: JsonRespStream) =
+  discard x.stack.pop
+  append ']'
+
+proc beginMap*(x: JsonRespStream) =
+  writeSeparator(x)
+  append '{'
+  x.stack.add StateBeginMap
+
+proc endMap*(x: JsonRespStream) =
+  discard x.stack.pop
+  append '}'
 
 proc writeString*(x: JsonRespStream, v: string) =
   writeSeparator(x)
