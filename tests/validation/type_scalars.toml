@@ -29,7 +29,7 @@ input myinput {
 
 [[units]]
   name = "using valid custom scalar defVal in input object field"
-  error = "[3, 21]: Error: '1123' is an 'Int', expect 'String'"
+  error = "[3, 21]: Error: scalar '1123': expect string, but got 'Int'"
   code = """
 scalar myScalar
 input myinput {

@@ -277,7 +277,7 @@ input Third {
 
 [[units]]
   name = "input object field defVal coercion invalid int <- string"
-  error = "[2, 16]: Error: '123' is a 'String', expect 'Int'"
+  error = "[2, 16]: Error: scalar '123': expect int, but got 'String'"
   code = """
 input myinput {
   value: Int = "123"
@@ -286,7 +286,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid int <- float"
-  error = "[2, 16]: Error: '123.0' is a 'Float', expect 'Int'"
+  error = "[2, 16]: Error: scalar '123.0': expect int, but got 'Float'"
   code = """
 input myinput {
   value: Int = 123.0
@@ -295,7 +295,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid int <- bool"
-  error = "[2, 16]: Error: 'true' is a 'Boolean', expect 'Int'"
+  error = "[2, 16]: Error: scalar 'true': expect int, but got 'Boolean'"
   code = """
 input myinput {
   value: Int = true
@@ -320,7 +320,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid float <- bool"
-  error = "[2, 18]: Error: 'true' is a 'Boolean', expect '{Int, Float}'"
+  error = "[2, 18]: Error: scalar 'true': expect int or float, but got 'Boolean'"
   code = """
 input myinput {
   value: Float = true
@@ -329,7 +329,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid float <- string"
-  error = "[2, 18]: Error: '123.0' is a 'String', expect '{Int, Float}'"
+  error = "[2, 18]: Error: scalar '123.0': expect int or float, but got 'String'"
   code = """
 input myinput {
   value: Float = "123.0"
@@ -362,7 +362,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid boolean <- string"
-  error = "[2, 20]: Error: 'true' is a 'String', expect 'Boolean'"
+  error = "[2, 20]: Error: scalar 'true': expect boolean, but got 'String'"
   code = """
 input myinput {
   value: Boolean = "true"
@@ -371,7 +371,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid boolean <- float"
-  error = "[2, 20]: Error: '123.0' is a 'Float', expect 'Boolean'"
+  error = "[2, 20]: Error: scalar '123.0': expect boolean, but got 'Float'"
   code = """
 input myinput {
   value: Boolean = 123.0
@@ -380,7 +380,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid boolean <- int"
-  error = "[2, 20]: Error: '123' is an 'Int', expect 'Boolean'"
+  error = "[2, 20]: Error: scalar '123': expect boolean, but got 'Int'"
   code = """
 input myinput {
   value: Boolean = 123
@@ -389,7 +389,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid string <- int"
-  error = "[2, 19]: Error: '123' is an 'Int', expect 'String'"
+  error = "[2, 19]: Error: scalar '123': expect string, but got 'Int'"
   code = """
 input myinput {
   value: String = 123
@@ -398,7 +398,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid string <- float"
-  error = "[2, 19]: Error: '123.0' is a 'Float', expect 'String'"
+  error = "[2, 19]: Error: scalar '123.0': expect string, but got 'Float'"
   code = """
 input myinput {
   value: String = 123.0
@@ -407,7 +407,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid string <- bool"
-  error = "[2, 19]: Error: 'false' is a 'Boolean', expect 'String'"
+  error = "[2, 19]: Error: scalar 'false': expect string, but got 'Boolean'"
   code = """
 input myinput {
   value: String = false
@@ -464,7 +464,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid ID <- float"
-  error = "[2, 15]: Error: '123.0' is a 'Float', expect '{Int, String}'"
+  error = "[2, 15]: Error: scalar '123.0': expect int or string, but got 'Float'"
   code = """
 input myinput {
   value: ID = 123.0
@@ -561,7 +561,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid input <- {string <- int}"
-  error = "[6, 25]: Error: '123' is an 'Int', expect 'String'"
+  error = "[6, 25]: Error: scalar '123': expect string, but got 'Int'"
   code = """
 input fruit {
   name: String
@@ -645,7 +645,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion valid [int] <- [int, string]"
-  error = "[2, 25]: Error: 'hello' is a 'String', expect 'Int'"
+  error = "[2, 25]: Error: scalar 'hello': expect int, but got 'String'"
   code = """
 input myinput {
   value: [Int] = [1, 2, "hello"]
