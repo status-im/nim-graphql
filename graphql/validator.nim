@@ -1134,12 +1134,22 @@ proc extendScalar(ctx: ContextRef, sym: Symbol, node: Node) =
   let dirs    = scalar.dirs
   extendDirs(sym, 2, tDirs, dirs)
 
+proc extendImplements(sym: Symbol, idx: int, tImpl, impl: Node) =
+  if tImpl.kind == nkEmpty:
+    sym.ast[idx] = Node(impl)
+  else:
+    for imp in impl:
+      tImpl.sons.add imp
+
 proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
   let tObj  = Object(sym.ast)
   let tDirs = Node(tObj.dirs)
   let obj   = Object(node)
   let dirs  = obj.dirs
+  let tImpl = Node(tObj.implements)
+  let impl  = Node(obj.implements)
+  extendImplements(sym, 2, tImpl, impl)
   extendDirs(sym, 3, tDirs, dirs)
   let fields = Node(obj.fields)
   let tFields = Node(tObj.fields)
@@ -1148,13 +1158,16 @@ proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
 
 proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
-  let tImp  = Interface(sym.ast)
-  let tDirs = Node(tImp.dirs)
-  let imp   = Interface(node)
-  let dirs  = imp.dirs
+  let tIface  = Interface(sym.ast)
+  let tDirs   = Node(tIface.dirs)
+  let iface   = Interface(node)
+  let dirs    = iface.dirs
+  let tImpl   = Node(tIface.implements)
+  let impl    = Node(iface.implements)
+  extendImplements(sym, 2, tImpl, impl)
   extendDirs(sym, 3, tDirs, dirs)
-  let fields = Node(imp.fields)
-  let tFields = Node(tImp.fields)
+  let fields = Node(iface.fields)
+  let tFields = Node(tIface.fields)
   for n in fields:
     tFields.sons.add n
 

@@ -246,3 +246,32 @@ extend input myinput {
 }
 """
 
+[[units]]
+  name = "extend type implements dup"
+  error = "[7, 30]: Error: duplicate name 'Fruit'"
+  code = """
+interface Fruit {
+  color: Int
+}
+type Query implements Fruit{
+  name: String
+}
+extend type Query implements Fruit {
+  color: Int
+}
+"""
+
+[[units]]
+  name = "extend interface implements dup"
+  error = "[7, 35]: Error: duplicate name 'Fruit'"
+  code = """
+interface Fruit {
+  color: Int
+}
+interface Query implements Fruit{
+  name: String
+}
+extend interface Query implements Fruit {
+  color: Int
+}
+"""
