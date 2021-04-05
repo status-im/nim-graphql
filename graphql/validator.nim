@@ -897,12 +897,29 @@ proc fieldSelection(ctx: ContextRef, scope, parentType: Node, fieldSet: var Fiel
   fieldSet.add ffn
   visit fieldSelection(scope, fieldSels, fieldType, ffn.fieldSet)
 
+proc skipField(ctx: ContextRef, dirs: Dirs): bool =
+  for dir in dirs:
+    case toKeyword(dir.name.sym.name)
+    of kwSkip:
+      let args = dir.args
+      for arg in args:
+        if toKeyword(arg.name.name) == kwIf and arg.val.boolVal:
+          return true
+    of kwInclude:
+      let args = dir.args
+      for arg in args:
+        if toKeyword(arg.name.name) == kwIf and not arg.val.boolVal:
+          return true
+    else:
+      discard
+
 proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: var FieldSet) =
   for field in sels:
     case field.kind
     of nkFragmentSpread:
       # name, dirs
       let spread = FragmentSpread(field)
+      if ctx.skipField(spread.dirs): continue
       let name = spread.name
       let frag = Fragment(name.sym.ast)
       visit directivesUsage(frag.dirs, dlFRAGMENT_DEFINITION, scope)
@@ -911,12 +928,14 @@ proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: va
     of nkInlineFragment:
       # typeCond, dirs, sels
       let frag = InlineFragment(field)
+      if ctx.skipField(frag.dirs): continue
       let typ = frag.typeCond
       visit applicableType(typ, typ, parentType)
       visit fieldSelection(scope, frag.sels, typ, fieldSet)
     of nkField:
       # alias, name, args, dirs, sels
       let field = Field(field)
+      if ctx.skipField(field.dirs): continue
       let name = field.name
       if toKeyword(name.name) in introsKeywords:
         visit fieldSelection(scope, ctx.rootIntros, fieldSet, field)
@@ -1032,12 +1051,22 @@ proc validateVarUsage(ctx: ContextRef, symNode: Node) =
     invalid sfUsed notin v.sym.flags:
       ctx.error(ErrNotUsed, v)
 
+proc skipOrInclude(field: FieldForName) =
+  # recursively remove merged field in fieldset
+  var s = newSeq[FieldForName]()
+  for n in field.fieldSet:
+    if n.merged:
+      continue
+    skipOrInclude(n)
+    s.add n
+  swap(field.fieldSet, s)
+
 proc skipOrInclude(ctx: ContextRef, fieldSet: FieldSet, opSym, opType: Node) =
-  # TODO: implement @skip and @include directive
   var exec = ExecRef(opSym: opSym, opType: opType)
   for n in fieldSet:
     if n.merged:
       continue
+    skipOrInclude(n)
     exec.fieldSet.add n
   ctx.execTable[opSym.sym.name] = exec
 

@@ -45,11 +45,18 @@ type
     kwRootMutation     = "Mutation"
     kwRootSubscription = "Subscription"
 
+    # builtin directives
+    kwSkip        = "skip"
+    kwInclude     = "include"
+    kwDeprecated  = "deprecated"
+    kwIf          = "if"
+    kwReason      = "reason"
+
     # Type system instrospection
     introsSchema       = "__schema"
     introsType         = "__type"
     introsTypeName     = "__typename"
-    
+
     # ExecutableDirectiveLocation
     LocQUERY                = "QUERY"
     LocMUTATION             = "MUTATION"
