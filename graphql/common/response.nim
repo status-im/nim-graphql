@@ -10,26 +10,32 @@
 import
   ./ast, ./respstream, ./types
 
-proc respMap*(pos: Pos): Node =
-  Node(kind: nkMap, pos: pos)
+proc respMap*(): Node =
+  Node(kind: nkMap, pos: Pos())
 
-proc respList*(pos: Pos): Node =
-  Node(kind: nkList, pos: pos)
+proc respList*(): Node =
+  Node(kind: nkList, pos: Pos())
 
-proc respNull*(pos: Pos): Node =
-  Node(kind: nkNull, pos: pos)
+proc respNull*(): Node =
+  Node(kind: nkNull, pos: Pos())
 
-proc resp*(x: string, pos: Pos): Node =
-  Node(kind: nkString, stringVal: x, pos: pos)
+proc resp*(): Node =
+  Node(kind: nkEmpty, pos: Pos())
 
-proc resp*(x: int, pos: Pos): Node =
-  Node(kind: nkInt, intVal: $x, pos: pos)
+proc resp*(x: Symbol): Node =
+  Node(kind: nkSym, sym: x, pos: Pos())
 
-proc resp*(x: bool, pos: Pos): Node =
-  Node(kind: nkBoolean, boolVal: x, pos: pos)
+proc resp*(x: string): Node =
+  Node(kind: nkString, stringVal: x, pos: Pos())
 
-proc resp*(x: float64, pos: Pos): Node =
-  Node(kind: nkFloat, floatVal: $x, pos: pos)
+proc resp*(x: int): Node =
+  Node(kind: nkInt, intVal: $x, pos: Pos())
+
+proc resp*(x: bool): Node =
+  Node(kind: nkBoolean, boolVal: x, pos: Pos())
+
+proc resp*(x: float64): Node =
+  Node(kind: nkFloat, floatVal: $x, pos: Pos())
 
 proc serialize*(n: Node, resp: RespStream) =
   case n.kind
@@ -53,4 +59,4 @@ proc serialize*(n: Node, resp: RespStream) =
         resp.fieldName(k)
         serialize(v, resp)
   else:
-    doAssert(false, "unreachable code")
+    doAssert(false, $n.kind & " sould not appear in resp stream")
