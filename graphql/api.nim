@@ -10,17 +10,22 @@
 import
   std/[os, tables],
   faststreams/inputs,
-  ./common/[ast, types, names, ast_helper],
-  ./builtin/[builtin],
-  ./schema_parser, ./context, ./validator
+  stew/[results],
+  ./common/[ast, types, names, ast_helper, response],
+  ./builtin/[builtin, introspection],
+  ./schema_parser, ./context, ./validator,
+  ./executor
 
-export validator, context, ast_helper
+export
+  validator, context, ast_helper, executor,
+  response, results, types, names
 
 const
   builtinSchema = staticRead("builtin" / "schema.ql")
 
 proc registerBuiltinScalars(ctx: ContextRef)
 proc loadBuiltinSchema(ctx: ContextRef)
+proc registerInstrospection(ctx: ContextRef)
 
 proc newContext*(): ContextRef =
   let empty = Node(kind: nkEmpty, pos: Pos())
@@ -30,6 +35,7 @@ proc newContext*(): ContextRef =
   )
   ctx.registerBuiltinScalars()
   ctx.loadBuiltinSchema()
+  ctx.registerInstrospection()
   result = ctx
 
 proc customScalar*(ctx: ContextRef, nameStr: string, scalarProc: ScalarProc) =
@@ -93,3 +99,29 @@ proc loadBuiltinSchema(ctx: ContextRef) =
     if n.sym.name == name:
       ctx.rootIntros = n
     n.sym.flags.incl sfBuiltin
+
+proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
+  var res = ctx.resolver.getOrDefault(typeName)
+  if res.isNil:
+    res = ResolverSet(ud: ud)
+    ctx.resolver[typeName] = res
+
+  for v in resolvers:
+    let field = ctx.names.insert(v[0])
+    res.resolvers[field] = v[1]
+
+proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)]) =
+  let name = ctx.names.insert(typeName)
+  ctx.registerResolvers(ud, name, resolvers)
+
+proc registerInstrospection(ctx: ContextRef) =
+  ctx.registerResolvers(ctx, "__Query", queryProtos)
+  ctx.registerResolvers(ctx, "__Schema", schemaProtos)
+  ctx.registerResolvers(ctx, "__Type", typeProtos)
+  ctx.registerResolvers(ctx, "__Field", fieldProtos)
+  ctx.registerResolvers(ctx, "__InputValue", inputValueProtos)
+  ctx.registerResolvers(ctx, "__EnumValue", enumValueProtos)
+  ctx.registerResolvers(ctx, "__Directive", directiveProtos)
+
+proc createName*(ctx: ContextRef, name: string): Name =
+  ctx.names.insert(name)

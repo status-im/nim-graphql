@@ -125,3 +125,15 @@ iterator items*(n: Dirs): Dir =
 
 func name*(n: Dir): Node = Node(n)[0]
 func args*(n: Dir): Args = Args(Node(n)[1])
+
+proc findArg*(name: Node, args: Args): Arg =
+  for arg in args:
+    if arg.name.name == name.name:
+      return arg
+  return Arg(nil)
+
+proc findArg*(name: Node, args: Arguments): Node =
+  for arg in args:
+    if arg.name.name == name.name:
+      return arg.typ
+  return nil

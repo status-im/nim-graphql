@@ -86,6 +86,7 @@ type
     of nkSym:
       sym*: Symbol
     of nkMap:
+      typeName*: Name
       map*: seq[(string, Node)]
     else:
       sons*: seq[Node]
@@ -149,9 +150,15 @@ type
       dirLocs*: set[DirLoc] # Directive locations
     of skScalar:
       scalar*: ScalarRef
-    of skEnum, skInputObject,
-      skInterface, skObject:
-      fields*: Table[Name, Node]
+    of skEnum:
+      enumVals*: Table[Name, Node]
+    of skInputObject:
+      inputFields*: Table[Name, Node]
+    of skInterface:
+      types*: seq[Node] # possible types that implements this interface
+      interfaceFields*: Table[Name, Node]
+    of skObject:
+      objectFields*: Table[Name, Node]
     of skQuery, skMutation,
       skSubscription, skFragment:
       vars*: Table[Name, Node]
@@ -189,6 +196,11 @@ const
   InputTypes*  = { skScalar, skEnum, skInputObject }
   OutputTypes* = { skScalar, skObject, skInterface, skUnion, skEnum }
   TypeConds*   = { skObject, skInterface, skUnion }
+
+  unreachableCode* = "unreachableCode"
+
+template unreachable*() =
+  assert(false, unreachableCode)
 
 proc hash*(sym: Symbol): Hash =
   hash(sym.name)
@@ -271,7 +283,7 @@ proc treeTraverse(n: Node; res: var string; level = 0; indented = false) =
   of nkSym:
     res.add(" " & $n.sym.name)
   of nkMap:
-    res.add("\n")
+    res.add(" " & $n.typeName & " \n")
     for k, v in n.mapPair:
       if indented:
         indent(res, level)
@@ -318,3 +330,38 @@ proc toSymKind*(kind: NodeKind): SymKind =
   of nkInputObjectDef: return skInputObject
   of nkDirectiveDef: return skDirective
   else: doAssert(false)
+
+proc nullableType*(node: Node): bool =
+  case node.kind
+  of nkNonNullType:
+    case node[0].kind
+    of nkListType:
+      return true
+    of nkSym:
+      return false
+    else:
+      unreachable()
+  of nkListType, nkSym, nkNamedType:
+    return true
+  else:
+    unreachable()
+
+proc getField*(sym: Symbol, name: Name): Node =
+  case sym.kind
+  of skInterface:
+    return sym.interfaceFields.getOrDefault(name)
+  of skObject:
+    return sym.objectFields.getOrDefault(name)
+  of skInputObject:
+    return sym.inputFields.getOrDefault(name)
+  else:
+    unreachable()
+
+proc setField*(sym: Symbol, name: Name, node: Node) =
+  case sym.kind
+  of skObject:
+    sym.objectFields[name] = node
+  of skInterface:
+    sym.interfaceFields[name] = node
+  else:
+    unreachable()

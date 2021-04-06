@@ -9,6 +9,7 @@
 
 import
   std/[tables, strutils, macros],
+  stew/[results],
   ./common/[ast, ast_helper, errors, names, types]
 
 type
@@ -55,9 +56,19 @@ type
     opSym*    : Node
     fieldSet* : FieldSet
 
+  RespResult* = Result[Node, string]
+
+  ResolverProc* = proc(ud: RootRef, params: Args,
+    parent: Node): RespResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
+
+  ResolverSet* = ref ResolverSetObj
+  ResolverSetObj* = object
+    ud*       : RootRef
+    resolvers*: Table[Name, ResolverProc]
+
   ContextRef* = ref Context
 
-  Context* = object
+  Context* = object of RootObj
     errKind*      : ContextError
     err*          : ErrorDesc
     opTable*      : Table[Name, Symbol]
@@ -65,18 +76,13 @@ type
     scalarTable*  : Table[Name, ScalarRef]
     varTable*     : Table[Name, Node]
     execTable*    : Table[Name, ExecRef]
+    resolver*     : Table[Name, ResolverSet]
     names*        : NameCache
     emptyNode*    : Node
     rootQuery*    : Node
     rootMutation* : Node
     rootSubs*     : Node
     rootIntros*   : Node
-
-const
-  unreachableCode* = "unreachableCode"
-
-template unreachable*() =
-  assert(false, unreachableCode)
 
 template findType*(name: Name): Symbol =
   ctx.typeTable.getOrDefault(name)
@@ -107,6 +113,11 @@ template `:=`*(dest: untyped, validator: untyped) =
   if ctx.errKind != ErrNone:
     return
 
+template `::=`*(dest: untyped, validator: untyped) =
+  dest = callValidator(ctx, validator)
+  if ctx.errKind != ErrNone:
+    return
+
 template invalid*(cond: untyped, body: untyped) =
   if cond:
     body
@@ -122,6 +133,12 @@ proc fatal*(ctx: ContextRef, err: ContextError, msg: varargs[string, `$`]) =
     ctx.err.message = "Resolver not found: '$1'" % [msg[0]]
   of ErrNoImpl:
     ctx.err.message = "Implementation not found: '$1' of '$2'" % [msg[0], msg[1]]
+  of ErrValueError:
+    ctx.err.message = "Field '$1' cannot be resolved: \"$2\"" % [msg[0], msg[1]]
+  of ErrNotNullable:
+    ctx.err.message = "Field '$1' should not return null" % [msg[0]]
+  of ErrIncompatType:
+    ctx.err.message = "Field '$1' expect '$2' but got '$3'" % [msg[0], msg[1], msg[2]]
   else:
     discard
 

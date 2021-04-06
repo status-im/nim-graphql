@@ -8,10 +8,11 @@
 # those terms.
 
 import
-  ./ast, ./respstream, ./types
+  ./ast, ./respstream, ./types,
+  ./names
 
-proc respMap*(): Node =
-  Node(kind: nkMap, pos: Pos())
+proc respMap*(name: Name): Node =
+  Node(kind: nkMap, pos: Pos(), typeName: name)
 
 proc respList*(): Node =
   Node(kind: nkList, pos: Pos())
@@ -59,4 +60,4 @@ proc serialize*(n: Node, resp: RespStream) =
         resp.fieldName(k)
         serialize(v, resp)
   else:
-    doAssert(false, $n.kind & " sould not appear in resp stream")
+    doAssert(false, $n.kind & " should not appear in resp stream")

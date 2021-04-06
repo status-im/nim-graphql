@@ -111,21 +111,6 @@ template isOutputType(ctx: ContextRef, node: Node, idx: int) =
 template isInputType(ctx: ContextRef, node: Node, idx: int) =
   ctx.isWhatType(node, idx, InputTypes)
 
-proc nullableType(node: Node): bool =
-  case node.kind
-  of nkNonNullType:
-    case node[0].kind
-    of nkListType:
-      return true
-    of nkSym:
-      return false
-    else:
-      unreachable()
-  of nkListType, nkSym, nkNamedType:
-    return true
-  else:
-    unreachable()
-
 proc getScalar(ctx: ContextRef, sym: Symbol): ScalarRef =
   if sym.scalar.isNil:
     let scalar = findScalar(sym.name)
@@ -136,7 +121,7 @@ proc getScalar(ctx: ContextRef, sym: Symbol): ScalarRef =
 
 proc findField(ctx: ContextRef, T: type, sym: Symbol, name: Node): T =
   # for object, interface, and input object only!
-  let field = sym.fields.getOrDefault(name.name)
+  let field = sym.getField(name.name)
   invalid field.isNil:
     ctx.error(ErrNotPartOf, name, sym.name)
   T(field)
@@ -158,28 +143,12 @@ proc findArg(ctx: ContextRef, dirName, argName: Node, targs: Arguments): Argumen
       return arg
   ctx.error(ErrDirArgUndefined, argName, dirName)
 
-proc findArg(name: Node, args: Args): Arg =
-  for arg in args:
-    if arg.name.name == name.name:
-      return arg
-  return Arg(nil)
-
-proc findArg(name: Node, args: Arguments): Node =
-  for arg in args:
-    if arg.name.name == name.name:
-      return arg.typ
-  return nil
-
 proc coerceEnum(ctx: ContextRef, sym: Symbol, inVal: Node) =
   invalid inVal.kind != nkEnum:
     ctx.error(ErrTypeMismatch, inVal, inVal.kind, sym.name)
 
-  if sym.fields.len == 0:
-    for x in sym.ast[3]:
-      sym.fields[x[1].name] = x
-
   # desc, enumval, dirs
-  invalid sym.fields.getOrDefault(inVal.name).isNil:
+  invalid sym.enumVals.getOrDefault(inVal.name).isNil:
     ctx.error(ErrNotPartOf, inVal, sym.name)
 
 proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil))
@@ -239,11 +208,6 @@ proc coerceInputObject(ctx: ContextRef, nameNode: Node, sym: Symbol, inVal: Node
   # desc, name, dirs, fields
   let inp = InputObject(sym.ast)
   let fields = inp.fields
-  if sym.fields.len == 0:
-    for field in fields:
-      # desc, name, type, defVal, dirs
-      sym.fields[field.name.name] = field.Node
-
   var names = initHashSet[Name]()
   for field in inVal:
     # name, value
@@ -373,9 +337,22 @@ proc visitType(ctx: ContextRef, parent: Node, idx: int, sk: SymKind) =
   invalid findType(name.name) != nil:
     ctx.error(ErrDuplicateName, name)
 
-  let sym = newSymNode(sk, name.name, node, name.pos)
-  ctx.typeTable[name.name] = sym.sym
-  parent[idx] = sym
+  let symNode = newSymNode(sk, name.name, node, name.pos)
+  ctx.typeTable[name.name] = symNode.sym
+  parent[idx] = symNode
+
+  let sym = symNode.sym
+  case sk
+  of skEnum:
+    let vals = Enum(node).values
+    for val in vals:
+      sym.enumVals[val.name.name] = Node(val)
+  of skInputObject:
+    let fields = InputObject(node).fields
+    for field in fields:
+      sym.inputFields[field.name.name] = Node(field)
+  else:
+    discard
 
 proc dirArgs(ctx: ContextRef, scope, dirName: Node, args: Args, targs: Arguments) =
   for arg in args:
@@ -458,7 +435,7 @@ proc visitFields(ctx: ContextRef, fields: ObjectFields, sym: Symbol) =
   for field in fields:
     # desc, name, args, type, dirs
     let name = field.name
-    sym.fields[name.name] = field.Node
+    sym.setField(name.name, field.Node)
     noNameDup(name, names)
     visit validateArgs(field.args)
     visit isOutputType(field.Node, 3)
@@ -583,12 +560,25 @@ proc cyclicInterface(ctx: ContextRef, impls: Node, visited: var HashSet[Name]) =
     noCyclic(name, visited)
     visit cyclicInterface(imp.implements, visited)
 
+proc fillPossibleTypes(ctx: ContextRef, symNode: Node) =
+  if symNode.sym.types.len > 0:
+    return
+
+  for sym in values(ctx.typeTable):
+    if sym.kind notin {skObject, skInterface}:
+      continue
+    let impls = Object(sym.ast).implements
+    for n in impls:
+      if n.sym.name == symNode.sym.name:
+        symNode.sym.types.add newSymNode(sym, sym.ast.pos)
+
 proc interfaceInterface(ctx: ContextRef, symNode: Node) =
   # desc, name, ifaces, dirs, fields
   let node = Interface(symNode.sym.ast)
   noCyclicSetup(visited, symNode)
   visit cyclicInterface(node.implements, visited)
   visit isValidImplementation(node.implements, symNode)
+  ctx.fillPossibleTypes(symNode)
 
 proc visitInterface(ctx: ContextRef, node: Interface, sym: Symbol) =
   # desc, name, ifaces, dirs, fields
@@ -833,17 +823,11 @@ proc getPossibleTypes(ctx: ContextRef, node: Node): HashSet[Symbol] =
   of skObject:
     result.incl node.sym
   of skInterface:
-    for sym in values(ctx.typeTable):
-      if sym.kind notin {skObject, skInterface}:
-        continue
-      let obj = Object(sym.ast)
-      let impls = obj.implements
-      for n in impls:
-        if n.sym.name == node.sym.name:
-          result.incl sym
+    ctx.fillPossibleTypes(node)
+    for n in node.sym.types:
+      result.incl n.sym
   of skUnion:
-    let uni = Union(node.sym.ast)
-    let members = uni.members
+    let members = Union(node.sym.ast).members
     for n in members:
       result.incl n.sym
   else:
@@ -939,7 +923,7 @@ proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: va
       let name = field.name
       if toKeyword(name.name) in introsKeywords:
         visit fieldSelection(scope, ctx.rootIntros, fieldSet, field)
-        return
+        continue
       visit fieldSelection(scope, parentType, fieldSet, field)
     else:
       unreachable()
@@ -1165,7 +1149,7 @@ proc extendScalar(ctx: ContextRef, sym: Symbol, node: Node) =
 
 proc extendImplements(sym: Symbol, idx: int, tImpl, impl: Node) =
   if tImpl.kind == nkEmpty:
-    sym.ast[idx] = Node(impl)
+    sym.ast[idx] = impl
   else:
     for imp in impl:
       tImpl.sons.add imp
@@ -1176,8 +1160,8 @@ proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let tDirs = Node(tObj.dirs)
   let obj   = Object(node)
   let dirs  = obj.dirs
-  let tImpl = Node(tObj.implements)
-  let impl  = Node(obj.implements)
+  let tImpl = tObj.implements
+  let impl  = obj.implements
   extendImplements(sym, 2, tImpl, impl)
   extendDirs(sym, 3, tDirs, dirs)
   let fields = Node(obj.fields)
@@ -1191,8 +1175,8 @@ proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let tDirs   = Node(tIface.dirs)
   let iface   = Interface(node)
   let dirs    = iface.dirs
-  let tImpl   = Node(tIface.implements)
-  let impl    = Node(iface.implements)
+  let tImpl   = tIface.implements
+  let impl    = iface.implements
   extendImplements(sym, 2, tImpl, impl)
   extendDirs(sym, 3, tDirs, dirs)
   let fields = Node(iface.fields)
