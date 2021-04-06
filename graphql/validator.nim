@@ -111,14 +111,6 @@ template isOutputType(ctx: ContextRef, node: Node, idx: int) =
 template isInputType(ctx: ContextRef, node: Node, idx: int) =
   ctx.isWhatType(node, idx, InputTypes)
 
-proc getScalar(ctx: ContextRef, sym: Symbol): ScalarRef =
-  if sym.scalar.isNil:
-    let scalar = findScalar(sym.name)
-    sym.scalar = scalar
-    scalar
-  else:
-    sym.scalar
-
 proc findField(ctx: ContextRef, T: type, sym: Symbol, name: Node): T =
   # for object, interface, and input object only!
   let field = sym.getField(name.name)
@@ -299,9 +291,7 @@ proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; 
       return
     case sym.kind
     of skScalar:
-      let scalar = ctx.getScalar(sym)
-      invalid scalar.isNil:
-        ctx.error(ErrNoImpl, locType, "scalar")
+      scalar := getScalar(locType)
       let res = scalar.parseLit(inVal)
       invalid res.isErr:
         ctx.error(ErrScalarError, inVal, res.error)

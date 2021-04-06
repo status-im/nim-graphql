@@ -28,8 +28,8 @@ proc getOperation(ctx: ContextRef, opName: string): ExecRef =
 proc name(field: FieldForName): string =
   $field.respName.name
 
-proc coerceScalar(fieldType: Node, resval: Node): Node =
-  let scalar = fieldType.sym.scalar
+proc coerceScalar(ctx: ContextRef, fieldType: Node, resval: Node): Node =
+  scalar := getScalar(fieldType)
   let res = scalar.parseLit(resval)
   if res.isErr:
     respNull()
@@ -86,16 +86,14 @@ proc completeValue(ctx: ContextRef, fieldType: Node, field: FieldForName, resval
 
   case fieldType.sym.kind
   of skScalar:
-    return coerceScalar(fieldType, resval)
+    result ::= coerceScalar(fieldType, resval)
   of skEnum:
-    return ctx.coerceEnum(fieldType, resval)
+    result ::= coerceEnum(fieldType, resval)
   of skObject:
     result ::= executeSelectionSet(field.fieldSet, fieldType, fieldType, resval)
-    return
   of skInterface, skUnion:
     objectType := resolveAbstractType(field, fieldType, resval)
     result ::= executeSelectionSet(field.fieldSet, fieldType, objectType, resval)
-    return
   else:
     unreachable()
 

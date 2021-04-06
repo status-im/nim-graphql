@@ -210,3 +210,13 @@ proc error*(ctx: ContextRef, err: ContextError, node: Node, msg: varargs[string,
     ctx.err.message = "scalar '$1': $2" % [$node, msg[0]]
   else:
     discard
+
+proc getScalar*(ctx: ContextRef, locType: Node): ScalarRef =
+  if locType.sym.scalar.isNil:
+    let scalar = findScalar(locType.sym.name)
+    invalid scalar.isNil:
+      ctx.error(ErrNoImpl, locType, "scalar")
+    locType.sym.scalar = scalar
+    scalar
+  else:
+    locType.sym.scalar

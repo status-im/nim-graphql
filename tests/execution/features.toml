@@ -1,0 +1,184 @@
+[[units]]
+  name = "@skip(if: false)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+{
+  name
+  color @skip(if: false)
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "color":"567"
+}
+"""
+
+[[units]]
+  name = "@skip(if: true)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+{
+  name
+  color @skip(if: true)
+}
+"""
+  result = """
+{
+  "name":"superman"
+}
+"""
+
+[[units]]
+  name = "@skip(if: $myTrue)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query ($myTrue: Boolean!) {
+  name
+  color @skip(if: $myTrue)
+}
+"""
+  result = """
+{
+  "name":"superman"
+}
+"""
+
+[[units]]
+  name = "@skip(if: $myFalse)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query ($myFalse: Boolean!) {
+  name
+  color @skip(if: $myFalse)
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "color":"567"
+}
+"""
+
+[[units]]
+  name = "@include(if: false)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+{
+  name
+  color @include(if: false)
+}
+"""
+  result = """
+{
+  "name":"superman"
+}
+"""
+
+[[units]]
+  name = "@include(if: true)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+{
+  name
+  color @include(if: true)
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "color":"567"
+}
+"""
+
+[[units]]
+  name = "@include(if: $myTrue)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query ($myTrue: Boolean!) {
+  name
+  color @include(if: $myTrue)
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "color":"567"
+}
+"""
+
+[[units]]
+  name = "@include(if: $myFalse)"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query ($myFalse: Boolean!) {
+  name
+  color @include(if: $myFalse)
+}
+"""
+  result = """
+{
+  "name":"superman"
+}
+"""
+
+[[units]]
+  name = "merge very basic field"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query {
+  name
+  name
+}
+"""
+  result = """
+{
+  "name":"superman"
+}
+"""
+
+[[units]]
+  name = "simple field alias"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query {
+  name
+  jumbo: name
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "jumbo":"superman"
+}
+"""
