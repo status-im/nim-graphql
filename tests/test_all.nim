@@ -13,4 +13,5 @@ import
   test_lexer,
   test_parser,
   test_validation,
-  test_respstream
+  test_respstream,
+  test_introspection

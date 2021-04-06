@@ -1,0 +1,1026 @@
+[[units]]
+  name = "operation not found"
+  error = "Fatal Error: Operation not found: ':anonymous'"
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+"""
+
+[[units]]
+  name = "operation found"
+  opName = "myquery"
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+"""
+  result = """
+{
+  "name": "superman"
+}
+"""
+
+[[units]]
+  name = "schema description"
+  code = """
+"Miracle Boots"
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+query {
+  __schema {
+    description
+  }
+}
+"""
+  result = """
+{
+   "__schema": {
+     "description": "Miracle Boots"
+   }
+}
+"""
+
+[[units]]
+  name = "schema types: include builtin types"
+  code = """
+"Miracle Boots"
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+query {
+  __schema {
+    types(includeBuiltin: true) {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "types":[
+    {"name":"__InputValue"},
+    {"name":"__Field"},
+    {"name":"Int"},
+    {"name":"Float"},
+    {"name":"__Schema"},
+    {"name":"__DirectiveLocation"},
+    {"name":"Boolean"},
+    {"name":"__Query"},
+    {"name":"__Directive"},
+    {"name":"String"},
+    {"name":"__Type"},
+    {"name":"__EnumValue"},
+    {"name":"__TypeKind"},
+    {"name":"ID"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "schema types: exclude builtin types"
+  code = """
+"Miracle Boots"
+schema {
+  query: Query
+}
+type Query {
+  name: String
+}
+query {
+  __schema {
+    types {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "types":[
+    {"name":"Query"},
+    {"name":"schema"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "schema queryType"
+  code = """
+type Query {
+  name: String
+}
+{
+  __schema {
+    queryType {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "queryType":{
+      "name":"Query"
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "schema mutationType"
+  code = """
+type Mutation {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  __schema {
+    mutationType {
+      name
+    }
+  }
+}
+"""
+result = """
+{
+  "__schema":{
+    "mutationType":{
+      "name":"Mutation"
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "schema subscriptionType"
+  code = """
+type Subscription {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  __schema {
+    subscriptionType {
+      name
+    }
+  }
+}
+"""
+result = """
+{
+  "__schema":{
+    "subscriptionType":{
+      "name":"Subscription"
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "schema directive include builtin"
+  code = """
+type Query {
+  name: String
+}
+{
+  __schema {
+    directives(includeBuiltin: true) {
+      name
+      description
+      locations
+      args {name}
+      isRepeatable
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "directives":[
+      {
+        "name":"skip",
+        "description":"Builtin@skipdirective",
+        "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
+        "args":[{"name":"if"}],
+        "isRepeatable":false
+      },
+      {
+        "name":"deprecated",
+        "description":"Builtin@deprecateddirective",
+        "locations":["FIELD_DEFINITION","ENUM_VALUE"],
+        "args":[{"name":"reason"}],
+        "isRepeatable":false
+      },
+      {
+        "name":"include",
+        "description":"Builtin@includedirective",
+        "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
+        "args":[{"name":"if"}],
+        "isRepeatable":false
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "schema directive exclude builtin"
+  code = """
+directive @mydir repeatable on ENUM
+type Query {
+  name: String
+}
+{
+  __schema {
+    directives(includeBuiltin: false) {
+      name
+      description
+      locations
+      args {name}
+      isRepeatable
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "directives":[
+      {
+        "name":"mydir",
+        "description":null,
+        "locations":["ENUM"],
+        "args":[],
+        "isRepeatable":true
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"__Typex\") not found"
+  error = "Fatal Error: Field '__type' cannot be resolved: \"'__Typex' not defined\""
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "__Typex") {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"__Type\") name"
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "__Type") {
+    name
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "name": "__Type"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"__Type\") kind: OBJECT"
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "__Type") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "OBJECT"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"ID\") kind: SCALAR"
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "ID") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "SCALAR"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"Animal\") kind: INTERFACE"
+  code = """
+type Query {
+  name: String
+}
+interface Animal {
+  name: String
+}
+{
+  __type(name: "Animal") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "INTERFACE"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"UNI\") kind: UNION"
+  code = """
+type Query {
+  name: String
+}
+union UNI = Query
+{
+  __type(name: "UNI") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "UNION"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"ENU\") kind: ENUM"
+  code = """
+type Query {
+  name: String
+}
+enum ENU {
+  BANANA
+}
+{
+  __type(name: "ENU") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "ENUM"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"INP\") kind: INPUT_OBJECT"
+  code = """
+type Query {
+  name: String
+}
+input INP {
+  name: String
+}
+{
+  __type(name: "INP") {
+    kind
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "kind": "INPUT_OBJECT"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection __type(\"__Type\") description"
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "__Type") {
+    description
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "description": "Builtin __Type type"
+  }
+}
+"""
+
+[[units]]
+  name = "instrospection example no 96"
+  code = """
+scalar Date
+type Query {
+  user: User
+}
+type User {
+  id: String
+  name: String
+  birthday: Date
+}
+{
+  __type(name: "User") {
+    name
+    fields {
+      name
+      type {
+        name
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type": {
+    "name": "User",
+    "fields": [
+      {
+        "name": "id",
+        "type": { "name": "String" }
+      },
+      {
+        "name": "name",
+        "type": { "name": "String" }
+      },
+      {
+        "name": "birthday",
+        "type": { "name": "Date" }
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__typename on union"
+  code = """
+type Human {
+  name: String
+}
+type Droid {
+  name: String
+}
+type Starship {
+  name: String
+}
+union Entity = Human | Droid | Starship
+type Query {
+  search: [Entity]
+}
+{
+  search {
+    __typename
+    ... on Human {
+      name
+    }
+    ... on Droid {
+      name
+    }
+    ... on Starship {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "search":[
+    {
+      "__typename":"Human",
+      "name":"Dr.Jones"
+    },
+    {
+      "__typename":"Droid",
+      "name":"3CPO"
+    },
+    {
+      "__typename":"Starship",
+      "name":"MilleniumFalcon"
+    }
+  ]
+}
+"""
+
+[[units]]
+  name = "__typename on interface"
+  code = """
+interface Entity {
+  name: String
+}
+type Human implements Entity {
+  name: String
+}
+type Droid implements Entity {
+  name: String
+}
+type Starship implements Entity {
+  name: String
+}
+type Query {
+  search: [Entity]
+}
+{
+  search {
+    __typename
+    name
+  }
+}
+"""
+  result = """
+{
+  "search":[
+    {"__typename":"Human","name":"Dr.Jones"},
+    {"__typename":"Droid","name":"3CPO"},
+    {"__typename":"Starship","name":"MilleniumFalcon"}
+  ]
+}
+"""
+
+[[units]]
+  name = "enumValues include deprecated"
+  code = """
+enum Fruit {
+  BANANA
+  APPLE @deprecated(reason: "Expired")
+  DURIAN
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Fruit") {
+    enumValues(includeDeprecated: true) {
+      name
+      description
+      isDeprecated
+      deprecationReason
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "enumValues":[
+      {
+        "name":"BANANA",
+        "description":null,
+        "isDeprecated":false,
+        "deprecationReason":null
+      },
+      {
+        "name":"APPLE",
+        "description":null,
+        "isDeprecated":true,
+        "deprecationReason":"Expired"
+      },
+      {
+        "name":"DURIAN",
+        "description":null,
+        "isDeprecated":false,
+        "deprecationReason":null
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "enumValues exclude deprecated"
+  code = """
+enum Fruit {
+  BANANA
+  APPLE @deprecated
+  DURIAN
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Fruit") {
+    enumValues(includeDeprecated: false) {
+    name
+  }
+ }
+}
+"""
+  result = """
+{
+  "__type":{
+    "enumValues":[
+      {"name":"BANANA"},
+      {"name":"DURIAN"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type fields include deprecated"
+  code = """
+type Query {
+  name: String
+  color: String @deprecated(reason: "expired")
+}
+{
+  __type(name: "Query") {
+    fields(includeDeprecated: true) {
+      name
+      isDeprecated
+      deprecationReason
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "fields":[
+      {
+        "name":"name",
+        "isDeprecated":false,
+        "deprecationReason":null
+      },
+      {
+        "name":"color",
+        "isDeprecated":true,
+        "deprecationReason":"expired"
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type fields exclude deprecated"
+  code = """
+type Query {
+  "field 'name'"
+  name("hello" isok: Int = 567): String
+  color: String @deprecated(reason: "expired")
+}
+{
+  __type(name: "Query") {
+    fields(includeDeprecated: false) {
+      description
+      name
+      isDeprecated
+      deprecationReason
+      type {kind}
+      args {
+        description
+        name
+        type {kind}
+        defaultValue
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "fields":[
+      {
+        "description":"field'name'",
+        "name":"name",
+        "isDeprecated":false,
+        "deprecationReason":null,
+        "type":{"kind":"SCALAR"},
+        "args":[
+          {
+            "description":"hello",
+            "name":"isok",
+            "type":{"kind":"SCALAR"},
+            "defaultValue":"567"
+          }
+        ]
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type interfaces for interface"
+  code = """
+interface Animal {
+  name: String
+}
+interface Cat implements Animal {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Cat") {
+    interfaces {
+      name
+      kind
+    }
+  }
+}
+"""
+  result = """
+{
+    "__type":{
+      "interfaces":[
+        {"name":"Animal","kind":"INTERFACE"}
+      ]
+    }
+}
+"""
+
+[[units]]
+  name = "__type interfaces for object"
+  code = """
+interface Animal {
+  name: String
+}
+type Cat implements Animal {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Cat") {
+    interfaces {
+      name
+      kind
+    }
+  }
+}
+"""
+  result = """
+{
+    "__type":{
+      "interfaces":[
+        {"name":"Animal","kind":"INTERFACE"}
+      ]
+    }
+}
+"""
+
+[[units]]
+  name = "__type interfaces for scalar"
+  code = """
+scalar Cat
+type Query {
+  name: String
+}
+{
+  __type(name: "Cat") {
+    interfaces {
+      name
+      kind
+    }
+  }
+}
+"""
+  result = """
+{
+    "__type":{
+      "interfaces": null
+    }
+}
+"""
+
+[[units]]
+  name = "__type possibleTypes for union"
+  code = """
+type Cat {
+  name: String
+}
+type Dog {
+  color: Int
+}
+union Pet = Dog | Cat
+type Query {
+  name: String
+}
+{
+  __type(name: "Pet") {
+    possibleTypes {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "possibleTypes":[
+      {"name":"Dog"},
+      {"name":"Cat"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type possibleTypes for interfaces"
+  code = """
+interface Pet {
+  name: String
+}
+type Cat implements Pet {
+  name: String
+}
+type Dog implements Pet  {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Pet") {
+    possibleTypes {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "possibleTypes":[
+      {"name":"Dog"},
+      {"name":"Cat"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type inputFields"
+  code = """
+input Pet {
+  name: String
+  dotted: Boolean = null
+  color: Int = 123
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Pet") {
+    inputFields {
+      name
+      defaultValue
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "inputFields":[
+      {"name":"name","defaultValue":null},
+      {"name":"dotted","defaultValue":null},
+      {"name":"color","defaultValue":"123"}
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type ofType LIST"
+  code = """
+input Pet {
+  color: [Int]
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Pet") {
+    inputFields {
+      name
+      type {
+        kind
+        ofType {
+          kind
+        }
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "inputFields":[
+      {
+        "name":"color",
+        "type":{
+          "kind":"LIST",
+          "ofType":{"kind":"SCALAR"}
+        }
+      }
+    ]
+  }
+}
+"""
+
+[[units]]
+  name = "__type ofType NON_NULL"
+  code = """
+input Pet {
+  color: Int!
+}
+type Query {
+  name: String
+}
+{
+  __type(name: "Pet") {
+    inputFields {
+      name
+      type {
+        kind
+        ofType {
+          kind
+        }
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "inputFields":[
+      {
+        "name":"color",
+        "type":{
+          "kind":"NON_NULL",
+          "ofType":{"kind":"SCALAR"}
+        }
+      }
+    ]
+  }
+}
+"""
+
