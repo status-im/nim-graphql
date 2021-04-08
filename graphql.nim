@@ -46,6 +46,10 @@ export
   api.createName,
   api.executeRequest,
   api.validate,
+  api.parseSchema,
+  api.parseSchemaFromFile,
+  api.parseQuery,
+  api.parseQueryFromFile,
 
   # graphql response
   api.respMap,

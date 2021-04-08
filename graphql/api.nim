@@ -13,12 +13,15 @@ import
   stew/[results],
   ./common/[ast, types, names, ast_helper, response, errors],
   ./builtin/[builtin, introspection],
-  ./schema_parser, ./context, ./validator,
-  ./executor, ./common_parser, ./lexer
+  ./lexer, ./common_parser, ./schema_parser, ./query_parser,
+  ./context, ./validator, ./executor
 
 export
   validator, context, ast_helper, executor,
   response, results, types, names, errors
+
+type
+  ParseResult* = Result[void, ErrorDesc]
 
 const
   builtinSchema = staticRead("builtin" / "schema.ql")
@@ -75,7 +78,8 @@ proc parseVariable(q: var Parser): Node =
     return
   q.valueLiteral(isConst = true, result)
 
-proc parseVar*(ctx: ContextRef, name: string, value: string): Result[void, ErrorDesc] =
+proc parseVar*(ctx: ContextRef, name: string,
+               value: string): ParseResult =
   var stream = unsafeMemoryInput(value)
   var parser = Parser.init(stream)
   let node = parser.parseVariable()
@@ -85,7 +89,8 @@ proc parseVar*(ctx: ContextRef, name: string, value: string): Result[void, Error
   ctx.varTable[name] = node
   ok()
 
-proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
+proc registerResolvers*(ctx: ContextRef, ud: RootRef,
+     typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
   var res = ctx.resolver.getOrDefault(typeName)
   if res.isNil:
     res = ResolverSet(ud: ud)
@@ -95,12 +100,48 @@ proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers:
     let field = ctx.names.insert(v[0])
     res.resolvers[field] = v[1]
 
-proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)]) =
+proc registerResolvers*(ctx: ContextRef, ud: RootRef,
+     typeName: string, resolvers: openArray[(string, ResolverProc)]) =
   let name = ctx.names.insert(typeName)
   ctx.registerResolvers(ud, name, resolvers)
 
 proc createName*(ctx: ContextRef, name: string): Name =
   ctx.names.insert(name)
+
+template validation(ctx: ContextRef, parser: Parser,
+                    stream: InputStream, doc: untyped): untyped =
+  parser.parseDocument(doc)
+  close stream
+  if parser.error != errNone:
+    return err(parser.errDesc())
+  ctx.validate(doc.root)
+  if ctx.errKind != ErrNone:
+    return err(ctx.err)
+  ok()
+
+proc parseSchema*(ctx: ContextRef, schema: string): ParseResult =
+  var stream = unsafeMemoryInput(schema)
+  var parser = Parser.init(stream, ctx.names)
+  var doc: SchemaDocument
+  ctx.validation(parser, stream, doc)
+
+proc parseSchemaFromFile*(ctx: ContextRef, fileName: string): ParseResult =
+  var stream = memFileInput(fileName)
+  var parser = Parser.init(stream, ctx.names)
+  var doc: SchemaDocument
+  ctx.validation(parser, stream, doc)
+
+proc parseQuery*(ctx: ContextRef, query: string): ParseResult =
+  var stream = unsafeMemoryInput(query)
+  var parser = Parser.init(stream, ctx.names)
+  var doc: QueryDocument
+  ctx.validation(parser, stream, doc)
+
+proc parseQueryFromFile*(ctx: ContextRef, fileName: string): ParseResult =
+  var stream = memFileInput(fileName)
+  var parser = Parser.init(stream, ctx.names)
+  var doc: QueryDocument
+  ctx.validation(parser, stream, doc)
 
 proc registerBuiltinScalars(ctx: ContextRef) =
   for c in builtinScalars:
