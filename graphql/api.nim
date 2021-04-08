@@ -69,6 +69,23 @@ proc addVar*(ctx: ContextRef, name: string) =
   let node = Node(kind: nkNull, pos: Pos())
   ctx.varTable[name] = node
 
+proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
+  var res = ctx.resolver.getOrDefault(typeName)
+  if res.isNil:
+    res = ResolverSet(ud: ud)
+    ctx.resolver[typeName] = res
+
+  for v in resolvers:
+    let field = ctx.names.insert(v[0])
+    res.resolvers[field] = v[1]
+
+proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)]) =
+  let name = ctx.names.insert(typeName)
+  ctx.registerResolvers(ud, name, resolvers)
+
+proc createName*(ctx: ContextRef, name: string): Name =
+  ctx.names.insert(name)
+
 proc registerBuiltinScalars(ctx: ContextRef) =
   for c in builtinScalars:
     ctx.customScalar(c[0], c[1])
@@ -100,20 +117,6 @@ proc loadBuiltinSchema(ctx: ContextRef) =
       ctx.rootIntros = n
     n.sym.flags.incl sfBuiltin
 
-proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
-  var res = ctx.resolver.getOrDefault(typeName)
-  if res.isNil:
-    res = ResolverSet(ud: ud)
-    ctx.resolver[typeName] = res
-
-  for v in resolvers:
-    let field = ctx.names.insert(v[0])
-    res.resolvers[field] = v[1]
-
-proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)]) =
-  let name = ctx.names.insert(typeName)
-  ctx.registerResolvers(ud, name, resolvers)
-
 proc registerInstrospection(ctx: ContextRef) =
   ctx.registerResolvers(ctx, "__Query", queryProtos)
   ctx.registerResolvers(ctx, "__Schema", schemaProtos)
@@ -122,6 +125,3 @@ proc registerInstrospection(ctx: ContextRef) =
   ctx.registerResolvers(ctx, "__InputValue", inputValueProtos)
   ctx.registerResolvers(ctx, "__EnumValue", enumValueProtos)
   ctx.registerResolvers(ctx, "__Directive", directiveProtos)
-
-proc createName*(ctx: ContextRef, name: string): Name =
-  ctx.names.insert(name)
