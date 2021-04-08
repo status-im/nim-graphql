@@ -231,7 +231,7 @@ proc coerceInputObject(ctx: ContextRef, nameNode: Node, sym: Symbol, inVal: Node
     invalid not nullableType(field.typ) and dv.kind == nkEmpty:
       ctx.error(ErrFieldNotinArg, nameNode, name)
     if dv.kind != nkEmpty:
-      inVal.sons.add newTree(nkPair, name, dv)
+      inVal <- newTree(nkPair, name, dv)
 
 proc coerceVariable(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope: Node) =
   let varName = parent[idx]
@@ -1116,7 +1116,7 @@ proc extendDirs(sym: Symbol, idx: int, tDirs: Node, dirs: Dirs) =
     sym.ast[idx] = Node(dirs)
   else:
     for dir in dirs:
-      tDirs.sons.add dir.Node
+      tDirs <- dir.Node
 
 proc extendSchema(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, dirs, members
@@ -1128,7 +1128,7 @@ proc extendSchema(ctx: ContextRef, sym: Symbol, node: Node) =
   let members = schema.members
   let tMembers = tSchema.members
   for n in members:
-    tMembers.sons.add n
+    tMembers <- n
 
 proc extendScalar(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, dirs
@@ -1143,7 +1143,7 @@ proc extendImplements(sym: Symbol, idx: int, tImpl, impl: Node) =
     sym.ast[idx] = impl
   else:
     for imp in impl:
-      tImpl.sons.add imp
+      tImpl <- imp
 
 proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
@@ -1158,7 +1158,7 @@ proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let fields = Node(obj.fields)
   let tFields = Node(tObj.fields)
   for n in fields:
-    tFields.sons.add n
+    tFields <- n
 
 proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
@@ -1173,7 +1173,7 @@ proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let fields = Node(iface.fields)
   let tFields = Node(tIface.fields)
   for n in fields:
-    tFields.sons.add n
+    tFields <- n
 
 proc extendUnionDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, dirs, members
@@ -1185,7 +1185,7 @@ proc extendUnionDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let members = uni.members
   let tMembers = tUni.members
   for n in members:
-    tMembers.sons.add n
+    tMembers <- n
 
 proc extendEnumDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, dirs, values
@@ -1197,7 +1197,7 @@ proc extendEnumDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let values  = Node(enumDef.values)
   let tValues = Node(tEnum.values)
   for n in values:
-    tValues.sons.add n
+    tValues <- n
 
 proc extendInputObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   # desc, name, dirs, fields
@@ -1209,7 +1209,7 @@ proc extendInputObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   let fields = Node(input.fields)
   let tFields = Node(tInput.fields)
   for n in fields:
-    tFields.sons.add n
+    tFields <- n
 
 proc visitExtension(ctx: ContextRef, root: Node, idx: int) =
   # skip the 'extend'
