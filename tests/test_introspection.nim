@@ -8,12 +8,9 @@
 # those terms.
 
 import
-  std/[os, strutils], unittest,
-  faststreams/inputs, toml_serialization,
-  ../graphql/[parser, api],
-  ../graphql/common/errors,
-  ../graphql/builtin/json_respstream,
-  test_config
+  std/[os, strutils, unittest],
+  toml_serialization,
+  ../graphql, ./test_config
 
 type
   Unit = object
