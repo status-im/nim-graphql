@@ -89,7 +89,7 @@ proc parseVar*(ctx: ContextRef, name: string,
   ctx.varTable[name] = node
   ok()
 
-proc registerResolvers*(ctx: ContextRef, ud: RootRef,
+proc addResolvers*(ctx: ContextRef, ud: RootRef,
      typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
   var res = ctx.resolver.getOrDefault(typeName)
   if res.isNil:
@@ -100,10 +100,10 @@ proc registerResolvers*(ctx: ContextRef, ud: RootRef,
     let field = ctx.names.insert(v[0])
     res.resolvers[field] = v[1]
 
-proc registerResolvers*(ctx: ContextRef, ud: RootRef,
+proc addResolvers*(ctx: ContextRef, ud: RootRef,
      typeName: string, resolvers: openArray[(string, ResolverProc)]) =
   let name = ctx.names.insert(typeName)
-  ctx.registerResolvers(ud, name, resolvers)
+  ctx.addResolvers(ud, name, resolvers)
 
 proc createName*(ctx: ContextRef, name: string): Name =
   ctx.names.insert(name)
@@ -175,10 +175,10 @@ proc loadBuiltinSchema(ctx: ContextRef) =
     n.sym.flags.incl sfBuiltin
 
 proc registerInstrospection(ctx: ContextRef) =
-  ctx.registerResolvers(ctx, "__Query", queryProtos)
-  ctx.registerResolvers(ctx, "__Schema", schemaProtos)
-  ctx.registerResolvers(ctx, "__Type", typeProtos)
-  ctx.registerResolvers(ctx, "__Field", fieldProtos)
-  ctx.registerResolvers(ctx, "__InputValue", inputValueProtos)
-  ctx.registerResolvers(ctx, "__EnumValue", enumValueProtos)
-  ctx.registerResolvers(ctx, "__Directive", directiveProtos)
+  ctx.addResolvers(ctx, "__Query", queryProtos)
+  ctx.addResolvers(ctx, "__Schema", schemaProtos)
+  ctx.addResolvers(ctx, "__Type", typeProtos)
+  ctx.addResolvers(ctx, "__Field", fieldProtos)
+  ctx.addResolvers(ctx, "__InputValue", inputValueProtos)
+  ctx.addResolvers(ctx, "__EnumValue", enumValueProtos)
+  ctx.addResolvers(ctx, "__Directive", directiveProtos)

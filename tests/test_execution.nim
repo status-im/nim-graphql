@@ -77,7 +77,7 @@ proc runExecutor(unit: Unit, testStatusIMPL: var TestStatus) =
     debugEcho ctx.err
     return
 
-  ctx.registerResolvers(nil, "Query", queryProtos)
+  ctx.addResolvers(nil, "Query", queryProtos)
 
   var resp = newJsonRespStream()
   ctx.executeRequest(resp, unit.opName)

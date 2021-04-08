@@ -105,10 +105,10 @@ proc runExecutor(unit: Unit, testStatusIMPL: var TestStatus) =
   for c in TestNames:
     let name = ctx.createName($c)
     tc.names[c] = name
-    ctx.registerResolvers(tc, name, [("name", nameImpl)])
+    ctx.addResolvers(tc, name, [("name", nameImpl)])
 
-  ctx.registerResolvers(tc, "Query", queryProtos)
-  ctx.registerResolvers(tc, "Droid", [("color", colorImpl)])
+  ctx.addResolvers(tc, "Query", queryProtos)
+  ctx.addResolvers(tc, "Droid", [("color", colorImpl)])
 
   var resp = newJsonRespStream()
   ctx.executeRequest(resp, unit.opName)

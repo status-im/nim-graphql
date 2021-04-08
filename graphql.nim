@@ -42,7 +42,7 @@ export
   api.customScalar,
   api.addVar,
   api.parseVar,
-  api.registerResolvers,
+  api.addResolvers,
   api.createName,
   api.executeRequest,
   api.validate,

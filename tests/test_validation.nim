@@ -90,7 +90,7 @@ proc runConverter(unit: var Unit) =
 
 proc runConverter(path, output: string) =
   let parts = splitFile(path)
-  let newPath = "tests"/ output / parts.name & parts.ext
+  let newPath = "tests" / output / parts.name & parts.ext
   var cases = Toml.loadFile(path, TestCase)
   var f = open(newPath, fmWrite)
   for unit in mitems(cases.units):
