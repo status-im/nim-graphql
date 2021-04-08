@@ -513,7 +513,7 @@ type User {
 """
 
 [[units]]
-  name = "__typename on union"
+  name = "__typename on inline fragment of union"
   code = """
 type Human {
   name: String
@@ -563,7 +563,60 @@ type Query {
 """
 
 [[units]]
-  name = "__typename on interface"
+  name = "__typename on spread fragment of union"
+  code = """
+type Human {
+  name: String
+}
+type Droid {
+  name: String
+}
+type Starship {
+  name: String
+}
+union Entity = Human | Droid | Starship
+fragment humanFrag on Human {
+  name
+}
+fragment droidFrag on Droid {
+  name
+}
+fragment shipFrag on Starship {
+  name
+}
+type Query {
+  search: [Entity]
+}
+{
+  search {
+    __typename
+    ... humanFrag
+    ... droidFrag
+    ... shipFrag
+  }
+}
+"""
+  result = """
+{
+  "search":[
+    {
+      "__typename":"Human",
+      "name":"Dr.Jones"
+    },
+    {
+      "__typename":"Droid",
+      "name":"3CPO"
+    },
+    {
+      "__typename":"Starship",
+      "name":"MilleniumFalcon"
+    }
+  ]
+}
+"""
+
+[[units]]
+  name = "__typename of interface"
   code = """
 interface Entity {
   name: String
@@ -1024,3 +1077,35 @@ type Query {
 }
 """
 
+[[units]]
+  name = "__type ofType SCALAR"
+  code = """
+type Query {
+  name: String
+}
+{
+  __type(name: "Query") {
+     fields {
+      name
+      type {
+        kind
+        ofType {
+          kind
+        }
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "fields":[
+      {
+        "name":"name",
+        "type":{"kind":"SCALAR","ofType":null}
+      }
+    ]
+  }
+}
+"""
