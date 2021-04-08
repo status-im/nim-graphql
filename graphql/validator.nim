@@ -247,6 +247,7 @@ proc coerceVariable(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node;
         ctx.error(ErrValueError, nameNode, nkEmpty)
       parent[idx] = defVal
   else:
+    rtVal.pos = varName.pos
     parent[idx] = rtVal
 
 proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil)) =

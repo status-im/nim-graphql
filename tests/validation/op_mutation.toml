@@ -597,7 +597,7 @@ mutation($myStringVar: String) {
 
 [[units]]
   name = "mutation field arg value variable rt int"
-  error = "[0, 0]: Error: scalar '567': expect string, but got 'Int'"
+  error = "[5, 13]: Error: scalar '567': expect string, but got 'Int'"
   code = """
 type Mutation {
   dog(inp: String): String

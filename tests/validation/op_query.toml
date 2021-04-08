@@ -999,7 +999,7 @@ type Hero {
 }
 type Query {
   hero(episode: Episode): Hero
-}  
+}
 query Hero($episode: Episode, $myBoolVar: Boolean!) {
   hero(episode: $episode) {
     name
@@ -1041,3 +1041,16 @@ enum Language {
 }
 """
 
+[[units]]
+  name = "@include(if: $myFalse)"
+  error = "[7, 23]: Error: scalar '567': expect boolean, but got 'Int'"
+  code = """
+type Query {
+  name: String
+  color: Int
+}
+query ($myIntVar: Boolean!) {
+  name
+  color @include(if: $myIntVar)
+}
+"""
