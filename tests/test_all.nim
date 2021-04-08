@@ -15,4 +15,5 @@ import
   test_validation,
   test_respstream,
   test_introspection,
-  test_execution
+  test_execution,
+  test_misc

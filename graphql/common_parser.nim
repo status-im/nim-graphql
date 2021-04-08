@@ -383,7 +383,7 @@ proc variable*(q: var Parser, varName: var Node) =
     varName.name = q.lex.name
 
 # input values
-proc valueLiteral(q: var Parser, isConst: bool, val: var Node) =
+proc valueLiteral*(q: var Parser, isConst: bool, val: var Node) =
   rgCheck(rgValueLiteral, q.conf.maxRecursionLimit)
   case currToken
   of tokLBracket:

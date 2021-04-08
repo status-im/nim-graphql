@@ -11,14 +11,14 @@ import
   std/[os, tables],
   faststreams/inputs,
   stew/[results],
-  ./common/[ast, types, names, ast_helper, response],
+  ./common/[ast, types, names, ast_helper, response, errors],
   ./builtin/[builtin, introspection],
   ./schema_parser, ./context, ./validator,
-  ./executor
+  ./executor, ./common_parser, ./lexer
 
 export
   validator, context, ast_helper, executor,
-  response, results, types, names
+  response, results, types, names, errors
 
 const
   builtinSchema = staticRead("builtin" / "schema.ql")
@@ -68,6 +68,22 @@ proc addVar*(ctx: ContextRef, name: string) =
   let name = ctx.names.insert(name)
   let node = Node(kind: nkNull, pos: Pos())
   ctx.varTable[name] = node
+
+proc parseVariable(q: var Parser): Node =
+  nextToken
+  if currToken == tokEof:
+    return
+  q.valueLiteral(isConst = true, result)
+
+proc parseVar*(ctx: ContextRef, name: string, value: string): Result[void, ErrorDesc] =
+  var stream = unsafeMemoryInput(value)
+  var parser = Parser.init(stream)
+  let node = parser.parseVariable()
+  if parser.error != errNone:
+    return err(parser.errDesc())
+  let name = ctx.names.insert(name)
+  ctx.varTable[name] = node
+  ok()
 
 proc registerResolvers*(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
   var res = ctx.resolver.getOrDefault(typeName)
