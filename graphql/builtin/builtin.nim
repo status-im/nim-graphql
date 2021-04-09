@@ -12,10 +12,35 @@ import
   stew/results,
   ../common/[ast]
 
+proc validateInt32(x: string): Result[void, string] =
+  var pos  = 0
+  var sign = if x[0] == '-':
+               inc pos
+               -1
+             else:
+               1
+  var b = 0.int64
+  while pos < x.len:
+    b = b * 10 + int64(x[pos]) - int64('0')
+    if b > high(uint32).int64:
+      break
+    inc pos
+
+  if sign == 1 and b > high(int32).int64:
+    return err("Int overflow")
+
+  if sign * b < low(int32).int64:
+    return err("Int overflow")
+
+  ok()
+
 proc scalarInt(node: Node): ScalarResult =
-  # TODO: validate 32 bit int
   if node.kind == nkInt:
-    ok(node)
+    let res = validateInt32(node.intVal)
+    if res.isErr:
+      err(res.error)
+    else:
+      ok(node)
   else:
     err("expect int, but got '$1'" % [$node.kind])
 

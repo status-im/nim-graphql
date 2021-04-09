@@ -45,3 +45,36 @@ directive @mydir on SCALAR
 scalar MyScalar @mydir @mydir
 """
 
+[[units]]
+  name = "int32 high"
+  code = """
+input myinput {
+  value: Int = 2147483647
+}
+"""
+
+[[units]]
+  name = "int32 low"
+  code = """
+input myinput {
+  value: Int = -2147483648
+}
+"""
+
+[[units]]
+  name = "int32 high overflow"
+  error = "[2, 16]: Error: scalar '2147483648': Int overflow"
+  code = """
+input myinput {
+  value: Int = 2147483648
+}
+"""
+
+[[units]]
+  name = "int32 low overflow"
+  error = "[2, 16]: Error: scalar '-2147483649': Int overflow"
+  code = """
+input myinput {
+  value: Int = -2147483649
+}
+"""
