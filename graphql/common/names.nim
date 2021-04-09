@@ -80,6 +80,8 @@ type
     LocINPUT_OBJECT            = "INPUT_OBJECT"
     LocINPUT_FIELD_DEFINITION  = "INPUT_FIELD_DEFINITION"
 
+  NameCounter* = distinct int
+
   NameCache* = ref object
     buckets   : array[4096, Name]
     counter   : int
@@ -151,19 +153,41 @@ proc remove*(nc: NameCache, name: Name) =
       return
     curName = curName.next
 
-  doAssert(false, "unreachable code or name not from this cache")
+  doAssert(false, "unreachable code or 'Name' not from this cache")
 
-proc resetCounter*(nc: NameCache) =
-  nc.counter = MaxKeyword
+proc resetCounter*(nc: NameCache, limit = NameCounter(MaxKeyword)) =
+  nc.counter = limit.int
   for x in nc.buckets:
     if x.isNil: continue
     var curName = x
     while curName != nil:
-      if curName.id > MaxKeyword:
+      if curName.id > limit.int:
         inc nc.counter
         curName.id = nc.counter
         break
       curName = curName.next
+
+proc getCounter*(nc: NameCache): NameCounter =
+  NameCounter(nc.counter)
+
+iterator items(nc: NameCache): Name =
+  for x in nc.buckets:
+    if x.isNil: continue
+    var curName = x
+    while curName != nil:
+      yield curName
+      curName = curName.next
+
+proc purge*(nc: NameCache, savePoint: NameCounter) =
+  assert(savePoint.int <= nc.counter)
+  let size = nc.counter - MaxKeyword
+  var names = newSeqOfCap[Name](size)
+  for n in nc:
+    if n.id > savePoint.int:
+      names.add n
+  for n in names:
+    nc.remove(n)
+  nc.resetCounter(savePoint)
 
 # for tables/sets
 func hash*(n: Name): Hash = n.h

@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[os, tables],
+  std/[os, tables, sets],
   faststreams/inputs,
   stew/[results],
   ./common/[ast, types, names, ast_helper, response, errors],
@@ -29,6 +29,7 @@ const
 proc registerBuiltinScalars(ctx: ContextRef)
 proc loadBuiltinSchema(ctx: ContextRef)
 proc registerInstrospection(ctx: ContextRef)
+proc introsNames(ctx: ContextRef)
 
 proc newContext*(): ContextRef =
   let empty = Node(kind: nkEmpty, pos: Pos())
@@ -36,6 +37,7 @@ proc newContext*(): ContextRef =
     names: newNameCache(),
     emptyNode: empty
   )
+  ctx.introsNames()
   ctx.registerBuiltinScalars()
   ctx.loadBuiltinSchema()
   ctx.registerInstrospection()
@@ -143,6 +145,59 @@ proc parseQueryFromFile*(ctx: ContextRef, fileName: string): ParseResult =
   var doc: QueryDocument
   ctx.validation(parser, stream, doc)
 
+proc purgeQueries*(ctx: ContextRef, includeVariables: bool) =
+  ctx.opTable.clear()
+  ctx.execTable.clear()
+  if includeVariables:
+    ctx.varTable.clear()
+  ctx.errKind = ErrNone
+
+proc purgeSchema*(ctx: ContextRef, includeScalars, includeResolvers: bool) =
+  let size = max(max(ctx.typeTable.len, ctx.scalarTable.len), ctx.resolver.len)
+  var names = newSeqOfCap[Name](size)
+  var intros = initHashSet[Name]()
+  for n in ctx.intros:
+    intros.incl n
+
+  for n in keys(ctx.typeTable):
+    if n notin intros:
+      names.add n
+
+  for n in keys(ctx.scalarTable):
+    if n notin intros:
+      names.add n
+
+  for n in keys(ctx.resolver):
+    if n notin intros:
+      names.add n
+
+  ctx.rootQuery = nil
+  ctx.rootMutation = nil
+  ctx.rootSubs = nil
+
+  for n in names:
+    ctx.typeTable.del(n)
+
+  if includeScalars:
+    for n in names:
+      ctx.scalarTable.del(n)
+
+  if includeResolvers:
+    for n in names:
+      ctx.resolver.del(n)
+
+  ctx.errKind = ErrNone
+
+proc getNameCounter*(ctx: ContextRef): NameCounter =
+  ctx.names.getCounter()
+
+proc purgeNames*(ctx: ContextRef, savePoint: NameCounter) =
+  ctx.names.purge(savePoint)
+
+proc introsNames(ctx: ContextRef) =
+  for n in IntrosTypes:
+    ctx.intros[n] = ctx.names.insert($n)
+
 proc registerBuiltinScalars(ctx: ContextRef) =
   for c in builtinScalars:
     ctx.customScalar(c[0], c[1])
@@ -168,7 +223,7 @@ proc loadBuiltinSchema(ctx: ContextRef) =
     doAssert(ctx.errKind == ErrNone)
 
   # instrospection root
-  let name = ctx.names.insert("__Query")
+  let name = ctx.intros[inQuery]
   for n in doc.root:
     if n.sym.name == name:
       ctx.rootIntros = n

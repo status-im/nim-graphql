@@ -39,6 +39,25 @@ type
     ErrOperationNotFound
     ErrScalarError
 
+  IntrosTypes* = enum
+    inQuery      = "__Query"
+    inSchema     = "__Schema"
+    inType       = "__Type"
+    inField      = "__Field"
+    inInputValue = "__InputValue"
+    inEnumValue  = "__EnumValue"
+    inDirective  = "__Directive"
+    inTypeKind   = "__TypeKind"
+    inDirLoc     = "__DirectiveLocation"
+    inInt        = "Int"
+    inFloat      = "Float"
+    inString     = "String"
+    inBoolean    = "Boolean"
+    inID         = "ID"
+    inSkip       = "skip"
+    inInclude    = "include"
+    inDeprecated = "deprecated"
+
   FieldForName* = ref FieldForNameObj
   FieldForNameObj* = object
     respName*  : Node
@@ -78,6 +97,7 @@ type
     execTable*    : Table[Name, ExecRef]
     resolver*     : Table[Name, ResolverSet]
     names*        : NameCache
+    intros*       : array[IntrosTypes, Name]
     emptyNode*    : Node
     rootQuery*    : Node
     rootMutation* : Node

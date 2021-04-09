@@ -30,6 +30,7 @@ export
   api.ContextRef,
   api.RespResult,
   api.ContextError,
+  api.NameCounter,
 
   # exported stew/results
   api.isErr,
@@ -50,6 +51,10 @@ export
   api.parseSchemaFromFile,
   api.parseQuery,
   api.parseQueryFromFile,
+  api.purgeQueries,
+  api.purgeSchema,
+  api.getNameCounter,
+  api.purgeNames,
 
   # graphql response
   api.respMap,
