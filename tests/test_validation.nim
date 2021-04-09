@@ -36,15 +36,17 @@ proc scalarMyScalar(node: Node): ScalarResult =
   else:
     err("expect string, but got '$1'" % [$node.kind])
 
-template setupContext() =
-  var stream = unsafeMemoryInput(unit.code)
+proc setupContext(): ContextRef =
   var ctx {.inject.} = newContext()
   ctx.customScalar("myScalar", scalarMyScalar)
   ctx.addVar("myStringVar", "graphql")
   ctx.addVar("myIntVar", 567)
   ctx.addVar("myNullVar")
   ctx.addVar("myBoolVar", true)
+  ctx
 
+template setupParser(ctx: ContextRef, unit: Unit) =
+  var stream = unsafeMemoryInput(unit.code)
   var parser {.inject.} = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
   var doc {.inject.}: FullDocument
@@ -77,8 +79,8 @@ proc writeUnit(f: File, unit: Unit) =
   f.write(unit.code)
   f.write("\"\"\"\n\n")
 
-proc runConverter(unit: var Unit) =
-  setupContext()
+proc runConverter(ctx: ContextRef, unit: var Unit) =
+  setupParser(ctx, unit)
   if parser.error != errNone:
     unit.error = $parser.errDesc
     return
@@ -88,23 +90,28 @@ proc runConverter(unit: var Unit) =
     unit.error = $ctx.err
     return
 
-proc runConverter(path, output: string) =
+proc runConverter(ctx: ContextRef, savePoint: NameCounter, path, output: string) =
   let parts = splitFile(path)
   let newPath = "tests" / output / parts.name & parts.ext
   var cases = Toml.loadFile(path, TestCase)
   var f = open(newPath, fmWrite)
   for unit in mitems(cases.units):
-    runConverter(unit)
+    ctx.runConverter(unit)
+    ctx.purgeQueries(false)
+    ctx.purgeSchema(false, false)
+    ctx.purgeNames(savePoint)
     writeUnit(f, unit)
 
   f.close()
 
 proc convertCases(output: string) =
+  var ctx = setupContext()
+  let savePoint = ctx.getNameCounter()
   for fileName in walkDirRec(caseFolder):
-    runConverter(fileName, output)
+    ctx.runConverter(savePoint, fileName, output)
 
-proc runValidator(unit: Unit, testStatusIMPL: var TestStatus) =
-  setupContext()
+proc runValidator(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
+  setupParser(ctx, unit)
   if parser.error != errNone:
     check (parser.error != errNone) == (unit.error.len > 0)
     check $parser.errDesc() == unit.error
@@ -118,7 +125,7 @@ proc runValidator(unit: Unit, testStatusIMPL: var TestStatus) =
 
   check (unit.error.len == 0)
 
-proc runSuite(fileName: string, counter: var Counter) =
+proc runSuite(ctx: ContextRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -128,7 +135,10 @@ proc runSuite(fileName: string, counter: var Counter) =
           skip()
           inc counter.skip
         else:
-          runValidator(unit, testStatusIMPL)
+          ctx.runValidator(unit, testStatusIMPL)
+          ctx.purgeQueries(false)
+          ctx.purgeSchema(false, false)
+          ctx.purgeNames(savePoint)
           if testStatusIMPL == OK:
             inc counter.ok
           else:
@@ -136,14 +146,14 @@ proc runSuite(fileName: string, counter: var Counter) =
 
 proc validateCases() =
   var counter: Counter
+  var ctx = setupContext()
+  let savePoint = ctx.getNameCounter()
   for fileName in walkDirRec(caseFolder):
-    runSuite(fileName, counter)
+    ctx.runSuite(savePoint, fileName, counter)
   debugEcho counter
 
-proc runValidator(fileName: string, testStatusIMPL: var TestStatus) =
+proc runValidator(ctx: ContextRef, fileName: string, testStatusIMPL: var TestStatus) =
   var stream = memFileInput(fileName)
-  var ctx = newContext()
-
   var parser = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
   var doc: FullDocument
@@ -163,9 +173,14 @@ proc runValidator(fileName: string, testStatusIMPL: var TestStatus) =
 
 proc validateSchemas() =
   suite "validate schemas":
+    var ctx = newContext()
+    var savePoint = ctx.getNameCounter()
     for fileName in walkDirRec("tests" / "schemas"):
       test fileName:
-        runValidator(fileName, testStatusIMPL)
+        ctx.runValidator(fileName, testStatusIMPL)
+        ctx.purgeQueries(true)
+        ctx.purgeSchema(true, true)
+        ctx.purgeNames(savePoint)
 
 when isMainModule:
   proc main() =
@@ -183,9 +198,11 @@ when isMainModule:
     # disable unittest param handler
     disableParamFiltering()
     var counter: Counter
+    var ctx = newContext()
+    var savePoint = ctx.getNameCounter()
     let fileName = caseFolder / conf.testFile
     if conf.unit.len == 0:
-      runSuite(fileName, counter)
+      ctx.runSuite(savePoint, fileName, counter)
       echo counter
       return
 
@@ -194,7 +211,10 @@ when isMainModule:
       if unit.name != conf.unit:
         continue
       test unit.name:
-        runValidator(unit, testStatusIMPL)
+        ctx.runValidator(unit, testStatusIMPL)
+        ctx.purgeQueries(true)
+        ctx.purgeSchema(true, true)
+        ctx.purgeNames(savePoint)
 
   var message: string
   ## Processing command line arguments

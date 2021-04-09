@@ -80,10 +80,20 @@ proc nameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.}
 proc colorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp("YELLOW"))
 
-proc runExecutor(unit: Unit, testStatusIMPL: var TestStatus) =
-  var stream = unsafeMemoryInput(unit.code)
+proc setupContext(): ContextRef =
   var ctx = newContext()
+  var tc = TestContext()
+  for c in TestNames:
+    let name = ctx.createName($c)
+    tc.names[c] = name
+    ctx.addResolvers(tc, name, [("name", nameImpl)])
 
+  ctx.addResolvers(tc, "Query", queryProtos)
+  ctx.addResolvers(tc, "Droid", [("color", colorImpl)])
+  ctx
+
+proc runExecutor(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
+  var stream = unsafeMemoryInput(unit.code)
   var parser = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
   var doc: FullDocument
@@ -101,15 +111,6 @@ proc runExecutor(unit: Unit, testStatusIMPL: var TestStatus) =
     debugEcho ctx.err
     return
 
-  var tc = TestContext()
-  for c in TestNames:
-    let name = ctx.createName($c)
-    tc.names[c] = name
-    ctx.addResolvers(tc, name, [("name", nameImpl)])
-
-  ctx.addResolvers(tc, "Query", queryProtos)
-  ctx.addResolvers(tc, "Droid", [("color", colorImpl)])
-
   var resp = newJsonRespStream()
   ctx.executeRequest(resp, unit.opName)
   if ctx.errKind != ErrNone:
@@ -123,7 +124,7 @@ proc runExecutor(unit: Unit, testStatusIMPL: var TestStatus) =
 
   check (unit.error.len == 0)
 
-proc runSuite(fileName: string, counter: var Counter) =
+proc runSuite(ctx: ContextRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -133,16 +134,21 @@ proc runSuite(fileName: string, counter: var Counter) =
           skip()
           inc counter.skip
         else:
-          runExecutor(unit, testStatusIMPL)
+          ctx.runExecutor(unit, testStatusIMPL)
+          ctx.purgeQueries(false)
+          ctx.purgeSchema(false, false)
+          ctx.purgeNames(savePoint)
           if testStatusIMPL == OK:
             inc counter.ok
           else:
             inc counter.fail
 
 proc executeCases() =
+  var ctx = setupContext()
+  let savePoint = ctx.getNameCounter()
   var counter: Counter
   for fileName in walkDirRec(caseFolder):
-    runSuite(fileName, counter)
+    ctx.runSuite(savePoint, fileName, counter)
   debugEcho counter
 
 when isMainModule:
@@ -156,8 +162,10 @@ when isMainModule:
     disableParamFiltering()
     var counter: Counter
     let fileName = caseFolder / conf.testFile
+    var ctx = setupContext()
+    let savePoint = ctx.getNameCounter()
     if conf.unit.len == 0:
-      runSuite(fileName, counter)
+      ctx.runSuite(savePoint, fileName, counter)
       echo counter
       return
 
@@ -166,7 +174,10 @@ when isMainModule:
       if unit.name != conf.unit:
         continue
       test unit.name:
-        runExecutor(unit, testStatusIMPL)
+        ctx.runExecutor(unit, testStatusIMPL)
+        ctx.purgeQueries(true)
+        ctx.purgeSchema(true, true)
+        ctx.purgeNames(savePoint)
 
   var message: string
   ## Processing command line arguments
