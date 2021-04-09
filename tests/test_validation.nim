@@ -198,7 +198,7 @@ when isMainModule:
     # disable unittest param handler
     disableParamFiltering()
     var counter: Counter
-    var ctx = newContext()
+    var ctx = setupContext()
     var savePoint = ctx.getNameCounter()
     let fileName = caseFolder / conf.testFile
     if conf.unit.len == 0:
