@@ -18,7 +18,7 @@ import
 
 export
   validator, context, ast_helper, executor,
-  response, results, types, names, errors
+  response, results, types, names, errors, ast
 
 type
   ParseResult* = Result[void, ErrorDesc]

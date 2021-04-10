@@ -28,7 +28,9 @@ export
   api.Name,
   api.Result,
   api.ContextRef,
+  api.ScalarResult,
   api.RespResult,
+  api.ParseResult,
   api.ContextError,
   api.NameCounter,
 
@@ -37,6 +39,8 @@ export
   api.isOk,
   api.err,
   api.ok,
+  api.error,
+  api.get,
 
   # graphql api
   api.newContext,
@@ -55,6 +59,7 @@ export
   api.purgeSchema,
   api.getNameCounter,
   api.purgeNames,
+  api.treeRepr,
 
   # graphql response
   api.respMap,
