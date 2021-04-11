@@ -24,6 +24,7 @@ type
   JsonRespStream* = ref object of RootRef
     stream: OutputStream
     stack: seq[State]
+    doubleEscape: bool
 
 template top(x: seq[State]): State =
   x[^1]
@@ -63,9 +64,14 @@ proc endMap*(x: JsonRespStream) =
 
 proc writeString*(x: JsonRespStream, v: string) =
   writeSeparator(x)
-  append '\"'
+  if x.doubleEscape:
+    append "\\\""
+  else:
+    append '\"'
 
   template addPrefixSlash(c) =
+    if x.doubleEscape:
+      append '\\'
     append '\\'
     append c
 
@@ -78,15 +84,22 @@ proc writeString*(x: JsonRespStream, v: string) =
     of '\r': addPrefixSlash 'r'
     of '"' : addPrefixSlash '\"'
     of '\0'..'\7':
+      if x.doubleEscape:
+        append '\\'
       append "\\u000"
       append char(ord('0') + ord(c))
     of '\14'..'\31':
+      if x.doubleEscape:
+        append '\\'
       append "\\u00"
       x.stream.writeHex([c])
     of '\\': addPrefixSlash '\\'
     else: append c
 
-  append '\"'
+  if x.doubleEscape:
+    append "\\\""
+  else:
+    append '\"'
 
 proc writeBool*(x: JsonRespStream, v: bool) =
   writeSeparator(x)
@@ -110,6 +123,21 @@ proc writeNull*(x: JsonRespStream) =
 
 proc fieldName*(x: JsonRespStream, v: string) =
   let top = x.stack.top
+  if x.doubleEscape:
+    case top
+    of StateMap:
+      append ",\\\""
+      append v
+      append "\\\":"
+    of StateBeginMap:
+      append "\\\""
+      append v
+      append "\\\":"
+      x.stack.top(StateMap)
+    else:
+      doAssert(false)
+    return
+
   case top
   of StateMap:
     append ','
@@ -129,9 +157,10 @@ proc fieldName*(x: JsonRespStream, v: string) =
 proc getOutput*(x: JsonRespStream): string =
   x.stream.getOutput(string)
 
-proc newJsonRespStream*(): RespStream =
+proc newJsonRespStream*(doubleEscape: bool = false): RespStream =
   let v = JsonRespStream(
     stream: memoryOutput(),
-    stack: @[StateTop]
+    stack: @[StateTop],
+    doubleEscape: doubleEscape
   )
   respStream(v)
