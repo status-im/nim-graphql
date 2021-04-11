@@ -9,14 +9,39 @@ nim-graphql
 
 ## Introduction
 
-nim-graphql is Nim implementation of [GraphQL](https://spec.graphql.org/June2018/) specification and consist of
-3 major parts:
+Enjoy writing graphql service in plain Nim!.
+You decide when to use more syntactic sugars offered by Nim templates.
+And you can choose whether you want to use macros or not, we don't impose them to you.
 
-* Parser
-* Server
-* Client
+Designed from ground up to be easily tested part by part,
+you can quickly implement your service while writing a comprehensive test suite for it.
 
-Expect nothing come soon because of quite low priority at the moment.
+You can choose which transport mechanism to deliver your service.
+Over http or secure-http, websocket or secure-websocket, ipc or rpc, rawsocket,
+and OS stdin/stdout. Not all of these mechanisms provided by nim-graphql,
+but the freedom is there.
+
+## Documentation
+
+If you are interested in contributing to nim-graphql development, the official
+specification is [here](https://spec.graphql.org/June2018/).
+
+If you want to know how to use nim-graphql or how nim-graphql works,
+the documentation is available [here](docs/toc.md).
+
+## Installation
+
+You can use Nim's official package manager Nimble to install Presto:
+
+```
+$ nimble install https://github.com/status-im/nim-presto.git
+```
+
+or
+
+```
+$ nimble install graphql
+```
 
 ## Contributing
 
