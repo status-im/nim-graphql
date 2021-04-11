@@ -136,7 +136,7 @@ type
     dlINPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION"
 
   ScalarResult* = Result[Node, string]
-  ScalarProc* = proc(node: Node): ScalarResult
+  ScalarProc* = proc(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.}
 
   ScalarRef* = ref ScalarObj
   ScalarObj* = object

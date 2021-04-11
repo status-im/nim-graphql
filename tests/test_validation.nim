@@ -30,7 +30,7 @@ type
 const
   caseFolder = "tests" / "validation"
 
-proc scalarMyScalar(node: Node): ScalarResult =
+proc scalarMyScalar(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:

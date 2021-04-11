@@ -49,6 +49,10 @@ proc customScalar*(ctx: ContextRef, nameStr: string, scalarProc: ScalarProc) =
     parseLit: scalarProc
   )
 
+proc customScalars*(ctx: ContextRef, procs: openArray[(string, ScalarProc)]) =
+  for c in procs:
+    ctx.customScalar(c[0], c[1])
+
 proc addVar*(ctx: ContextRef, name: string, val: int) =
   let name = ctx.names.insert(name)
   let node = Node(kind: nkInt, intVal: $val, pos: Pos())
@@ -199,8 +203,7 @@ proc introsNames(ctx: ContextRef) =
     ctx.intros[n] = ctx.names.insert($n)
 
 proc registerBuiltinScalars(ctx: ContextRef) =
-  for c in builtinScalars:
-    ctx.customScalar(c[0], c[1])
+  ctx.customScalars(builtinScalars)
 
 proc loadBuiltinSchema(ctx: ContextRef) =
   var stream = unsafeMemoryInput(builtinSchema)

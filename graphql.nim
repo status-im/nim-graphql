@@ -45,6 +45,7 @@ export
   # graphql api
   api.newContext,
   api.customScalar,
+  api.customScalars,
   api.addVar,
   api.parseVar,
   api.addResolvers,

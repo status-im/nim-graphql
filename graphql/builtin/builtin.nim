@@ -34,7 +34,7 @@ proc validateInt32(x: string): Result[void, string] =
 
   ok()
 
-proc scalarInt(node: Node): ScalarResult =
+proc scalarInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkInt:
     let res = validateInt32(node.intVal)
     if res.isErr:
@@ -44,7 +44,7 @@ proc scalarInt(node: Node): ScalarResult =
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
-proc scalarFloat(node: Node): ScalarResult =
+proc scalarFloat(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   # TODO: validate 64 bit float
   case node.kind
   of nkInt:
@@ -55,19 +55,19 @@ proc scalarFloat(node: Node): ScalarResult =
   else:
     err("expect int or float, but got '$1'" % [$node.kind])
 
-proc scalarString(node: Node): ScalarResult =
+proc scalarString(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:
     err("expect string, but got '$1'" % [$node.kind])
 
-proc scalarBoolean(node: Node): ScalarResult =
+proc scalarBoolean(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkBoolean:
     ok(node)
   else:
     err("expect boolean, but got '$1'" % [$node.kind])
 
-proc scalarID(node: Node): ScalarResult =
+proc scalarID(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   case node.kind
   of nkInt:
     let n = Node(
