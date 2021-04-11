@@ -31,10 +31,10 @@ the documentation is available [here](docs/toc.md).
 
 ## Installation
 
-You can use Nim's official package manager Nimble to install Presto:
+You can use Nim's official package manager Nimble to install nim-graphql:
 
 ```
-$ nimble install https://github.com/status-im/nim-presto.git
+$ nimble install https://github.com/status-im/nim-graphql.git
 ```
 
 or
