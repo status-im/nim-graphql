@@ -5,7 +5,7 @@
   - [Security features](#security-features)
 
 - [Tutorials](tutorial.md)
-  - [Important notes]((tutorial.md#important-notes)
+  - [Important notes](tutorial.md#important-notes)
   - [Star wars tutorial](tutorial.md#star-wars-tutorial)
 
 - [Resolver explained](resolver.md)

@@ -25,15 +25,15 @@ If you find anything not listed or not exported in this list, please submit an i
     - `addVar(ctx: ContextRef, name: string, val: bool)`
     - `addVar(ctx: ContextRef, name: string)`. Add a `null` variable.
 
-  - `parseVar(ctx: ContextRef, name: string, value: string): ParseResult`. Add new variable to the system by parsing a text string.
+  - `parseVar(ctx: ContextRef, name: string, value: string | openArray[byte]): ParseResult`. Add new variable to the system by parsing a text string.
   - `addResolvers(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
     - `addResolvers(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
   - `createName(ctx: ContextRef, name: string): Name`. `respMap` will need a name from the system using this proc.
   - `executeRequest`. This is your main entrance to the execution engine.
   - `validate`. Usually you don't need to call this directly.
   - `parseSchema(ctx: ContextRef, schema: string): ParseResult`. Parse a scheme from text string.
-  - `parseSchemaFromFile(ctx: ContextRef, fileName: string): ParseResult`.
-  - `parseQuery(ctx: ContextRef, query: string): ParseResult `. Parse queries from text string.
+  - `parseSchemaFromFile(ctx: ContextRef, fileName: string | openArray[byte]): ParseResult`.
+  - `parseQuery(ctx: ContextRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
   - `parseQueryFromFile(ctx: ContextRef, fileName: string): ParseResult`.
   - `purgeQueries(ctx: ContextRef, includeVariables: bool)`. A server will often call this to remove unused queries.
   - `purgeSchema(ctx: ContextRef, includeScalars, includeResolvers: bool)`. Probably not need to call this often.
