@@ -84,16 +84,23 @@ proc parseVariable(q: var Parser): Node =
     return
   q.valueLiteral(isConst = true, result)
 
-proc parseVar*(ctx: ContextRef, name: string,
-               value: string): ParseResult =
+template parseVariableImpl(name: string, value: untyped): untyped =
   var stream = unsafeMemoryInput(value)
   var parser = Parser.init(stream)
   let node = parser.parseVariable()
   if parser.error != errNone:
     return err(parser.errDesc())
-  let name = ctx.names.insert(name)
-  ctx.varTable[name] = node
+  let varname = ctx.names.insert(name)
+  ctx.varTable[varname] = node
   ok()
+
+proc parseVar*(ctx: ContextRef, name: string,
+               value: string): ParseResult =
+  parseVariableImpl(name, value)
+
+proc parseVar*(ctx: ContextRef, name: string,
+               value: openArray[byte]): ParseResult =
+  parseVariableImpl(name, value)
 
 proc addResolvers*(ctx: ContextRef, ud: RootRef,
      typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
@@ -125,11 +132,17 @@ template validation(ctx: ContextRef, parser: Parser,
     return err(ctx.err)
   ok()
 
-proc parseSchema*(ctx: ContextRef, schema: string): ParseResult =
+template parseSchemaImpl(schema: untyped): untyped =
   var stream = unsafeMemoryInput(schema)
   var parser = Parser.init(stream, ctx.names)
   var doc: SchemaDocument
   ctx.validation(parser, stream, doc)
+
+proc parseSchema*(ctx: ContextRef, schema: string): ParseResult =
+  parseSchemaImpl(schema)
+
+proc parseSchema*(ctx: ContextRef, schema: openArray[byte]): ParseResult =
+  parseSchemaImpl(schema)
 
 proc parseSchemaFromFile*(ctx: ContextRef, fileName: string): ParseResult =
   var stream = memFileInput(fileName)
@@ -137,11 +150,17 @@ proc parseSchemaFromFile*(ctx: ContextRef, fileName: string): ParseResult =
   var doc: SchemaDocument
   ctx.validation(parser, stream, doc)
 
-proc parseQuery*(ctx: ContextRef, query: string): ParseResult =
+template parseQueryImpl(schema: untyped): untyped =
   var stream = unsafeMemoryInput(query)
   var parser = Parser.init(stream, ctx.names)
   var doc: QueryDocument
   ctx.validation(parser, stream, doc)
+
+proc parseQuery*(ctx: ContextRef, query: string): ParseResult =
+  parseQueryImpl(query)
+
+proc parseQuery*(ctx: ContextRef, query: openArray[byte]): ParseResult =
+  parseQueryImpl(query)
 
 proc parseQueryFromFile*(ctx: ContextRef, fileName: string): ParseResult =
   var stream = memFileInput(fileName)
