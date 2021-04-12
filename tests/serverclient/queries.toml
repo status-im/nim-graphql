@@ -1,0 +1,28 @@
+[[units]]
+  name = "simple query"
+  code = """
+{
+  name
+}
+"""
+  result = """
+{
+  "name": "superman"
+}
+"""
+
+[[units]]
+  name = "bad query"
+  code = """
+{
+  namex
+}
+"""
+  error = """
+[
+  {
+    "message":"'namex' is not part of 'Query'",
+    "locations":[{"line":2,"column":3}]
+  }
+]
+"""
