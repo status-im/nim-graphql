@@ -19,15 +19,17 @@ type
 
 proc loadSchema(ctx: GraphqlRef, schema: Schema): ParseResult =
   notice "loading graphql api", name = schema
-  if schema == ethereum:    
+  if schema == ethereum:
     ctx.initEthApi()
     ctx.parseSchemaFromFile("tests" / "schemas" / "ethereum_1.0.ql")
   else:
     ctx.initStarWarsApi()
     ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql")
 
+const
+  address = initTAddress("127.0.0.1:8080")
+
 proc main() =
-  var address = initTAddress("127.0.0.1:8547")
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
   var ctx = GraphqlRef.new()
 
@@ -46,6 +48,9 @@ proc main() =
 
   let server = sres.get()
   server.start()
+
+  echo ""
+  echo "server ready at http://" & $address & "/graphql"
   runForever()
 
 main()
