@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[strutils],
+  std/[strutils, json],
   chronicles, json_serialization,
   chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream
@@ -16,7 +16,7 @@ import
 type
   VarPair = object
     name: string
-    value: string
+    value: JsonNode
 
   VarTable = seq[VarPair]
 
@@ -25,8 +25,8 @@ type
     ctJson
 
   RequestObject = object
-    query: string
-    operationName: string
+    query: JsonNode
+    operationName: JsonNode
     variables: VarTable
 
   GraphqlHttpServerState* {.pure.} = enum
@@ -45,7 +45,7 @@ type
   GraphqlHttpServerRef* = ref GraphqlHttpServer
 
 proc readValue*(reader: var JsonReader, value: var VarTable) =
-  for key, val in readObject(reader, string, string):
+  for key, val in readObject(reader, string, JsonNode):
     value.add VarPair(name: key, value: val)
 
 template jsonDecodeImpl(input, value: untyped): GraphqlHttpResult[void] =
@@ -54,8 +54,8 @@ template jsonDecodeImpl(input, value: untyped): GraphqlHttpResult[void] =
     var reader = init(ReaderType(Json), stream)
     reader.readValue(value)
     return ok()
-  except:
-    return err(getCurrentExceptionMsg())
+  except JsonReaderError as e:
+    return err(e.formatMsg(""))
 
 proc jsonDecode[T](input: openArray[byte], value: var T): GraphqlHttpResult[void] =
   jsonDecodeImpl(input, value)
@@ -121,6 +121,15 @@ template exec(executor: untyped) =
   if res.isErr:
     return errorResp(res.error)
 
+proc toString(n: JsonNode, isVariable: bool = false): string =
+  if n.isNil:
+    return ""
+  if not isVariable and n.kind == JNull:
+    return ""
+  if not isVariable and n.kind == JString:
+    return n.str
+  $n
+
 proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsafe.} =
   let ctx = server.graphql
 
@@ -129,17 +138,29 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
   ctx.purgeNames(server.savePoint)
 
   # TODO: get rid of this {.gcsafe.} if possible
+  # when using compiler switch --threads:on
   {.gcsafe.}:
     for n in ro.variables:
-      exec parsevar(n.name, n.value)
+      exec parsevar(n.name, toString(n.value, true))
 
-    exec parseQuery(ro.query)
+    exec parseQuery(toString(ro.query))
     let resp = JsonRespStream.new()
-    let res = ctx.executeRequest(resp, ro.operationName)
+    let res = ctx.executeRequest(resp, toString(ro.operationName))
     if res.isErr:
       errorResp(res.error, resp.getBytes())
     else:
       okResp(resp.getBytes())
+
+proc decodeRequest(ro: var RequestObject, k, v: string): GraphqlHttpResult[void] =
+  case k
+  of "query":
+    return jsonDecode(v, ro.query)
+  of "operationName":
+    return jsonDecode(v, ro.operationName)
+  of "variables":
+    return jsonDecode(v, ro.variables)
+  else:
+    return ok()
 
 proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
   if r.isErr():
@@ -160,21 +181,15 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
 
   var ro: RequestObject
   for k, v in request.query.stringItems():
-    case k
-    of "query": ro.query = v
-    of "operationName": ro.operationName = v
-    of "variables":
-      let res = jsonDecode(v, ro.variables)
-      if res.isErr:
-        let error = errorResp(res.error)
-        return await request.respond(Http200, error, server.defRespHeader)
-    else:
-      discard
+    let res = ro.decodeRequest(k, v)
+    if res.isErr:
+      let error = errorResp(res.error)
+      return await request.respond(Http200, error, server.defRespHeader)
 
   if request.hasBody:
     let body = await request.getBody()
     if ctGraphql in conSet:
-      ro.query = cast[string](body)
+      ro.query = %(cast[string](body))
     else:
       let res = jsonDecode(body, ro)
       if res.isErr:

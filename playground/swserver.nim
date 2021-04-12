@@ -27,7 +27,7 @@ proc loadSchema(ctx: GraphqlRef, schema: Schema): ParseResult =
     ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql")
 
 const
-  address = initTAddress("127.0.0.1:8080")
+  address = initTAddress("127.0.0.1:8547")
 
 proc main() =
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
