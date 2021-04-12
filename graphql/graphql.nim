@@ -13,7 +13,7 @@ import
   ./common/[ast, ast_helper, errors, names, types]
 
 type
-  ContextError* = enum
+  GraphqlError* = enum
     ErrNone
     ErrInternal
     ErrDuplicateName
@@ -58,8 +58,8 @@ type
     inInclude    = "include"
     inDeprecated = "deprecated"
 
-  FieldForName* = ref FieldForNameObj
-  FieldForNameObj* = object
+  FieldRef* = ref FieldObj
+  FieldObj* = object
     respName*  : Node
     field*     : Field
     typ*       : Node
@@ -67,7 +67,7 @@ type
     merged*    : bool
     fieldSet*  : FieldSet
 
-  FieldSet* = seq[FieldForName]
+  FieldSet* = seq[FieldRef]
 
   ExecRef* = ref ExecObj
   ExecObj* = object
@@ -80,22 +80,22 @@ type
   ResolverProc* = proc(ud: RootRef, params: Args,
     parent: Node): RespResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
 
-  ResolverSet* = ref ResolverSetObj
-  ResolverSetObj* = object
+  ResolverRef* = ref ResolverObj
+  ResolverObj* = object
     ud*       : RootRef
     resolvers*: Table[Name, ResolverProc]
 
-  ContextRef* = ref Context
+  GraphqlRef* = ref Graphql
 
-  Context* = object of RootObj
-    errKind*      : ContextError
+  Graphql* = object of RootObj
+    errKind*      : GraphqlError
     err*          : ErrorDesc
     opTable*      : Table[Name, Symbol]
     typeTable*    : Table[Name, Symbol]
     scalarTable*  : Table[Name, ScalarRef]
     varTable*     : Table[Name, Node]
     execTable*    : Table[Name, ExecRef]
-    resolver*     : Table[Name, ResolverSet]
+    resolver*     : Table[Name, ResolverRef]
     names*        : NameCache
     intros*       : array[IntrosTypes, Name]
     emptyNode*    : Node
@@ -143,7 +143,7 @@ template invalid*(cond: untyped, body: untyped) =
     body
     return
 
-proc fatal*(ctx: ContextRef, err: ContextError, msg: varargs[string, `$`]) =
+proc fatal*(ctx: GraphqlRef, err: GraphqlError, msg: varargs[string, `$`]) =
   ctx.errKind = err
   ctx.err.level = elFatal
   case err
@@ -178,7 +178,7 @@ func getArticle(x: string): string =
     return if x[1] in {'n', 'N'}: "a" else: "an"
   else: return "a"
 
-proc error*(ctx: ContextRef, err: ContextError, node: Node, msg: varargs[string, `$`]) =
+proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
   ctx.err.pos = node.nonEmptyPos
   ctx.err.level = elError
@@ -231,7 +231,7 @@ proc error*(ctx: ContextRef, err: ContextError, node: Node, msg: varargs[string,
   else:
     discard
 
-proc getScalar*(ctx: ContextRef, locType: Node): ScalarRef =
+proc getScalar*(ctx: GraphqlRef, locType: Node): ScalarRef =
   if locType.sym.scalar.isNil:
     let scalar = findScalar(locType.sym.name)
     invalid scalar.isNil:

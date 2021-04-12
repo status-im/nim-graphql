@@ -11,16 +11,16 @@ import
   std/[tables, strutils],
   stew/[results],
   ../common/[ast, ast_helper, response, names],
-  ../context
+  ../graphql
 
 {.pragma: introsPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
-proc findType(ctx: ContextRef, nameStr: string): Symbol =
+proc findType(ctx: GraphqlRef, nameStr: string): Symbol =
   let name = ctx.names.insert(nameStr)
   findType(name)
 
-proc skipDeprecated(ctx: ContextRef, dirs: Dirs, includeDeprecated: bool): bool =
+proc skipDeprecated(ctx: GraphqlRef, dirs: Dirs, includeDeprecated: bool): bool =
   let deprecated = ctx.names.keywords[kwDeprecated]
   for dir in dirs:
     if dir.name.sym.name == deprecated:
@@ -49,7 +49,7 @@ proc toDesc(node: Node): Node =
     node
 
 proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let name = ctx.names.insert("schema")
   let sym = findType(name)
   let resp = if sym.isNil:
@@ -59,7 +59,7 @@ proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
   ok(resp)
 
 proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let name = params[0].val
   let sym = ctx.findType(name.stringVal)
   if sym.isNil:
@@ -82,14 +82,14 @@ const queryProtos* = {
 }
 
 proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   if parent.kind == nkSym:
     ok(parent.sym.ast[0])
   else:
     ok(respNull())
 
 proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
@@ -102,25 +102,25 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
   ok(list)
 
 proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   ok(ctx.rootQuery)
 
 proc schemaMutationType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   if ctx.rootMutation.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootMutation)
 
 proc schemaSubscriptionType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   if ctx.rootSubs.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootSubs)
 
 proc schemaDirectives(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
@@ -173,7 +173,7 @@ proc typeDescription(ud: RootRef, params: Args, parent: Node): RespResult {.intr
     ok(respNull())
 
 proc typeFields(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
   if parent.kind == nkSym and parent.sym.kind in {skObject, skInterface}:
@@ -198,7 +198,7 @@ proc typeInterfaces(ud: RootRef, params: Args, parent: Node): RespResult {.intro
     ok(respNull())
 
 proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   if parent.kind == nkSym and parent.sym.kind in {skUnion, skInterface}:
     var list = respList()
     if parent.sym.kind == skUnion:
@@ -213,7 +213,7 @@ proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.in
     ok(respNull())
 
 proc typeEnumValues(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  var ctx = ContextRef(ud)
+  var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
   if parent.kind == nkSym and parent.sym.kind == skEnum:

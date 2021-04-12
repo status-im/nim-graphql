@@ -11,12 +11,12 @@ import
   std/[tables, sets, os],
   stew/results,
   ./common/[ast, names, errors, ast_helper],
-  ./context
+  ./graphql
 
 const
   introsKeywords = {introsSchema, introsType, introsTypeName}
 
-proc error(ctx: ContextRef, msg: string) =
+proc error(ctx: GraphqlRef, msg: string) =
   ctx.errKind     = ErrInternal
   ctx.err.level   = elFatal
   ctx.err.message = msg
@@ -41,7 +41,7 @@ proc `$$`(kind: set[NodeKind] | set[SymKind]): string =
   else:
     $kind
 
-proc assignRootOp(ctx: ContextRef, name: Name, sym: Node) =
+proc assignRootOp(ctx: GraphqlRef, name: Name, sym: Node) =
   case toKeyword(name)
   of kwRootQuery, kwQuery: ctx.rootQuery = sym
   of kwRootMutation, kwMutation: ctx.rootMutation = sym
@@ -68,7 +68,7 @@ template noCyclicSetup(visited: untyped, n: Node) =
   var visited {.inject.} = initHashSet[Name]()
   visited.incl getName(n)
 
-proc findType(ctx: ContextRef, name: Node, types: set[SymKind]): Symbol =
+proc findType(ctx: GraphqlRef, name: Node, types: set[SymKind]): Symbol =
   let sym = findType(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
@@ -76,7 +76,7 @@ proc findType(ctx: ContextRef, name: Node, types: set[SymKind]): Symbol =
     ctx.error(ErrTypeMismatch, name, sym.kind, $$types)
   sym
 
-proc findType(ctx: ContextRef, name: Node, typ: SymKind): Symbol =
+proc findType(ctx: GraphqlRef, name: Node, typ: SymKind): Symbol =
   let sym = findType(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
@@ -84,7 +84,7 @@ proc findType(ctx: ContextRef, name: Node, typ: SymKind): Symbol =
     ctx.error(ErrTypeMismatch, name, sym.kind, typ)
   sym
 
-proc findOp(ctx: ContextRef, name: Node, typ: SymKind): Symbol =
+proc findOp(ctx: GraphqlRef, name: Node, typ: SymKind): Symbol =
   let sym = findOp(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
@@ -92,7 +92,7 @@ proc findOp(ctx: ContextRef, name: Node, typ: SymKind): Symbol =
     ctx.error(ErrTypeMismatch, name, sym.kind, typ)
   sym
 
-proc isWhatType(ctx: ContextRef, parent: Node, idx: int, whatTypes: set[SymKind]) =
+proc isWhatType(ctx: GraphqlRef, parent: Node, idx: int, whatTypes: set[SymKind]) =
   let node = parent[idx]
   case node.kind
   of nkNonNullType:
@@ -105,13 +105,13 @@ proc isWhatType(ctx: ContextRef, parent: Node, idx: int, whatTypes: set[SymKind]
   else:
     unreachable()
 
-template isOutputType(ctx: ContextRef, node: Node, idx: int) =
+template isOutputType(ctx: GraphqlRef, node: Node, idx: int) =
   ctx.isWhatType(node, idx, OutputTypes)
 
-template isInputType(ctx: ContextRef, node: Node, idx: int) =
+template isInputType(ctx: GraphqlRef, node: Node, idx: int) =
   ctx.isWhatType(node, idx, InputTypes)
 
-proc findField(ctx: ContextRef, T: type, sym: Symbol, name: Node): T =
+proc findField(ctx: GraphqlRef, T: type, sym: Symbol, name: Node): T =
   # for object, interface, and input object only!
   let field = sym.getField(name.name)
   invalid field.isNil:
@@ -123,19 +123,19 @@ proc findField(name: Name, inputVal: Node): Node =
     if n[0].name == name:
       return n
 
-proc findArg(ctx: ContextRef, parentType, fieldName, argName: Node, targs: Arguments): Argument =
+proc findArg(ctx: GraphqlRef, parentType, fieldName, argName: Node, targs: Arguments): Argument =
   for arg in targs:
     if arg.name.name == argName.name:
       return arg
   ctx.error(ErrFieldArgUndefined, argName, fieldName, parentType)
 
-proc findArg(ctx: ContextRef, dirName, argName: Node, targs: Arguments): Argument =
+proc findArg(ctx: GraphqlRef, dirName, argName: Node, targs: Arguments): Argument =
   for arg in targs:
     if arg.name.name == argName.name:
       return arg
   ctx.error(ErrDirArgUndefined, argName, dirName)
 
-proc coerceEnum(ctx: ContextRef, sym: Symbol, inVal: Node) =
+proc coerceEnum(ctx: GraphqlRef, sym: Symbol, inVal: Node) =
   invalid inVal.kind != nkEnum:
     ctx.error(ErrTypeMismatch, inVal, inVal.kind, sym.name)
 
@@ -143,9 +143,9 @@ proc coerceEnum(ctx: ContextRef, sym: Symbol, inVal: Node) =
   invalid sym.enumVals.getOrDefault(inVal.name).isNil:
     ctx.error(ErrNotPartOf, inVal, sym.name)
 
-proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil))
+proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil))
 
-proc findVar(ctx: ContextRef, val: Node, scope: Node): Variable =
+proc findVar(ctx: GraphqlRef, val: Node, scope: Node): Variable =
   let varsym = scope.sym.vars.getOrDefault(val.name)
   invalid varsym.isNil:
     ctx.error(ErrNotPartOf, val, scope)
@@ -178,7 +178,7 @@ proc areTypesCompatible(varType, locType: Node): bool =
     varType.kind == nkSym and
     varType.sym.name == locType.sym.name
 
-proc variableUsageAllowed(ctx: ContextRef, varDef: Variable, varName, locType, locDefVal: Node) =
+proc variableUsageAllowed(ctx: GraphqlRef, varDef: Variable, varName, locType, locDefVal: Node) =
   let varType = varDef.typ
   if locType.kind == nkNonNullType and varType.kind != nkNonNullType:
     let defVal = varDef.defVal
@@ -193,7 +193,7 @@ proc variableUsageAllowed(ctx: ContextRef, varDef: Variable, varName, locType, l
   if not areTypesCompatible(varType, locType):
     ctx.error(ErrTypeMismatch, varName, $$varType, $$locType)
 
-proc coerceInputObject(ctx: ContextRef, nameNode: Node, sym: Symbol, inVal: Node, scope: Node) =
+proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node, scope: Node) =
   invalid inVal.kind != nkInput:
     ctx.error(ErrTypeMismatch, inVal, inVal.kind, nkInput)
 
@@ -233,7 +233,7 @@ proc coerceInputObject(ctx: ContextRef, nameNode: Node, sym: Symbol, inVal: Node
     if dv.kind != nkEmpty:
       inVal <- newTree(nkPair, name, dv)
 
-proc coerceVariable(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope: Node) =
+proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope: Node) =
   let varName = parent[idx]
   varDef := findVar(varName, scope)
   visit variableUsageAllowed(varDef, varName, locType, locDefVal)
@@ -250,7 +250,7 @@ proc coerceVariable(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node;
     rtVal.pos = varName.pos
     parent[idx] = rtVal
 
-proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil)) =
+proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil)) =
   var inVal = parent[idx]
   case inVal.kind
   of nkEmpty:
@@ -306,7 +306,7 @@ proc inputCoercion(ctx: ContextRef, nameNode, locType, locDefVal, parent: Node; 
   else:
     unreachable()
 
-proc visitOp(ctx: ContextRef, parent: Node, idx: int, sk: SymKind) =
+proc visitOp(ctx: GraphqlRef, parent: Node, idx: int, sk: SymKind) =
   # name, vars, dirs, sels, [typeCond]
   let node = parent[idx]
   let name = node[0]
@@ -319,7 +319,7 @@ proc visitOp(ctx: ContextRef, parent: Node, idx: int, sk: SymKind) =
   ctx.opTable[name.name] = sym.sym
   parent[idx] = sym
 
-proc visitType(ctx: ContextRef, parent: Node, idx: int, sk: SymKind) =
+proc visitType(ctx: GraphqlRef, parent: Node, idx: int, sk: SymKind) =
   # desc, name, ...
   let node = parent[idx]
   let name = node[1]
@@ -345,7 +345,7 @@ proc visitType(ctx: ContextRef, parent: Node, idx: int, sk: SymKind) =
   else:
     discard
 
-proc dirArgs(ctx: ContextRef, scope, dirName: Node, args: Args, targs: Arguments) =
+proc dirArgs(ctx: GraphqlRef, scope, dirName: Node, args: Args, targs: Arguments) =
   for arg in args:
     targ := findArg(dirName, arg.name, targs)
     visit inputCoercion(arg.name, targ.typ, targ.defVal, arg.Node, 1, scope)
@@ -358,7 +358,7 @@ proc dirArgs(ctx: ContextRef, scope, dirName: Node, args: Args, targs: Arguments
       invalid Node(arg).isNil:
         ctx.error(ErrNoArg, dirName, targ.name)
 
-proc directivesUsage(ctx: ContextRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(nil)) =
+proc directivesUsage(ctx: GraphqlRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(nil)) =
   var names = initHashSet[Name]()
   for dir in dirs:
     let name = dir.name
@@ -382,7 +382,7 @@ proc directivesUsage(ctx: ContextRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(n
     else:
       unreachable()
 
-proc validateArgs(ctx: ContextRef, args: Arguments) =
+proc validateArgs(ctx: GraphqlRef, args: Arguments) =
   # desc, argName, argType, defVal, dirs
   var names = initHashSet[Name]()
   for arg in args:
@@ -392,7 +392,7 @@ proc validateArgs(ctx: ContextRef, args: Arguments) =
     visit inputCoercion(name, arg.typ, arg.defVal, arg.Node, 3)
     visit directivesUsage(arg.dirs, dlARGUMENT_DEFINITION)
 
-proc visitSchema(ctx: ContextRef, node: Schema) =
+proc visitSchema(ctx: GraphqlRef, node: Schema) =
   # desc, name, dirs, members
   let members = node.members
   var names = initHashSet[Name]()
@@ -408,11 +408,11 @@ proc visitSchema(ctx: ContextRef, node: Schema) =
 
   visit directivesUsage(node.dirs, dlSCHEMA)
 
-proc visitScalar(ctx: ContextRef, node: Scalar) =
+proc visitScalar(ctx: GraphqlRef, node: Scalar) =
   # desc, name, dirs
   visit directivesUsage(node.dirs, dlSCALAR)
 
-proc visitImplements(ctx: ContextRef, imp: Node) =
+proc visitImplements(ctx: GraphqlRef, imp: Node) =
   var names = initHashSet[Name]()
   # check object implements valid interface
   for i, name in imp:
@@ -421,7 +421,7 @@ proc visitImplements(ctx: ContextRef, imp: Node) =
     sym := findType(name, skInterface)
     imp[i] = newSymNode(sym, name.pos)
 
-proc visitFields(ctx: ContextRef, fields: ObjectFields, sym: Symbol) =
+proc visitFields(ctx: GraphqlRef, fields: ObjectFields, sym: Symbol) =
   var names = initHashSet[Name]()
   for field in fields:
     # desc, name, args, type, dirs
@@ -432,7 +432,7 @@ proc visitFields(ctx: ContextRef, fields: ObjectFields, sym: Symbol) =
     visit isOutputType(field.Node, 3)
     visit directivesUsage(field.dirs, dlFIELD_DEFINITION)
 
-proc visitObject(ctx: ContextRef, obj: Object, symNode: Node) =
+proc visitObject(ctx: GraphqlRef, obj: Object, symNode: Node) =
   # desc, name, ifaces, dirs, fields
   let sym = symNode.sym
   ctx.assignRootOp(sym.name, symNode)
@@ -504,7 +504,7 @@ proc validFieldType(fieldType, thatType: Node): bool =
   else:
     unreachable()
 
-proc isValidImplementation(ctx: ContextRef, impls: Node, symNode: Node) =
+proc isValidImplementation(ctx: GraphqlRef, impls: Node, symNode: Node) =
   for n in impls:
     let iface = Interface(n.sym.ast)
     # desc, name, ifaces, dirs, fields
@@ -539,19 +539,19 @@ proc isValidImplementation(ctx: ContextRef, impls: Node, symNode: Node) =
 
     visit isValidImplementation(iface.implements, symNode)
 
-proc objectObject(ctx: ContextRef, symNode: Node) =
+proc objectObject(ctx: GraphqlRef, symNode: Node) =
   # desc, name, ifaces, dirs, fields
   let node = Object(symNode.sym.ast)
   visit isValidImplementation(node.implements, symNode)
 
-proc cyclicInterface(ctx: ContextRef, impls: Node, visited: var HashSet[Name]) =
+proc cyclicInterface(ctx: GraphqlRef, impls: Node, visited: var HashSet[Name]) =
   for n in impls:
     let imp = Interface(n.sym.ast)
     let name = imp.name
     noCyclic(name, visited)
     visit cyclicInterface(imp.implements, visited)
 
-proc fillPossibleTypes(ctx: ContextRef, symNode: Node) =
+proc fillPossibleTypes(ctx: GraphqlRef, symNode: Node) =
   if symNode.sym.types.len > 0:
     return
 
@@ -563,7 +563,7 @@ proc fillPossibleTypes(ctx: ContextRef, symNode: Node) =
       if n.sym.name == symNode.sym.name:
         symNode.sym.types.add newSymNode(sym, sym.ast.pos)
 
-proc interfaceInterface(ctx: ContextRef, symNode: Node) =
+proc interfaceInterface(ctx: GraphqlRef, symNode: Node) =
   # desc, name, ifaces, dirs, fields
   let node = Interface(symNode.sym.ast)
   noCyclicSetup(visited, symNode)
@@ -571,13 +571,13 @@ proc interfaceInterface(ctx: ContextRef, symNode: Node) =
   visit isValidImplementation(node.implements, symNode)
   ctx.fillPossibleTypes(symNode)
 
-proc visitInterface(ctx: ContextRef, node: Interface, sym: Symbol) =
+proc visitInterface(ctx: GraphqlRef, node: Interface, sym: Symbol) =
   # desc, name, ifaces, dirs, fields
   visit visitImplements(node.implements)
   visit directivesUsage(node.dirs, dlINTERFACE)
   visit visitFields(node.fields, sym)
 
-proc visitUnion(ctx: ContextRef, node: Union) =
+proc visitUnion(ctx: GraphqlRef, node: Union) =
   # desc, name, dirs, members
 
   # only object can be union member
@@ -591,7 +591,7 @@ proc visitUnion(ctx: ContextRef, node: Union) =
   # validate directives
   visit directivesUsage(node.dirs, dlUNION)
 
-proc visitEnum(ctx: ContextRef, node: Enum) =
+proc visitEnum(ctx: GraphqlRef, node: Enum) =
   # desc, name, dirs, vals
 
   # no duplicate enum value for this enum
@@ -605,7 +605,7 @@ proc visitEnum(ctx: ContextRef, node: Enum) =
   # validate directives
   visit directivesUsage(node.dirs, dlENUM)
 
-proc inputInput(ctx: ContextRef, node: Node, visited: var HashSet[Name], nullableCount: int) =
+proc inputInput(ctx: GraphqlRef, node: Node, visited: var HashSet[Name], nullableCount: int) =
   case node.kind
   of nkNonNullType:
     visit inputInput(node[0], visited, nullableCount)
@@ -629,7 +629,7 @@ proc inputInput(ctx: ContextRef, node: Node, visited: var HashSet[Name], nullabl
   else:
     unreachable()
 
-proc inputInput(ctx: ContextRef, symNode: Node) =
+proc inputInput(ctx: GraphqlRef, symNode: Node) =
   let inp = InputObject(symNode.sym.ast)
   let fields = inp.fields
   for field in fields:
@@ -641,7 +641,7 @@ proc inputInput(ctx: ContextRef, symNode: Node) =
     visit inputInput(typ, visited, nullableCount)
     visit inputCoercion(name, typ, field.defVal, field.Node, 3)
 
-proc visitInputObject(ctx: ContextRef, inp: InputObject) =
+proc visitInputObject(ctx: GraphqlRef, inp: InputObject) =
   # desc, name, dirs, fields
   visit directivesUsage(inp.dirs, dlINPUT_OBJECT)
 
@@ -654,7 +654,7 @@ proc visitInputObject(ctx: ContextRef, inp: InputObject) =
     visit isInputType(field.Node, 2)
     visit directivesUsage(field.dirs, dlINPUT_FIELD_DEFINITION)
 
-proc directiveFlags(ctx: ContextRef, symNode: Node) =
+proc directiveFlags(ctx: GraphqlRef, symNode: Node) =
   if symNode.kind == nkEmpty:
     return
 
@@ -669,7 +669,7 @@ proc directiveFlags(ctx: ContextRef, symNode: Node) =
     let loc = DirLoc(n.name.id - LocQUERY.int)
     sym.dirLocs.incl loc
 
-proc cyclicDirective(ctx: ContextRef, node: Node, visited: var HashSet[Name]) =
+proc cyclicDirective(ctx: GraphqlRef, node: Node, visited: var HashSet[Name]) =
   # simply look into every nodes
   # because it's very complicated
   # if we use specialized code for each schema type
@@ -686,7 +686,7 @@ proc cyclicDirective(ctx: ContextRef, node: Node, visited: var HashSet[Name]) =
     for n in node:
       visit cyclicDirective(n, visited)
 
-proc directiveDirective(ctx: ContextRef, symNode: Node) =
+proc directiveDirective(ctx: GraphqlRef, symNode: Node) =
   let dir = Directive(symNode.sym.ast)
   let args = dir.args
   for arg in args:
@@ -696,10 +696,10 @@ proc directiveDirective(ctx: ContextRef, symNode: Node) =
     noCyclicSetup(vb, symNode)
     visit cyclicDirective(arg.typ, vb)
 
-proc visitDirective(ctx: ContextRef, node: Directive) =
+proc visitDirective(ctx: GraphqlRef, node: Directive) =
   visit validateArgs(node.args)
 
-proc visitTypeCond(ctx: ContextRef, parent: Node, idx: int) =
+proc visitTypeCond(ctx: GraphqlRef, parent: Node, idx: int) =
   let node = parent[idx]
   case node.kind
   of nkNamedType:
@@ -710,9 +710,9 @@ proc visitTypeCond(ctx: ContextRef, parent: Node, idx: int) =
   else:
     unreachable()
 
-proc fragmentInOp(ctx: ContextRef, sels: Node, visited: var HashSet[Name], scope: Node)
+proc fragmentInOp(ctx: GraphqlRef, sels: Node, visited: var HashSet[Name], scope: Node)
 
-proc validateSpreadUsage(ctx: ContextRef, parent: Node, idx: int, visited: var HashSet[Name], scope: Node) =
+proc validateSpreadUsage(ctx: GraphqlRef, parent: Node, idx: int, visited: var HashSet[Name], scope: Node) =
   let name = parent[idx]
   case name.kind
   of nkName:
@@ -729,7 +729,7 @@ proc validateSpreadUsage(ctx: ContextRef, parent: Node, idx: int, visited: var H
   else:
     unreachable()
 
-proc fragmentInOp(ctx: ContextRef, sels: Node, visited: var HashSet[Name], scope: Node) =
+proc fragmentInOp(ctx: GraphqlRef, sels: Node, visited: var HashSet[Name], scope: Node) =
   for field in sels:
     case field.kind
     of nkFragmentSpread:
@@ -756,7 +756,7 @@ proc fragmentInOp(ctx: ContextRef, sels: Node, visited: var HashSet[Name], scope
     else:
       unreachable()
 
-proc validateVariables(ctx: ContextRef, vars: Variables, sym: Symbol) =
+proc validateVariables(ctx: GraphqlRef, vars: Variables, sym: Symbol) =
   var names = initHashSet[Name]()
   for varDef in vars:
     # name, type, defVal, dirs
@@ -767,7 +767,7 @@ proc validateVariables(ctx: ContextRef, vars: Variables, sym: Symbol) =
     visit directivesUsage(varDef.dirs, dlVARIABLE_DEFINITION)
     sym.vars[name.name] = newSymNode(skVariable, name.name, varDef.Node, name.pos)
 
-proc visitQuery(ctx: ContextRef, symNode: Node) =
+proc visitQuery(ctx: GraphqlRef, symNode: Node) =
   # name, vars, dirs, sels
   let node = Query(symNode.sym.ast)
   visit validateVariables(node.vars, symNode.sym)
@@ -775,7 +775,7 @@ proc visitQuery(ctx: ContextRef, symNode: Node) =
   noCyclicSetup(visited, symNode)
   visit fragmentInOp(node.sels, visited, symNode)
 
-proc visitMutation(ctx: ContextRef, symNode: Node) =
+proc visitMutation(ctx: GraphqlRef, symNode: Node) =
   # name, vars, dirs, sels
   let node = Mutation(symNode.sym.ast)
   visit validateVariables(node.vars, symNode.sym)
@@ -783,7 +783,7 @@ proc visitMutation(ctx: ContextRef, symNode: Node) =
   noCyclicSetup(visited, symNode)
   visit fragmentInOp(node.sels, visited, symNode)
 
-proc visitSubscription(ctx: ContextRef, symNode: Node) =
+proc visitSubscription(ctx: GraphqlRef, symNode: Node) =
   # name, vars, dirs, sels
   let node = Subscription(symNode.sym.ast)
   visit validateVariables(node.vars, symNode.sym)
@@ -791,7 +791,7 @@ proc visitSubscription(ctx: ContextRef, symNode: Node) =
   noCyclicSetup(visited, symNode)
   visit fragmentInOp(node.sels, visited, symNode)
 
-proc visitFragment(ctx: ContextRef, symNode: Node) =
+proc visitFragment(ctx: GraphqlRef, symNode: Node) =
   # name, vars, typeCond, dirs, sels
   let node = Fragment(symNode.sym.ast)
   visit validateVariables(node.vars, symNode.sym)
@@ -809,7 +809,7 @@ proc getInnerType(node: Node): Node =
   else:
     unreachable()
 
-proc getPossibleTypes(ctx: ContextRef, node: Node): HashSet[Symbol] =
+proc getPossibleTypes(ctx: GraphqlRef, node: Node): HashSet[Symbol] =
   case node.sym.kind
   of skObject:
     result.incl node.sym
@@ -824,13 +824,13 @@ proc getPossibleTypes(ctx: ContextRef, node: Node): HashSet[Symbol] =
   else:
     unreachable()
 
-proc applicableType(ctx: ContextRef, name: Node, typ: Node, parentType: Node) =
+proc applicableType(ctx: GraphqlRef, name: Node, typ: Node, parentType: Node) =
   let ta = ctx.getPossibleTypes(typ)
   let tb = ctx.getPossibleTypes(parentType)
   if ta.intersection(tb).len == 0:
     ctx.error(ErrNotPartOf, name, parentType)
 
-proc fieldArgs(ctx: ContextRef, scope, parentType, fieldName: Node, args: Args, targs: Arguments) =
+proc fieldArgs(ctx: GraphqlRef, scope, parentType, fieldName: Node, args: Args, targs: Arguments) =
   for arg in args:
     targ := findArg(parentType, fieldName, arg.name, targs)
     visit inputCoercion(arg.name, targ.typ, targ.defVal, arg.Node, 1, scope)
@@ -845,9 +845,9 @@ proc fieldArgs(ctx: ContextRef, scope, parentType, fieldName: Node, args: Args, 
       # no need to check for null here
       # already handled by inputCoercion above
 
-proc fieldForName(field: Field, typ: Node, parentType: Node): FieldForName =
+proc fieldRef(field: Field, typ: Node, parentType: Node): FieldRef =
   let respName = if field.alias.kind != nkEmpty: field.alias else: field.name
-  var res = FieldForName(
+  var res = FieldRef(
     respName: respName,
     field: field,
     typ: typ,
@@ -855,9 +855,9 @@ proc fieldForName(field: Field, typ: Node, parentType: Node): FieldForName =
   )
   res
 
-proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: var FieldSet)
+proc fieldSelection(ctx: GraphqlRef, scope, sels, parentType: Node, fieldSet: var FieldSet)
 
-proc fieldSelection(ctx: ContextRef, scope, parentType: Node, fieldSet: var FieldSet, field: Field) =
+proc fieldSelection(ctx: GraphqlRef, scope, parentType: Node, fieldSet: var FieldSet, field: Field) =
   let name = field.name
   invalid parentType.sym.kind notin {skInterface, skObject}:
     ctx.error(ErrNotPartOf, name, parentType)
@@ -868,11 +868,11 @@ proc fieldSelection(ctx: ContextRef, scope, parentType: Node, fieldSet: var Fiel
   invalid fieldType.sym.kind in {skInterface, skObject} and fieldSels.len == 0:
     let obj = Object(fieldType.sym.ast)
     ctx.error(ErrRequireSelection, name, obj.name)
-  let ffn = fieldForName(field, target.typ, parentType)
+  let ffn = fieldRef(field, target.typ, parentType)
   fieldSet.add ffn
   visit fieldSelection(scope, fieldSels, fieldType, ffn.fieldSet)
 
-proc skipField(ctx: ContextRef, dirs: Dirs): bool =
+proc skipField(ctx: GraphqlRef, dirs: Dirs): bool =
   for dir in dirs:
     case toKeyword(dir.name.sym.name)
     of kwSkip:
@@ -888,7 +888,7 @@ proc skipField(ctx: ContextRef, dirs: Dirs): bool =
     else:
       discard
 
-proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: var FieldSet) =
+proc fieldSelection(ctx: GraphqlRef, scope, sels, parentType: Node, fieldSet: var FieldSet) =
   for field in sels:
     case field.kind
     of nkFragmentSpread:
@@ -919,7 +919,7 @@ proc fieldSelection(ctx: ContextRef, scope, sels, parentType: Node, fieldSet: va
     else:
       unreachable()
 
-proc sameResponseShape(fieldA, fieldB: FieldForName): bool =
+proc sameResponseShape(fieldA, fieldB: FieldRef): bool =
   var typeA = fieldA.typ
   var typeB = fieldB.typ
 
@@ -984,7 +984,7 @@ proc litEquals(a, b: Node): bool =
         return false
     return true
 
-proc identicalArguments(fieldA, fieldB: FieldForName): bool =
+proc identicalArguments(fieldA, fieldB: FieldRef): bool =
   let argsA = fieldA.field.args
   let argsB = fieldB.field.args
 
@@ -999,7 +999,7 @@ proc identicalArguments(fieldA, fieldB: FieldForName): bool =
       return false
   return true
 
-proc fieldInSetCanMerge(ctx: ContextRef, fieldSet: FieldSet) =
+proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
   for x, fieldA in fieldSet:
     if fieldA.merged: continue
     for y, fieldB in fieldSet:
@@ -1021,14 +1021,14 @@ proc fieldInSetCanMerge(ctx: ContextRef, fieldSet: FieldSet) =
         fieldB.merged = true
         return
 
-proc validateVarUsage(ctx: ContextRef, symNode: Node) =
+proc validateVarUsage(ctx: GraphqlRef, symNode: Node) =
   for v in values(symNode.sym.vars):
     invalid sfUsed notin v.sym.flags:
       ctx.error(ErrNotUsed, v)
 
-proc skipOrInclude(field: FieldForName) =
+proc skipOrInclude(field: FieldRef) =
   # recursively remove merged field in fieldset
-  var s = newSeq[FieldForName]()
+  var s = newSeq[FieldRef]()
   for n in field.fieldSet:
     if n.merged:
       continue
@@ -1036,7 +1036,7 @@ proc skipOrInclude(field: FieldForName) =
     s.add n
   swap(field.fieldSet, s)
 
-proc skipOrInclude(ctx: ContextRef, fieldSet: FieldSet, opSym, opType: Node) =
+proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node) =
   var exec = ExecRef(opSym: opSym, opType: opType)
   for n in fieldSet:
     if n.merged:
@@ -1045,7 +1045,7 @@ proc skipOrInclude(ctx: ContextRef, fieldSet: FieldSet, opSym, opType: Node) =
     exec.fieldSet.add n
   ctx.execTable[opSym.sym.name] = exec
 
-proc fragmentFragment(ctx: ContextRef, symNode: Node) =
+proc fragmentFragment(ctx: GraphqlRef, symNode: Node) =
   let node = Fragment(symNode.sym.ast)
   # name, vars, typeCond, dirs, sels
   var fieldSet: FieldSet
@@ -1055,7 +1055,7 @@ proc fragmentFragment(ctx: ContextRef, symNode: Node) =
     ctx.error(ErrNotUsed, symNode)
   visit validateVarUsage(symNode)
 
-proc queryQuery(ctx: ContextRef, symNode: Node) =
+proc queryQuery(ctx: GraphqlRef, symNode: Node) =
   invalid ctx.rootQuery.isNil:
     ctx.error(ErrNoRoot, symNode, "Query or schema:query")
 
@@ -1066,7 +1066,7 @@ proc queryQuery(ctx: ContextRef, symNode: Node) =
   visit validateVarUsage(symNode)
   ctx.skipOrInclude(fieldSet, symNode, ctx.rootQuery)
 
-proc mutationMutation(ctx: ContextRef, symNode: Node) =
+proc mutationMutation(ctx: GraphqlRef, symNode: Node) =
   invalid ctx.rootMutation.isNil:
     ctx.error(ErrNoRoot, symNode, "Mutation or schema:mutation")
 
@@ -1098,7 +1098,7 @@ proc countRootFields(sels: Node, root = true): int =
       unreachable()
   return count
 
-proc subscriptionSubscription(ctx: ContextRef, symNode: Node) =
+proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node) =
   invalid ctx.rootSubs.isNil:
     ctx.error(ErrNoRoot, symNode, "Subscription or schema:suscription")
 
@@ -1118,7 +1118,7 @@ proc extendDirs(sym: Symbol, idx: int, tDirs: Node, dirs: Dirs) =
     for dir in dirs:
       tDirs <- dir.Node
 
-proc extendSchema(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendSchema(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, dirs, members
   let tSchema = Schema(sym.ast)
   let tDirs   = Node(tSchema.dirs)
@@ -1130,7 +1130,7 @@ proc extendSchema(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in members:
     tMembers <- n
 
-proc extendScalar(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendScalar(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, dirs
   let tScalar = Scalar(sym.ast)
   let tDirs   = Node(tScalar.dirs)
@@ -1145,7 +1145,7 @@ proc extendImplements(sym: Symbol, idx: int, tImpl, impl: Node) =
     for imp in impl:
       tImpl <- imp
 
-proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendObjectDef(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
   let tObj  = Object(sym.ast)
   let tDirs = Node(tObj.dirs)
@@ -1160,7 +1160,7 @@ proc extendObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in fields:
     tFields <- n
 
-proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendInterfaceDef(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, impls, dirs, fields
   let tIface  = Interface(sym.ast)
   let tDirs   = Node(tIface.dirs)
@@ -1175,7 +1175,7 @@ proc extendInterfaceDef(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in fields:
     tFields <- n
 
-proc extendUnionDef(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendUnionDef(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, dirs, members
   let tUni  = Union(sym.ast)
   let tDirs = Node(tUni.dirs)
@@ -1187,7 +1187,7 @@ proc extendUnionDef(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in members:
     tMembers <- n
 
-proc extendEnumDef(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendEnumDef(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, dirs, values
   let tEnum   = Enum(sym.ast)
   let tDirs   = Node(tEnum.dirs)
@@ -1199,7 +1199,7 @@ proc extendEnumDef(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in values:
     tValues <- n
 
-proc extendInputObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
+proc extendInputObjectDef(ctx: GraphqlRef, sym: Symbol, node: Node) =
   # desc, name, dirs, fields
   let tInput = InputObject(sym.ast)
   let tDirs  = Node(tInput.dirs)
@@ -1211,7 +1211,7 @@ proc extendInputObjectDef(ctx: ContextRef, sym: Symbol, node: Node) =
   for n in fields:
     tFields <- n
 
-proc visitExtension(ctx: ContextRef, root: Node, idx: int) =
+proc visitExtension(ctx: GraphqlRef, root: Node, idx: int) =
   # skip the 'extend'
   let node = root[idx][0]
   doAssert(node.kind in TypeDefNodes)
@@ -1230,7 +1230,7 @@ proc visitExtension(ctx: ContextRef, root: Node, idx: int) =
   else:
     unreachable()
 
-proc secondPass(ctx: ContextRef, root: Node) =
+proc secondPass(ctx: GraphqlRef, root: Node) =
   var opCount = 0 # validate anon op
 
   for n in root:
@@ -1282,7 +1282,7 @@ proc secondPass(ctx: ContextRef, root: Node) =
   invalid anonSym.isNil.not and opCount > 1:
     ctx.error(ErrOnlyOne, anonSym.ast[0], "anonymous operation")
 
-proc validate*(ctx: ContextRef, root: Node) =
+proc validate*(ctx: GraphqlRef, root: Node) =
   if root.kind != nkMembers:
     ctx.error("expect nkMembers")
     return

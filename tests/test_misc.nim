@@ -14,7 +14,7 @@ import
 proc suite1() =
   suite "misc test suite":
     test "parseVariable":
-      var ctx = newContext()
+      var ctx = GraphqlRef.new()
       var res = ctx.parseVar("boolVar", "true")
       check res.isOk
       res = ctx.parseVar("inputObject", "{apple: 123, banana: \"hello\"}")

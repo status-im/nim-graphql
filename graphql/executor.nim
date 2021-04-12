@@ -11,13 +11,13 @@ import
   std/[tables],
   stew/[results],
   ./common/[names, ast, ast_helper, response, respstream],
-  ./context
+  ./graphql
 
 # errors
 # data
 # extensions
 
-proc getOperation(ctx: ContextRef, opName: string): ExecRef =
+proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
   let name = if opName.len == 0: ctx.names.anonName
              else: ctx.names.insert(opName)
   let op = ctx.execTable.getOrDefault(name)
@@ -25,10 +25,10 @@ proc getOperation(ctx: ContextRef, opName: string): ExecRef =
     ctx.fatal(ErrOperationNotFound, name)
   op
 
-proc name(field: FieldForName): string =
+proc name(field: FieldRef): string =
   $field.respName.name
 
-proc coerceScalar(ctx: ContextRef, fieldType: Node, resval: Node): Node =
+proc coerceScalar(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
   scalar := getScalar(fieldType)
   let res = scalar.parseLit(resval)
   if res.isErr:
@@ -36,13 +36,13 @@ proc coerceScalar(ctx: ContextRef, fieldType: Node, resval: Node): Node =
   else:
     res.get()
 
-proc coerceEnum(ctx: ContextRef, fieldType: Node, resval: Node): Node =
+proc coerceEnum(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
   let name = ctx.names.insert(resval.stringVal)
   if fieldType.sym.enumVals.hasKey(name):
     return resval
   respNull()
 
-proc resolveAbstractType(ctx: ContextRef, field: FieldForName, fieldType: Node, resval: Node): Node =
+proc resolveAbstractType(ctx: GraphqlRef, field: FieldRef, fieldType: Node, resval: Node): Node =
   invalid resval.kind != nkMap:
     ctx.fatal(ErrIncompatType, field.field.name, nkMap, resval.kind)
 
@@ -58,10 +58,10 @@ proc resolveAbstractType(ctx: ContextRef, field: FieldForName, fieldType: Node, 
 
   ctx.fatal(ErrIncompatType, field.field.name, fieldType, resval.typeName)
 
-proc executeSelectionSet(ctx: ContextRef, fieldSet: FieldSet,
+proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
                          parentFieldType, objectType, parent: Node): Node
 
-proc completeValue(ctx: ContextRef, fieldType: Node, field: FieldForName, resval: Node): Node =
+proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: Node): Node =
   if fieldType.kind == nkNonNullType:
     let innerType = fieldType[0]
     result ::= completeValue(innerType, field, resval)
@@ -109,7 +109,7 @@ proc fillArgs(fieldName: Name, parent: Symbol, args: Args): Args =
       res <- Node(arg)
   Args(res)
 
-proc executeField(ctx: ContextRef, field: FieldForName, parent: Node): Node =
+proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
   let parentTypeName = field.parentType.sym.name
   let fieldName = field.field.name
   let resolverSet = ctx.resolver.getOrDefault(parentTypeName)
@@ -134,7 +134,7 @@ proc skip(fieldType, parentType: Node, objectName, rootIntros: Name): bool =
   if fieldType.kind == nkSym and fieldType.sym.kind == skUnion:
     return objectName != name
 
-proc executeSelectionSet(ctx: ContextRef, fieldSet: FieldSet,
+proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
                          parentFieldType, objectType, parent: Node): Node =
 
   let rootIntros = ctx.rootIntros.sym.name
@@ -146,17 +146,17 @@ proc executeSelectionSet(ctx: ContextRef, fieldSet: FieldSet,
     field := executeField(n, parent)
     result[n.name] = field
 
-proc executeQuery(ctx: ContextRef, exec: ExecRef, resp: RespStream) =
+proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   res := executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
   serialize(res, resp)
 
-proc executeMutation(ctx: ContextRef, exec: ExecRef, resp: RespStream) =
+proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   discard
 
-proc executeSubscription(ctx: ContextRef, exec: ExecRef, resp: RespStream) =
+proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   discard
 
-proc executeRequest*(ctx: ContextRef, resp: RespStream, opName = "") =
+proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = "") =
   exec := getOperation(opName)
   case exec.opSym.sym.kind
   of skQuery:         visit executeQuery(exec, resp)

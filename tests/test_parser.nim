@@ -26,7 +26,7 @@ template runBadQuery(query, errmsg: string) =
   var parser = Parser.init(stream)
   var doc: QueryDocument
   parser.parseDocument(doc)
-  let desc = parser.errDesc()
+  let desc = parser.err
   check $desc == errmsg
 
 template runSchema(input: string) =
@@ -41,7 +41,7 @@ template runBadSchema(input, errmsg: string) =
   var parser = Parser.init(stream)
   var doc: SchemaDocument
   parser.parseDocument(doc)
-  let desc = parser.errDesc()
+  let desc = parser.err
   check $desc == errmsg
 
 proc suite1() =
@@ -49,7 +49,7 @@ proc suite1() =
     test "bad query":
       runBadQuery("query !", "[1, 7]: Error: get '!', expect '{'")
       runBadQuery("query \"abc", "[1, 11]: Error: Please terminate string with '\"'")
-      runBadQuery("query {}", "[1, 8]: Error: get '}', expect Name")      
+      runBadQuery("query {}", "[1, 8]: Error: get '}', expect Name")
       runBadQuery("query myquery($__mm) { name }", "[1, 16]: Error: get '__mm', expect name without '__' prefix in this context")
 
     test "good query":
@@ -64,7 +64,7 @@ proc suite2() =
       runSchema("type myquery { name: __string }")
 
     test "bad schema":
-      runBadSchema("union abc = ", "[1, 13]: Error: get EOF, expect Name")      
+      runBadSchema("union abc = ", "[1, 13]: Error: get EOF, expect Name")
 
 proc runGoodDoc(fileName: string): bool =
   var doc: FullDocument
@@ -74,7 +74,7 @@ proc runGoodDoc(fileName: string): bool =
   parser.parseDocument(doc)
   stream.close()
   if parser.error != errNone:
-    debugEcho parser.errDesc()
+    debugEcho parser.err
   parser.error == errNone
 
 proc suite3() =

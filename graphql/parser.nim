@@ -17,7 +17,6 @@ export
   common_parser.ParserError,
   common_parser.ParserFlag,
   common_parser.init,
-  common_parser.errDesc,
   ast
 
 proc definition(q: var Parser, def: var Node) =

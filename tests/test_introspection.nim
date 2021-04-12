@@ -80,8 +80,8 @@ proc nameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.}
 proc colorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp("YELLOW"))
 
-proc setupContext(): ContextRef =
-  var ctx = newContext()
+proc setupContext(): GraphqlRef =
+  var ctx = new(GraphqlRef)
   var tc = TestContext()
   for c in TestNames:
     let name = ctx.createName($c)
@@ -92,7 +92,7 @@ proc setupContext(): ContextRef =
   ctx.addResolvers(tc, "Droid", [("color", colorImpl)])
   ctx
 
-proc runExecutor(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
+proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   var stream = unsafeMemoryInput(unit.code)
   var parser = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
@@ -102,7 +102,7 @@ proc runExecutor(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
 
   check parser.error == errNone
   if parser.error != errNone:
-    debugEcho parser.errDesc()
+    debugEcho parser.err
     return
 
   ctx.validate(doc.root)
@@ -124,7 +124,7 @@ proc runExecutor(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
 
   check (unit.error.len == 0)
 
-proc runSuite(ctx: ContextRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:

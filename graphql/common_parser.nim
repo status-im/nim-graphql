@@ -125,9 +125,6 @@ proc init*(T: type Parser, stream: InputStream, names: NameCache, conf = default
 template pos*(q: Parser): Pos =
   q.lex.pos()
 
-proc errDesc*(q: Parser): ErrorDesc =
-  q.err
-
 template newNode*(nk: NodeKind): Node =
   Node(pos: q.pos, kind: nk)
 

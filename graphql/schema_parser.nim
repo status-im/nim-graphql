@@ -16,7 +16,6 @@ export
   common_parser.ParserError,
   common_parser.ParserFlag,
   common_parser.init,
-  common_parser.errDesc,
   ast
 
 proc operationKind*(q: var Parser, opKind: var Node) =

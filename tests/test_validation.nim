@@ -36,8 +36,8 @@ proc scalarMyScalar(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   else:
     err("expect string, but got '$1'" % [$node.kind])
 
-proc setupContext(): ContextRef =
-  var ctx {.inject.} = newContext()
+proc setupContext(): GraphqlRef =
+  var ctx {.inject.} = new(GraphqlRef)
   ctx.customScalar("myScalar", scalarMyScalar)
   ctx.addVar("myStringVar", "graphql")
   ctx.addVar("myIntVar", 567)
@@ -45,7 +45,7 @@ proc setupContext(): ContextRef =
   ctx.addVar("myBoolVar", true)
   ctx
 
-template setupParser(ctx: ContextRef, unit: Unit) =
+template setupParser(ctx: GraphqlRef, unit: Unit) =
   var stream = unsafeMemoryInput(unit.code)
   var parser {.inject.} = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
@@ -79,10 +79,10 @@ proc writeUnit(f: File, unit: Unit) =
   f.write(unit.code)
   f.write("\"\"\"\n\n")
 
-proc runConverter(ctx: ContextRef, unit: var Unit) =
+proc runConverter(ctx: GraphqlRef, unit: var Unit) =
   setupParser(ctx, unit)
   if parser.error != errNone:
-    unit.error = $parser.errDesc
+    unit.error = $parser.err
     return
 
   ctx.validate(doc.root)
@@ -90,7 +90,7 @@ proc runConverter(ctx: ContextRef, unit: var Unit) =
     unit.error = $ctx.err
     return
 
-proc runConverter(ctx: ContextRef, savePoint: NameCounter, path, output: string) =
+proc runConverter(ctx: GraphqlRef, savePoint: NameCounter, path, output: string) =
   let parts = splitFile(path)
   let newPath = "tests" / output / parts.name & parts.ext
   var cases = Toml.loadFile(path, TestCase)
@@ -110,11 +110,11 @@ proc convertCases(output: string) =
   for fileName in walkDirRec(caseFolder):
     ctx.runConverter(savePoint, fileName, output)
 
-proc runValidator(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
+proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   setupParser(ctx, unit)
   if parser.error != errNone:
     check (parser.error != errNone) == (unit.error.len > 0)
-    check $parser.errDesc() == unit.error
+    check $parser.err == unit.error
     return
 
   ctx.validate(doc.root)
@@ -125,7 +125,7 @@ proc runValidator(ctx: ContextRef, unit: Unit, testStatusIMPL: var TestStatus) =
 
   check (unit.error.len == 0)
 
-proc runSuite(ctx: ContextRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -152,7 +152,7 @@ proc validateCases() =
     ctx.runSuite(savePoint, fileName, counter)
   debugEcho counter
 
-proc runValidator(ctx: ContextRef, fileName: string, testStatusIMPL: var TestStatus) =
+proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
   var stream = memFileInput(fileName)
   var parser = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
@@ -162,7 +162,7 @@ proc runValidator(ctx: ContextRef, fileName: string, testStatusIMPL: var TestSta
 
   check parser.error == errNone
   if parser.error != errNone:
-    debugEcho $parser.errDesc()
+    debugEcho $parser.err
     return
 
   ctx.validate(doc.root)
@@ -173,7 +173,7 @@ proc runValidator(ctx: ContextRef, fileName: string, testStatusIMPL: var TestSta
 
 proc validateSchemas() =
   suite "validate schemas":
-    var ctx = newContext()
+    var ctx = new(GraphqlRef)
     var savePoint = ctx.getNameCounter()
     for fileName in walkDirRec("tests" / "schemas"):
       test fileName:

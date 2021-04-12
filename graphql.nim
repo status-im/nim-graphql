@@ -27,11 +27,11 @@ export
   api.ErrorLevel,
   api.Name,
   api.Result,
-  api.ContextRef,
+  api.GraphqlRef,
   api.ScalarResult,
   api.RespResult,
   api.ParseResult,
-  api.ContextError,
+  api.GraphqlError,
   api.NameCounter,
 
   # exported stew/results
@@ -43,7 +43,8 @@ export
   api.get,
 
   # graphql api
-  api.newContext,
+  api.init,
+  api.new,
   api.customScalar,
   api.customScalars,
   api.addVar,
