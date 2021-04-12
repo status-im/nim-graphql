@@ -72,5 +72,6 @@ export
   api.resp,
 
   # builtin json response stream
-  jrs.newJsonRespStream,
-  jrs.getOutput
+  jrs.new,
+  jrs.getOutput,
+  jrs.JsonRespStream

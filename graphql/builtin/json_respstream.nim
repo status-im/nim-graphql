@@ -157,10 +157,12 @@ proc fieldName*(x: JsonRespStream, v: string) =
 proc getOutput*(x: JsonRespStream): string =
   x.stream.getOutput(string)
 
-proc newJsonRespStream*(doubleEscape: bool = false): RespStream =
-  let v = JsonRespStream(
-    stream: memoryOutput(),
-    stack: @[StateTop],
-    doubleEscape: doubleEscape
-  )
+proc init*(v: JsonRespStream, doubleEscape: bool = false) =
+  v.stream = memoryOutput()
+  v.stack  = @[StateTop]
+  v.doubleEscape = doubleEscape
+    
+proc new*(_: type JsonRespStream, doubleEscape: bool = false): RespStream =
+  let v = JsonRespStream()
+  v.init(doubleEscape)
   respStream(v)

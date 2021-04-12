@@ -207,9 +207,11 @@ proc fieldName*(x: TomlRespStream, v: string) =
 proc getOutput*(x: TomlRespStream): string =
   x.stream.getOutput(string)
 
-proc newTomlRespStream*(): RespStream =
-  let v = TomlRespStream(
-    stream: memoryOutput(),
-    stack: @[StateTop]
-  )
+proc init*(v: TomlRespStream) =
+  v.stream = memoryOutput()
+  v.stack  = @[StateTop]
+
+proc new*(_: type TomlRespStream): RespStream =
+  let v = TomlRespStream()
+  v.init()
   respStream(v)
