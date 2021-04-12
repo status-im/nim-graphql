@@ -10,7 +10,7 @@
 import
   std/[os, strutils, unittest],
   toml_serialization,
-  ../graphql, ./test_config
+  ../graphql, ./test_config, ./test_utils
 
 type
   Unit = object
@@ -33,14 +33,6 @@ const
   caseFolder = "tests" / "execution"
 
 {.push hint[XDeclaredButNotUsed]: off.}
-
-proc removeWhitespaces(x: string): string =
-  # TODO: do not remove white spaces in string/multiline string
-  const whites = {' ', '\t', '\r', '\n'}
-  for c in x:
-    if c notin whites:
-      result.add c
-
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 
 proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -88,7 +80,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     return
 
   let unitRes = removeWhitespaces(unit.result)
-  let execRes = removeWhitespaces(resp.getOutput)
+  let execRes = removeWhitespaces(resp.getString)
   check unitRes == execRes
 
   check (unit.error.len == 0)

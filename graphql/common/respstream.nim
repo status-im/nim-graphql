@@ -18,7 +18,9 @@ type
   boolProc     = proc (x: RootRef, v: bool) {.respPragma.}
   intProc      = proc (x: RootRef, v: int) {.respPragma.}
   floatProc    = proc (x: RootRef, v: float64) {.respPragma.}
-  outputProc   = proc (x: RootRef): string {.respPragma.}
+  bytesProc    = proc (x: RootRef, v: openArray[byte]) {.respPragma.}
+  outputSProc  = proc (x: RootRef): string {.respPragma.}
+  outputBProc  = proc (x: RootRef): seq[byte] {.respPragma.}
 
   RespStream* = ref RespStreamObj
   RespStreamObj* = object
@@ -32,8 +34,10 @@ type
     writeBoolP: boolProc
     writeIntP: intProc
     writeNullP: simpleProc
+    writeBytesP: bytesProc
     writeFloatP: floatProc
-    getOutputP: outputProc
+    getStringP: outputSProc
+    getBytesP: outputBProc
 
 proc beginListImpl[T](x: RootRef) =
   mixin beginList
@@ -71,13 +75,21 @@ proc writeNullImpl[T](x: RootRef) =
   mixin writeNull
   writeNull(T(x))
 
+proc writeBytesImpl[T](x: RootRef, raw: openArray[byte]) =
+  mixin writeBytes
+  writeBytes(T(x), raw)
+
 proc fieldNameImpl[T](x: RootRef, v: string) =
   mixin fieldName
   fieldName(T(x), v)
 
-proc getOutputImpl[T](x: RootRef): string =
-  mixin getOutput
-  getOutput(T(x))
+proc getStringImpl[T](x: RootRef): string =
+  mixin getString
+  getString(T(x))
+
+proc getBytesImpl[T](x: RootRef): seq[byte] =
+  mixin getBytes
+  getBytes(T(x))
 
 proc respStream*[T: RootRef](x: T): RespStream =
   mixin beginList, endList, beginMap, endMap
@@ -95,8 +107,10 @@ proc respStream*[T: RootRef](x: T): RespStream =
   result.writeBoolP     = writeBoolImpl[T]
   result.writeIntP      = writeIntImpl[T]
   result.writeNullP     = writeNullImpl[T]
+  result.writeBytesP    = writeBytesImpl[T]
   result.writeFloatP    = writeFloatImpl[T]
-  result.getOutputP     = getOutputImpl[T]
+  result.getStringP     = getStringImpl[T]
+  result.getBytesP      = getBytesImpl[T]
 
 proc beginList*(x: RespStream) =
   x.beginListP(x.obj)
@@ -128,8 +142,14 @@ proc write*(x: RespStream, v: float64) =
 proc writeNull*(x: RespStream) =
   x.writeNullP(x.obj)
 
-proc getOutput*(x: RespStream): string =
-  x.getOutputP(x.obj)
+proc write*(x: RespStream, raw: openArray[byte]) =
+  x.writeBytesP(x.obj, raw)
+  
+proc getString*(x: RespStream): string =
+  x.getStringP(x.obj)
+
+proc getBytes*(x: RespStream): seq[byte] =
+  x.getBytesP(x.obj)
 
 template respMap*(x: RespStream, body: untyped) =
   beginMap(x)

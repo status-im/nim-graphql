@@ -17,27 +17,27 @@ proc suite1() =
     test "write string":
       var n = JsonRespStream.new()
       n.write("hello")
-      check n.getOutput() == "\"hello\""
+      check n.getString() == "\"hello\""
 
     test "write bool":
       var n = JsonRespStream.new()
       n.write(true)
-      check n.getOutput() == "true"
+      check n.getString() == "true"
 
     test "write int":
       var n = JsonRespStream.new()
       n.write(123)
-      check n.getOutput() == "123"
+      check n.getString() == "123"
 
     test "write null":
       var n = JsonRespStream.new()
       n.writeNull()
-      check n.getOutput() == "null"
+      check n.getString() == "null"
 
     test "write float":
       var n = JsonRespStream.new()
       n.write(123.1)
-      check n.getOutput() == "123.1"
+      check n.getString() == "123.1"
 
     test "write array":
       var n = JsonRespStream.new()
@@ -47,7 +47,7 @@ proc suite1() =
         n.write(123)
         n.write(123.4)
         n.writeNull()
-      check n.getOutput() == "[\"hello\",true,123,123.4,null]"
+      check n.getString() == "[\"hello\",true,123,123.4,null]"
 
     test "write array in array":
       var n = JsonRespStream.new()
@@ -58,7 +58,7 @@ proc suite1() =
         respList(n):
           n.write(123.4)
           n.writeNull()
-      check n.getOutput() == "[\"hello\",true,123,[123.4,null]]"
+      check n.getString() == "[\"hello\",true,123,[123.4,null]]"
 
     test "write object in array":
       var n = JsonRespStream.new()
@@ -71,7 +71,7 @@ proc suite1() =
         respMap(n):
           n.fieldName("one")
           n.write(123)
-      check n.getOutput() == "[\"hello\",true,123,123.4,null,{\"one\":123}]"
+      check n.getString() == "[\"hello\",true,123,123.4,null,{\"one\":123}]"
 
     test "write objects in array":
       var n = JsonRespStream.new()
@@ -84,7 +84,7 @@ proc suite1() =
         respMap(n):
           n.fieldName("one")
           n.write(123)
-      check n.getOutput() == "[{\"hello\":true,\"world\":null},{\"one\":123}]"
+      check n.getString() == "[{\"hello\":true,\"world\":null},{\"one\":123}]"
 
     test "write object":
       var n = JsonRespStream.new()
@@ -99,7 +99,7 @@ proc suite1() =
         n.write(123.4)
         n.fieldName("five")
         n.writeNull()
-      check n.getOutput() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"four\":123.4,\"five\":null}"
+      check n.getString() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"four\":123.4,\"five\":null}"
 
     test "write array in object":
       var n = JsonRespStream.new()
@@ -114,7 +114,7 @@ proc suite1() =
         respList(n):
           n.write(123.4)
           n.writeNull()
-      check n.getOutput() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"four\":[123.4,null]}"
+      check n.getString() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"four\":[123.4,null]}"
 
     test "write object in object":
       var n = JsonRespStream.new()
@@ -131,7 +131,7 @@ proc suite1() =
           n.write(123.4)
           n.fieldName("five")
           n.writeNull()
-      check n.getOutput() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"obj\":{\"four\":123.4,\"five\":null}}"
+      check n.getString() == "{\"one\":\"hello\",\"two\":true,\"three\":123,\"obj\":{\"four\":123.4,\"five\":null}}"
 
 proc suite2() =
   suite "toml response stream test suite":
@@ -139,31 +139,31 @@ proc suite2() =
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.write("hello")
-      check n.getOutput() == "one = \"hello\"\n"
+      check n.getString() == "one = \"hello\"\n"
 
     test "write int":
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.write(123)
-      check n.getOutput() == "one = 123\n"
+      check n.getString() == "one = 123\n"
 
     test "write bool":
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.write(true)
-      check n.getOutput() == "one = true\n"
+      check n.getString() == "one = true\n"
 
     test "write float":
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.write(123.4)
-      check n.getOutput() == "one = 123.4\n"
+      check n.getString() == "one = 123.4\n"
 
     test "write null":
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.writeNull
-      check n.getOutput() == ""
+      check n.getString() == ""
 
     test "write array":
       var n = TomlRespStream.new()
@@ -174,7 +174,7 @@ proc suite2() =
         n.writeNull()
         n.write(true)
         n.write(123.4)
-      check n.getOutput() == "array = [\"one\", 2, true, 123.4]\n"
+      check n.getString() == "array = [\"one\", 2, true, 123.4]\n"
 
     test "write map":
       var n = TomlRespStream.new()
@@ -190,7 +190,7 @@ proc suite2() =
         n.write(true)
         n.fieldName("five")
         n.write(123.4)
-      check n.getOutput() == "[map]\n  one = \"one\"\n  two = 2\n  four = true\n  five = 123.4\n\n"
+      check n.getString() == "[map]\n  one = \"one\"\n  two = 2\n  four = true\n  five = 123.4\n\n"
 
     test "write inline map":
       var n = TomlRespStream.new()
@@ -208,7 +208,7 @@ proc suite2() =
           n.write(true)
           n.fieldName("five")
           n.write(123.4)
-      check n.getOutput() == "[map]\n  inline = {one = \"one\", two = 2, four = true, five = 123.4}\n\n"
+      check n.getString() == "[map]\n  inline = {one = \"one\", two = 2, four = true, five = 123.4}\n\n"
 
     test "write inline map in inline map in map":
       var n = TomlRespStream.new()
@@ -228,7 +228,7 @@ proc suite2() =
             n.write(true)
             n.fieldName("five")
             n.write(123.4)
-      check n.getOutput() == "[map]\n  inline = {one = \"one\", two = 2, inmap = {four = true, five = 123.4}}\n\n"
+      check n.getString() == "[map]\n  inline = {one = \"one\", two = 2, inmap = {four = true, five = 123.4}}\n\n"
 
     test "write array in map":
       var n = TomlRespStream.new()
@@ -241,7 +241,7 @@ proc suite2() =
           n.writeNull()
           n.write(true)
           n.write(123.4)
-      check n.getOutput() == "[map]\n  array = [\"one\", 2, true, 123.4]\n\n"
+      check n.getString() == "[map]\n  array = [\"one\", 2, true, 123.4]\n\n"
 
     test "write array in array in map":
       var n = TomlRespStream.new()
@@ -256,7 +256,7 @@ proc suite2() =
           n.write(123.4)
           respList(n):
             n.write(456)
-      check n.getOutput() == "[map]\n  array = [\"one\", 2, true, 123.4, [456]]\n\n"
+      check n.getString() == "[map]\n  array = [\"one\", 2, true, 123.4, [456]]\n\n"
 
     test "write array in inline map in map pos 2":
       var n = TomlRespStream.new()
@@ -269,7 +269,7 @@ proc suite2() =
           n.fieldName("two")
           respList(n):
             n.write(456)
-      check n.getOutput() == "[map]\n  inline = {one = 2, two = [456]}\n\n"
+      check n.getString() == "[map]\n  inline = {one = 2, two = [456]}\n\n"
 
     test "write array in inline map in map pos 1":
       var n = TomlRespStream.new()
@@ -282,7 +282,7 @@ proc suite2() =
             n.write(456)
           n.fieldName("one")
           n.write(2)
-      check n.getOutput() == "[map]\n  inline = {two = [456], one = 2}\n\n"
+      check n.getString() == "[map]\n  inline = {two = [456], one = 2}\n\n"
 
     test "write inline map in array in map pos 2":
       var n = TomlRespStream.new()
@@ -296,7 +296,7 @@ proc suite2() =
             n.write(true)
             n.fieldName("five")
             n.write(123.4)
-      check n.getOutput() == "[map]\n  array = [2, {four = true, five = 123.4}]\n\n"
+      check n.getString() == "[map]\n  array = [2, {four = true, five = 123.4}]\n\n"
 
     test "write inline map in array in map pos 1":
       var n = TomlRespStream.new()
@@ -310,7 +310,7 @@ proc suite2() =
             n.fieldName("five")
             n.write(123.4)
           n.write(2)
-      check n.getOutput() == "[map]\n  array = [{four = true, five = 123.4}, 2]\n\n"
+      check n.getString() == "[map]\n  array = [{four = true, five = 123.4}, 2]\n\n"
 
 suite1()
 suite2()

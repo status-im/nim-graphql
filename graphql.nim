@@ -73,5 +73,7 @@ export
 
   # builtin json response stream
   jrs.new,
-  jrs.getOutput,
-  jrs.JsonRespStream
+  jrs.getString,
+  jrs.getBytes,
+  jrs.JsonRespStream,
+  jrs

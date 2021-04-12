@@ -204,8 +204,14 @@ proc writeNull*(x: TomlRespStream) =
 proc fieldName*(x: TomlRespStream, v: string) =
   x.fieldName = v
 
-proc getOutput*(x: TomlRespStream): string =
+proc writeBytes*(x: TomlRespStream, v: openArray[byte]) =
+  x.stream.write(v)
+
+proc getString*(x: TomlRespStream): string =
   x.stream.getOutput(string)
+
+proc getBytes*(x: TomlRespStream): seq[byte] =
+  x.stream.getOutput(seq[byte])
 
 proc init*(v: TomlRespStream) =
   v.stream = memoryOutput()

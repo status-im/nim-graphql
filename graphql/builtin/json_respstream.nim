@@ -154,14 +154,20 @@ proc fieldName*(x: JsonRespStream, v: string) =
   else:
     doAssert(false)
 
-proc getOutput*(x: JsonRespStream): string =
+proc writeBytes*(x: JsonRespStream, v: openArray[byte]) =
+  x.stream.write(v)
+
+proc getString*(x: JsonRespStream): string =
   x.stream.getOutput(string)
+
+proc getBytes*(x: JsonRespStream): seq[byte] =
+  x.stream.getOutput(seq[byte])
 
 proc init*(v: JsonRespStream, doubleEscape: bool = false) =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]
   v.doubleEscape = doubleEscape
-    
+
 proc new*(_: type JsonRespStream, doubleEscape: bool = false): RespStream =
   let v = JsonRespStream()
   v.init(doubleEscape)
