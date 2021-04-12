@@ -8,17 +8,33 @@
 # those terms.
 
 import
-  std/[os], chronos,
+  std/[os, strutils], chronos, chronicles,
   ../graphql, ../graphql/httpserver,
-  ./swapi
+  ./swapi, ./ethapi
+
+type
+  Schema = enum
+    starwars
+    ethereum
+
+proc loadSchema(ctx: GraphqlRef, schema: Schema): ParseResult =
+  notice "loading graphql api", name = schema
+  if schema == ethereum:    
+    ctx.initEthApi()
+    ctx.parseSchemaFromFile("tests" / "schemas" / "ethereum_1.0.ql")
+  else:
+    ctx.initStarWarsApi()
+    ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql")
 
 proc main() =
   var address = initTAddress("127.0.0.1:8547")
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
   var ctx = GraphqlRef.new()
-  ctx.initStarWarsApi()
-  
-  let res = ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql")
+
+  let schema = if paramCount() == 0: starwars
+               else: parseEnum[Schema](paramStr(1))
+
+  let res = ctx.loadSchema(schema)
   if res.isErr:
     debugEcho res.error
     return
