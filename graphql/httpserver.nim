@@ -121,25 +121,27 @@ template exec(executor: untyped) =
   if res.isErr:
     return errorResp(res.error)
 
-proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string =
+proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsafe.} =
   let ctx = server.graphql
 
   # clean up previous garbage before new execution
   ctx.purgeQueries(includeVariables = true)
   ctx.purgeNames(server.savePoint)
 
-  for n in ro.variables:
-    exec parsevar(n.name, n.value)
+  # TODO: get rid of this {.gcsafe.} if possible
+  {.gcsafe.}:
+    for n in ro.variables:
+      exec parsevar(n.name, n.value)
 
-  exec parseQuery(ro.query)
-  let resp = JsonRespStream.new()
-  let res = ctx.executeRequest(resp, ro.operationName)
-  if res.isErr:
-    errorResp(res.error, resp.getBytes())
-  else:
-    okResp(resp.getBytes())
+    exec parseQuery(ro.query)
+    let resp = JsonRespStream.new()
+    let res = ctx.executeRequest(resp, ro.operationName)
+    if res.isErr:
+      errorResp(res.error, resp.getBytes())
+    else:
+      okResp(resp.getBytes())
 
-proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.async.} =
+proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
   if r.isErr():
     return dumbResponse()
 
