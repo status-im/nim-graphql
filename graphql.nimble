@@ -36,3 +36,12 @@ task test, "Run all tests":
   test "--threads:on", "tests/test_all"
   test "--threads:off -d:release", "tests/test_all"
   test "--threads:on -d:release", "tests/test_all"
+
+proc playground(server: string) =
+  exec "nim c -r -d:release playground/swserver " & server
+
+task ethereum, "run ethereum playground server":
+  playground("ethereum")
+
+task starwars, "run starwars playground server":
+  playground("starwars")

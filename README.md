@@ -29,6 +29,33 @@ specification is [here](https://spec.graphql.org/June2018/).
 If you want to know how to use nim-graphql or how nim-graphql works,
 the documentation is available [here](docs/toc.md).
 
+## Playground
+
+You can play with our playground graphql http server using graphql
+client such as [Altair GraphQL client](https://altair.sirmuel.design)
+because currently we don't have time to provide a fancy built in interface
+for our playground server.
+
+- Using Starwars schema/api.
+```bash
+$ nimble starwars
+
+or
+
+$ nim c -r playground/swserver starwars
+```
+
+- Using Ethereum schema/api.
+```bash
+$ nimble ethereum
+
+or
+
+$ nim c -r playground/swserver ethereum
+```
+
+The server is accessible at this address `http://127.0.0.1:8547/graphql`
+
 ## Installation
 
 You can use Nim's official package manager Nimble to install nim-graphql:
