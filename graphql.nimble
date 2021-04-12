@@ -14,11 +14,12 @@ version       = "0.1.0"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
-skipDirs      = @["tests", "resources", "fuzzer"]
+skipDirs      = @["tests", "resources", "fuzzer", "docs"]
 
 requires "nim >= 1.2.0",
          "faststreams",
-         "stew"
+         "stew",
+         "json_serialization"
 
 proc test(env, path: string) =
   # Compilation language is controlled by TEST_LANG
