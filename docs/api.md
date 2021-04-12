@@ -53,9 +53,10 @@ If you find anything not listed or not exported in this list, please submit an i
     - `resp(x: float64): Node`
 
 #### Builtin JSON response stream API
-  - `newJsonRespStream(doubleEscape = false): RespStream`. Create a new JSON response stream object.
+  - `new(_: type JsonRespStream, doubleEscape = false): RespStream`. Create a new JSON response stream object.
     When `doubleEscape` is true, the `getOutput` will return a text string that can be embedded in a json string.
   - `getOutput(): string`. Get a string output from response stream.
+  - `JsonRespStream`. The JSON stream type
 
 #### Datatypes
   - `ErrorDesc`.
