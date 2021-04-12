@@ -111,7 +111,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     debugEcho ctx.err
     return
 
-  var resp = newJsonRespStream()
+  var resp = JsonRespStream.new()
   let res = ctx.executeRequest(resp, unit.opName)
   if res.isErr:
     check res.isErr == (unit.error.len > 0)
