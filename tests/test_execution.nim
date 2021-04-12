@@ -81,10 +81,10 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     return
 
   var resp = newJsonRespStream()
-  ctx.executeRequest(resp, unit.opName)
-  if ctx.errKind != ErrNone:
-    check (ctx.errKind != ErrNone) == (unit.error.len > 0)
-    check $ctx.err == unit.error
+  let res = ctx.executeRequest(resp, unit.opName)
+  if res.isErr:
+    check res.isErr == (unit.error.len > 0)
+    check $res.error == unit.error
     return
 
   let unitRes = removeWhitespaces(unit.result)
