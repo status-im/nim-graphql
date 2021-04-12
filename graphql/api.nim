@@ -20,9 +20,6 @@ export
   validator, graphql, ast_helper, executor,
   response, results, types, names, errors, ast
 
-type
-  ParseResult* = Result[void, ErrorDesc]
-
 const
   builtinSchema = staticRead("builtin" / "schema.ql")
 
@@ -50,9 +47,10 @@ proc customScalar*(ctx: GraphqlRef, nameStr: string, scalarProc: ScalarProc) =
     parseLit: scalarProc
   )
 
-proc customScalars*(ctx: GraphqlRef, procs: openArray[(string, ScalarProc)]) =
+proc customScalars*(ctx: GraphqlRef,
+                    procs: openArray[tuple[name: string, scalarProc: ScalarProc]]) =
   for c in procs:
-    ctx.customScalar(c[0], c[1])
+    ctx.customScalar(c.name, c.scalarProc)
 
 proc addVar*(ctx: GraphqlRef, name: string, val: int) =
   let name = ctx.names.insert(name)
@@ -103,19 +101,19 @@ proc parseVar*(ctx: GraphqlRef, name: string,
                value: openArray[byte]): ParseResult =
   parseVariableImpl(name, value)
 
-proc addResolvers*(ctx: GraphqlRef, ud: RootRef,
-     typeName: Name, resolvers: openArray[(string, ResolverProc)]) =
+proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: Name,
+                   resolvers: openArray[tuple[name: string, resolver: ResolverProc]]) =
   var res = ctx.resolver.getOrDefault(typeName)
   if res.isNil:
     res = ResolverRef(ud: ud)
     ctx.resolver[typeName] = res
 
   for v in resolvers:
-    let field = ctx.names.insert(v[0])
-    res.resolvers[field] = v[1]
+    let field = ctx.names.insert(v.name)
+    res.resolvers[field] = v.resolver
 
-proc addResolvers*(ctx: GraphqlRef, ud: RootRef,
-     typeName: string, resolvers: openArray[(string, ResolverProc)]) =
+proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: string,
+                   resolvers: openArray[tuple[name: string, resolver: ResolverProc]]) =
   let name = ctx.names.insert(typeName)
   ctx.addResolvers(ud, name, resolvers)
 

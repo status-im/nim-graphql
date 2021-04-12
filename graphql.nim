@@ -9,14 +9,16 @@
 
 import
   faststreams/inputs,
-  graphql/[server, client, parser, api],
+  graphql/[parser, api],
   graphql/builtin/json_respstream as jrs
-
-export server, client, parser
 
 export
   # faststreams inputs
   inputs,
+
+  # query_parser, schema_parser
+  # and full_parser
+  parser,
 
   # ast helper types
   api.ast_helper,

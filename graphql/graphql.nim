@@ -75,6 +75,7 @@ type
     opSym*    : Node
     fieldSet* : FieldSet
 
+  ParseResult* = Result[void, ErrorDesc]
   RespResult* = Result[Node, string]
 
   ResolverProc* = proc(ud: RootRef, params: Args,

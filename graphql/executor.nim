@@ -151,16 +151,24 @@ proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   serialize(res, resp)
 
 proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
-  discard
+  res := executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
+  serialize(res, resp)
 
 proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   discard
 
-proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = "") =
+proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
   exec := getOperation(opName)
   case exec.opSym.sym.kind
-  of skQuery:         visit executeQuery(exec, resp)
-  of skMutation:      visit executeMutation(exec, resp)
-  of skSubscription:  visit executeSubscription(exec, resp)
+  of skQuery:        visit executeQuery(exec, resp)
+  of skMutation:     visit executeMutation(exec, resp)
+  of skSubscription: visit executeSubscription(exec, resp)
   else:
     unreachable()
+
+proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): ParseResult =
+  ctx.executeRequestImpl(resp, opName)
+  if ctx.errKind == ErrNone:
+    ok()
+  else:
+    err(ctx.err)
