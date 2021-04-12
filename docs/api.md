@@ -55,7 +55,8 @@ If you find anything not listed or not exported in this list, please submit an i
 #### Builtin JSON response stream API
   - `new(_: type JsonRespStream, doubleEscape = false): RespStream`. Create a new JSON response stream object.
     When `doubleEscape` is true, the `getOutput` will return a text string that can be embedded in a json string.
-  - `getOutput(): string`. Get a string output from response stream.
+  - `getString(): string`. Get a string output from response stream.
+  - `getBytes(): seq[byte]`. Get a bytes output from response stream.
   - `JsonRespStream`. The JSON stream type
 
 #### Datatypes
