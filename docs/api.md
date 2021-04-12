@@ -29,8 +29,8 @@ If you find anything not listed or not exported in this list, please submit an i
   - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
     - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
   - `createName(ctx: GraphqlRef, name: string): Name`. `respMap` will need a name from the system using this proc.
-  - `executeRequest`. This is your main entrance to the execution engine.
-  - `validate`. Usually you don't need to call this directly.
+  - `executeRequest(ctx: GraphqlRef, resp: RespStream, opName = ""): ParseResult`. This is your main entrance to the execution engine.
+  - `validate(ctx: GraphqlRef, root: Node)`. Usually you don't need to call this directly.
   - `parseSchema(ctx: GraphqlRef, schema: string): ParseResult`. Parse a scheme from text string.
   - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string | openArray[byte]): ParseResult`.
   - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
