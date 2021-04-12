@@ -15,30 +15,30 @@ If you find anything not listed or not exported in this list, please submit an i
   - `get`. If `isOk` is true, use `get` to retrieve the wrapped object.
 
 #### Graphql API
-  - `newContext(): ContextRef`. Create a new validation/execution context.
-  - `customScalar(ctx: ContextRef, nameStr: string, scalarProc: ScalarProc)`. Add more custom scalar proc to the system.
-  - `customScalars(ctx: ContextRef, procs: [(string, ScalarProc)])`. Add a list of custom scalars to the system.
+  - `newContext(): GraphqlRef`. Create a new validation/execution context.
+  - `customScalar(ctx: GraphqlRef, nameStr: string, scalarProc: ScalarProc)`. Add more custom scalar proc to the system.
+  - `customScalars(ctx: GraphqlRef, procs: [(string, ScalarProc)])`. Add a list of custom scalars to the system.
   - `addVar`. Add new variable to the system.
-    - `addVar(ctx: ContextRef, name: string, val: int)`
-    - `addVar(ctx: ContextRef, name: string, val: string)`
-    - `addVar(ctx: ContextRef, name: string, val: float64)`
-    - `addVar(ctx: ContextRef, name: string, val: bool)`
-    - `addVar(ctx: ContextRef, name: string)`. Add a `null` variable.
+    - `addVar(ctx: GraphqlRef, name: string, val: int)`
+    - `addVar(ctx: GraphqlRef, name: string, val: string)`
+    - `addVar(ctx: GraphqlRef, name: string, val: float64)`
+    - `addVar(ctx: GraphqlRef, name: string, val: bool)`
+    - `addVar(ctx: GraphqlRef, name: string)`. Add a `null` variable.
 
-  - `parseVar(ctx: ContextRef, name: string, value: string | openArray[byte]): ParseResult`. Add new variable to the system by parsing a text string.
-  - `addResolvers(ctx: ContextRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
-    - `addResolvers(ctx: ContextRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
-  - `createName(ctx: ContextRef, name: string): Name`. `respMap` will need a name from the system using this proc.
+  - `parseVar(ctx: GraphqlRef, name: string, value: string | openArray[byte]): ParseResult`. Add new variable to the system by parsing a text string.
+  - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
+    - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
+  - `createName(ctx: GraphqlRef, name: string): Name`. `respMap` will need a name from the system using this proc.
   - `executeRequest`. This is your main entrance to the execution engine.
   - `validate`. Usually you don't need to call this directly.
-  - `parseSchema(ctx: ContextRef, schema: string): ParseResult`. Parse a scheme from text string.
-  - `parseSchemaFromFile(ctx: ContextRef, fileName: string | openArray[byte]): ParseResult`.
-  - `parseQuery(ctx: ContextRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
-  - `parseQueryFromFile(ctx: ContextRef, fileName: string): ParseResult`.
-  - `purgeQueries(ctx: ContextRef, includeVariables: bool)`. A server will often call this to remove unused queries.
-  - `purgeSchema(ctx: ContextRef, includeScalars, includeResolvers: bool)`. Probably not need to call this often.
-  - `getNameCounter(ctx: ContextRef): NameCounter`. Use this proc to create a savepoint for `purgeNames`.
-  - `purgeNames(ctx: ContextRef, savePoint: NameCounter)`. You need to call this after you call `purgeQueries` or `purgeSchema`.
+  - `parseSchema(ctx: GraphqlRef, schema: string): ParseResult`. Parse a scheme from text string.
+  - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string | openArray[byte]): ParseResult`.
+  - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
+  - `parseQueryFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
+  - `purgeQueries(ctx: GraphqlRef, includeVariables: bool)`. A server will often call this to remove unused queries.
+  - `purgeSchema(ctx: GraphqlRef, includeScalars, includeResolvers: bool)`. Probably not need to call this often.
+  - `getNameCounter(ctx: GraphqlRef): NameCounter`. Use this proc to create a savepoint for `purgeNames`.
+  - `purgeNames(ctx: GraphqlRef, savePoint: NameCounter)`. You need to call this after you call `purgeQueries` or `purgeSchema`.
   - `treeRepr(n: Node): string`. Pretty print `Node`.
 
 #### Graphql response API
@@ -62,10 +62,10 @@ If you find anything not listed or not exported in this list, please submit an i
   - `ErrorLevel`.
   - `Name`.
   - `Result`.
-  - `ContextRef`.
+  - `GraphqlRef`.
   - `ScalarResult`.
   - `RespResult`.
   - `ParseResult`.
-  - `ContextError`.
+  - `GraphqlError`.
   - `NameCounter`.
   - `Node`.
