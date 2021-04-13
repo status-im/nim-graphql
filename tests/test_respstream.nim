@@ -9,11 +9,16 @@
 
 import
   unittest,
-  ../graphql/common/respstream,
+  ../graphql/common/[respstream, response, ast],
   ../graphql/builtin/[json_respstream, toml_respstream]
 
 proc suite1() =
   suite "json response stream test suite":
+    test "write raw string":
+      var n = JsonRespStream.new()
+      n.writeRaw("hello")
+      check n.getString() == "hello"
+
     test "write string":
       var n = JsonRespStream.new()
       n.write("hello")
@@ -135,6 +140,12 @@ proc suite1() =
 
 proc suite2() =
   suite "toml response stream test suite":
+    test "write raw string":
+      var n = TomlRespStream.new()
+      n.fieldName("one")
+      n.writeRaw("123")
+      check n.getString() == "one = 123\n"
+
     test "write string":
       var n = TomlRespStream.new()
       n.fieldName("one")
@@ -312,5 +323,30 @@ proc suite2() =
           n.write(2)
       check n.getString() == "[map]\n  array = [{four = true, five = 123.4}, 2]\n\n"
 
+proc suite3() =
+  suite "response stream serialization from node":
+    var map = respMap(nil)
+    var list = respList()
+    list.add respNull()
+    list.add resp(123)
+    list.add resp(123.4)
+    map["1"] = list
+    map["2"] = resp("hello")
+    map["3"] = resp(123)
+    map["4"] = resp(true)
+    map["5"] = resp(456.7)
+
+    test "json serialization":
+      var resp = JsonRespStream.new()
+      serialize(map, resp)
+      check resp.getString() == "{\"1\":[null,123,123.4],\"2\":\"hello\",\"3\":123,\"4\":true,\"5\":456.7}"
+
+    test "toml serialization":
+      var resp = TomlRespStream.new()
+      serialize(map, resp)
+      const toml_out = "[]\n  1 = [123, 123.4]\n  2 = \"hello\"\n  3 = 123\n  4 = true\n  5 = 456.7\n\n"
+      check resp.getString() == toml_out
+
 suite1()
 suite2()
+suite3()

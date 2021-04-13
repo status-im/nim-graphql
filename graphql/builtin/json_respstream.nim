@@ -101,6 +101,10 @@ proc writeString*(x: JsonRespStream, v: string) =
   else:
     append '\"'
 
+proc writeRaw*(x: JsonRespStream, v: string) =
+  writeSeparator(x)
+  x.stream.write(v)
+
 proc writeBool*(x: JsonRespStream, v: bool) =
   writeSeparator(x)
   if v:

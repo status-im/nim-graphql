@@ -31,6 +31,7 @@ type
     endMapP: simpleProc
     fieldNameP: stringProc
     writeStringP: stringProc
+    writeRawP: stringProc
     writeBoolP: boolProc
     writeIntP: intProc
     writeNullP: simpleProc
@@ -58,6 +59,10 @@ proc endMapImpl[T](x: RootRef) =
 proc writeStringImpl[T](x: RootRef, v: string) =
   mixin writeString
   writeString(T(x), v)
+
+proc writeRawImpl[T](x: RootRef, v: string) =
+  mixin writeRaw
+  writeRaw(T(x), v)
 
 proc writeBoolImpl[T](x: RootRef, v: bool) =
   mixin writeBool
@@ -104,6 +109,7 @@ proc respStream*[T: RootRef](x: T): RespStream =
   result.endMapP        = endMapImpl[T]
   result.fieldNameP     = fieldNameImpl[T]
   result.writeStringP   = writeStringImpl[T]
+  result.writeRawP      = writeRawImpl[T]
   result.writeBoolP     = writeBoolImpl[T]
   result.writeIntP      = writeIntImpl[T]
   result.writeNullP     = writeNullImpl[T]
@@ -129,6 +135,9 @@ proc fieldName*(x: RespStream, v: string) =
 
 proc write*(x: RespStream, v: string) =
   x.writeStringP(x.obj, v)
+
+proc writeRaw*(x: RespStream, v: string) =
+  x.writeRawP(x.obj, v)
 
 proc write*(x: RespStream, v: bool) =
   x.writeBoolP(x.obj, v)

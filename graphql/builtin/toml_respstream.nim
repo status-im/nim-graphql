@@ -178,6 +178,11 @@ proc writeString*(x: TomlRespStream, v: string) =
   append '\"'
   writeEOL(x)
 
+proc writeRaw*(x: TomlRespStream, v: string) =
+  writeSeparator(x)
+  x.stream.write(v)
+  writeEOL(x)
+
 proc writeBool*(x: TomlRespStream, v: bool) =
   writeSeparator(x)
   if v:
