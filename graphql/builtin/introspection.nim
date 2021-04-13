@@ -13,7 +13,7 @@ import
   ../common/[ast, ast_helper, response, names],
   ../graphql
 
-{.pragma: introsPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
 proc findType(ctx: GraphqlRef, nameStr: string): Symbol =
@@ -48,7 +48,7 @@ proc toDesc(node: Node): Node =
   else:
     node
 
-proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let name = ctx.names.insert("schema")
   let sym = findType(name)
@@ -58,7 +58,7 @@ proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
                resp(sym)
   ok(resp)
 
-proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let name = params[0].val
   let sym = ctx.findType(name.stringVal)
@@ -69,7 +69,7 @@ proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPrag
   else:
     ok(resp(sym))
 
-proc queryTypename(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryTypename(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind != nkMap:
     return err("__typename expect a 'Map' but got '$1'" % [$parent.kind])
 
@@ -81,14 +81,14 @@ const queryProtos* = {
   "__typename" : queryTypename
 }
 
-proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   if parent.kind == nkSym:
     ok(parent.sym.ast[0])
   else:
     ok(respNull())
 
-proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
@@ -101,25 +101,25 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
     list.add resp(v)
   ok(list)
 
-proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   ok(ctx.rootQuery)
 
-proc schemaMutationType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaMutationType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   if ctx.rootMutation.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootMutation)
 
-proc schemaSubscriptionType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaSubscriptionType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   if ctx.rootSubs.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootSubs)
 
-proc schemaDirectives(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc schemaDirectives(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
@@ -141,7 +141,7 @@ const schemaProtos* = {
   "directives"      : schemaDirectives
 }
 
-proc typeKind(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeKind(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   case parent.kind
   of nkNonNullType:
     result = ok(resp("NON_NULL"))
@@ -160,19 +160,19 @@ proc typeKind(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragm
   else:
     unreachable()
 
-proc typeName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym:
     ok(resp($parent))
   else:
     ok(respNull())
 
-proc typeDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym:
     ok(parent.sym.ast[0])
   else:
     ok(respNull())
 
-proc typeFields(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeFields(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
@@ -187,7 +187,7 @@ proc typeFields(ud: RootRef, params: Args, parent: Node): RespResult {.introsPra
   else:
     ok(respNull())
 
-proc typeInterfaces(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeInterfaces(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym and parent.sym.kind in {skObject, skInterface}:
     var list = respList()
     let impls = Object(parent.sym.ast).implements
@@ -197,7 +197,7 @@ proc typeInterfaces(ud: RootRef, params: Args, parent: Node): RespResult {.intro
   else:
     ok(respNull())
 
-proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   if parent.kind == nkSym and parent.sym.kind in {skUnion, skInterface}:
     var list = respList()
@@ -212,7 +212,7 @@ proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.in
   else:
     ok(respNull())
 
-proc typeEnumValues(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeEnumValues(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   let arg = params[0].val
   let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
@@ -227,7 +227,7 @@ proc typeEnumValues(ud: RootRef, params: Args, parent: Node): RespResult {.intro
   else:
     ok(respNull())
 
-proc typeInputFields(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeInputFields(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym and parent.sym.kind in {skInputObject}:
     var list = respList()
     let fields = InputObject(parent.sym.ast).fields
@@ -237,13 +237,13 @@ proc typeInputFields(ud: RootRef, params: Args, parent: Node): RespResult {.intr
   else:
     ok(respNull())
 
-proc typeOfType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeOfType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind in {nkListType, nkNonNullType}:
     ok(parent[0])
   else:
     ok(respNull())
 
-proc typeSpecifiedByURL(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc typeSpecifiedByURL(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym and parent.sym.kind == skScalar:
     directiveValue(Scalar(parent.sym.ast).dirs, kwSpecifiedByURL, kwUrl)
   else:
@@ -262,27 +262,27 @@ const typeProtos* = {
   "specifiedByURL": typeSpecifiedByURL
 }
 
-proc fieldName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let name = ObjectField(parent).name
   ok(resp($name))
 
-proc fieldDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(ObjectField(parent).desc.toDesc)
 
-proc fieldArgs(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldArgs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var list = respList()
   let args = ObjectField(parent).args
   for arg in args:
     list.add Node(arg)
   ok(list)
 
-proc fieldType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(ObjectField(parent).typ)
 
-proc fieldDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   deprecated(ObjectField(parent).dirs)
 
-proc fieldDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fieldDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   directiveValue(ObjectField(parent).dirs, kwDeprecated, kwReason)
 
 const fieldProtos* = {
@@ -294,17 +294,17 @@ const fieldProtos* = {
   "deprecationReason": fieldDeprecatedReason
 }
 
-proc invalName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc invalName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let arg = Argument(parent)
   ok(resp($arg.name))
 
-proc invalDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc invalDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(Argument(parent).desc.toDesc)
 
-proc invalType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc invalType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(Argument(parent).typ)
 
-proc invalDefVal(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc invalDefVal(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let val = Argument(parent).defVal
   case val.kind
   of nkNull: ok(val)
@@ -318,16 +318,16 @@ const inputValueProtos* = {
   "defaultValue": invalDefVal
 }
 
-proc enumValName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc enumValName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp($EnumVal(parent).name))
 
-proc enumValDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc enumValDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(EnumVal(parent).desc.toDesc)
 
-proc enumValDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc enumValDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   deprecated(EnumVal(parent).dirs)
 
-proc enumValDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc enumValDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   directiveValue(EnumVal(parent).dirs, kwDeprecated, kwReason)
 
 const enumValueProtos* = {
@@ -337,29 +337,29 @@ const enumValueProtos* = {
   "deprecationReason": enumValDeprecatedReason
 }
 
-proc dirName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc dirName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let dir = Directive(parent.sym.ast)
   ok(resp($dir.name))
 
-proc dirDescription(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc dirDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let dir = Directive(parent.sym.ast)
   ok(dir.desc.toDesc)
 
-proc dirLocations(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc dirLocations(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var list = respList()
   let locs = Directive(parent.sym.ast).locs
   for n in locs:
     list.add resp($n)
   ok(list)
 
-proc dirArgs(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc dirArgs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let args = Directive(parent.sym.ast).args
   var list = respList()
   for arg in args:
     list.add Node(arg)
   ok(list)
 
-proc dirRepeatable(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc dirRepeatable(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(sfRepeatable in parent.sym.flags))
 
 const directiveProtos* = {

@@ -225,10 +225,10 @@ proc fillFriends(ctx: Starwars, parent: Node): RespResult =
       list.add respNull()
   ok(list)
 
-{.pragma: introsPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
-proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ## Allows us to fetch the undisputed hero of the Star Wars trilogy, R2-D2.
   var ctx = Starwars(ud)
   let episode = params[0].val
@@ -239,23 +239,23 @@ proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.introsPrag
   # Artoo is the hero otherwise.
   return ctx.findChar("2001")
 
-proc queryReviews(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryReviews(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc querySearch(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc querySearch(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc queryCharacter(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryCharacter(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   let id = params[0].val
   return ctx.findChar(id.stringVal)
 
-proc queryDroid(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryDroid(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   let id = params[0].val
   return ctx.findDroid(id.stringVal)
 
-proc queryHumans(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryHumans(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   var list = respList()
   for n in ctx.characters:
@@ -263,12 +263,12 @@ proc queryHumans(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
       list.add ctx.humanToResp(n)
   ok(list)
 
-proc queryHuman(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryHuman(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   let id = params[0].val
   return ctx.findHuman(id.stringVal)
 
-proc queryStarship(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc queryStarship(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   let id = params[0].val
   ctx.findShip(id.stringVal)
@@ -284,20 +284,20 @@ const queryProcs = {
   "starship": queryStarship
 }
 
-proc charId(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc charId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[0][1])
 
-proc charName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc charName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[1][1])
 
-proc charFriends(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc charFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   ctx.fillFriends(parent)
 
-proc charFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc charFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc charAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc charAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[3][1])
 
 const charProcs = {
@@ -308,26 +308,26 @@ const charProcs = {
   "appearsIn": charAppearsIn
 }
 
-proc humanId(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[0][1])
 
-proc humanName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[1][1])
 
-proc humanFriends(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   ctx.fillFriends(parent)
 
-proc humanFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc humanAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[3][1])
 
-proc humanHomePlanet(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanHomePlanet(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[4][1])
 
-proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let height = parent.map[5][1]
   let unit = params[0].val
   if $unit == "FOOT":
@@ -335,10 +335,10 @@ proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.introsPr
   else:
     ok(height)
 
-proc humanMass(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanMass(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[6][1])
 
-proc humanStarships(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc humanStarships(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   var ships = parent.map[7][1]
   var list = respList()
@@ -362,23 +362,23 @@ const human = {
   "starships": humanStarships
 }
 
-proc droidId(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[0][1])
 
-proc droidName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[1][1])
 
-proc droidFriends(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   ctx.fillFriends(parent)
 
-proc droidFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc droidAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[3][1])
 
-proc droidPrimaryFunction(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc droidPrimaryFunction(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[4][1])
 
 const droidProcs = {
@@ -390,16 +390,16 @@ const droidProcs = {
   "primaryFunction": droidPrimaryFunction
 }
 
-proc fcTotalCount(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fcTotalCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc fcEdges(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fcEdges(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc fcFriends(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fcFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc fcPageInfo(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc fcPageInfo(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
 const friendsConnectionProcs = {
@@ -409,10 +409,10 @@ const friendsConnectionProcs = {
   "pageInfo": fcPageInfo
 }
 
-proc feCursor(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc feCursor(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc feNode(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc feNode(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
 const friendsEdgeProcs = {
@@ -420,13 +420,13 @@ const friendsEdgeProcs = {
   "node": feNode
 }
 
-proc piStartCursor(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc piStartCursor(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc piEndCursor(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc piEndCursor(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc piHasNextPage(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc piHasNextPage(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
 const pageInfoProcs = {
@@ -435,13 +435,13 @@ const pageInfoProcs = {
   "hasNextPage": piHasNextPage
 }
 
-proc reviewEpisode(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc reviewEpisode(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc reviewStars(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc reviewStars(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
-proc reviewCommentary(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc reviewCommentary(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   discard
 
 const reviewProcs = {
@@ -450,16 +450,16 @@ const reviewProcs = {
   "commentary": reviewCommentary
 }
 
-proc starshipId(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc starshipId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[0][1])
 
-proc starshipName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc starshipName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[1][1])
 
-proc starshipLength(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc starshipLength(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[2][1])
 
-proc starshipCoordinates(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+proc starshipCoordinates(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var list = respList()
   var c = respList()
   var d = respList()
