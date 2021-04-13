@@ -8,20 +8,20 @@
 # those terms.
 
 import
-  std/[strutils, os],
-  stew/[byteutils, results],
+  std/[strutils],
+  stew/[results],
   ../graphql
 
 type
   EthTypes = enum
-    etAccount      = "Account"
-    etLog          = "Log"
-    etTransaction  = "Transaction"
-    etBlock        = "Block"
-    etCallResult   = "CallResult"
-    etSyncState    = "SyncState"
-    etPending      = "Pending"
-    etQuery        = "Query"
+    ethAccount      = "Account"
+    ethLog          = "Log"
+    ethTransaction  = "Transaction"
+    ethBlock        = "Block"
+    ethCallResult   = "CallResult"
+    ethSyncState    = "SyncState"
+    ethPending      = "Pending"
+    ethQuery        = "Query"
 
   EthServer = ref EthServerObj
   EthServerObj = object of RootObj
@@ -30,41 +30,33 @@ type
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
-proc validateHex(x: string, minLen = 0): Result[void, string] =
-  if x.len < 2:
+proc validateHex(x: Node, minLen = 0): ScalarResult =
+  if x.stringVal.len < 2:
     return err("hex is too short")
-  if x.len != 2 + minLen * 2 and minLen != 0:
-    return err("expect hex with len '$1', got '$2'" % [$(2 * minLen + 2), $x.len])
-  if x.len mod 2 != 0:
+  if x.stringVal.len != 2 + minLen * 2 and minLen != 0:
+    return err("expect hex with len '$1', got '$2'" % [$(2 * minLen + 2), $x.stringVal.len])
+  if x.stringVal.len mod 2 != 0:
     return err("hex must have even number of nibbles")
-  if x[0] != '0' or x[1] notin {'x', 'X'}:
+  if x.stringVal[0] != '0' or x.stringVal[1] notin {'x', 'X'}:
     return err("hex should be prefixed by '0x'")
-  for i in 2..<x.len:
-    if x[i] notin HexDigits:
+  for i in 2..<x.stringVal.len:
+    if x.stringVal[i] notin HexDigits:
       return err("invalid chars in hex")
-  ok()
+  ok(x)
 
 proc scalarBytes32(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes32 is a 32 byte binary string,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
-  let res = validateHex(node.stringVal, 32)
-  if res.isErr:
-    err(res.error)
-  else:
-    ok(node)
+  validateHex(node, 32)
 
 proc scalarAddress(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Address is a 20 byte Ethereum address,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
-  let res = validateHex(node.stringVal, 20)
-  if res.isErr:
-    err(res.error)
-  else:
-    ok(node)
+  validateHex(node, 20)
 
 proc scalarBytes(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes is an arbitrary length binary string,
@@ -73,11 +65,7 @@ proc scalarBytes(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Byte strings must have an even number of hexadecimal nybbles.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
-  let res = validateHex(node.stringVal)
-  if res.isErr:
-    err(res.error)
-  else:
-    ok(node)
+  validateHex(node)
 
 proc scalarBigInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## BigInt is a large integer. Input is accepted as
@@ -90,11 +78,7 @@ proc scalarBigInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
     # 256 bits = 32 bytes = 64 hex nibbles
     # 64 hex nibbles + '0x' prefix = 66 bytes
     return err("Big Int should not exceed 66 bytes")
-  let res = validateHex(node.stringVal)
-  if res.isErr:
-    err(res.error)
-  else:
-    ok(node)
+  validateHex(node)
 
 proc scalarLong(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Long is a 64 bit unsigned integer.
@@ -435,11 +419,11 @@ proc initEthApi*(ctx: GraphqlRef) =
     let name = ctx.createName($n)
     ud.names[n] = name
 
-  ctx.addResolvers(ud, ud.names[etAccount    ], accountProcs)
-  ctx.addResolvers(ud, ud.names[etLog        ], logProcs)
-  ctx.addResolvers(ud, ud.names[etTransaction], txProcs)
-  ctx.addResolvers(ud, ud.names[etBlock      ], blockProcs)
-  ctx.addResolvers(ud, ud.names[etCallResult ], callResultProcs)
-  ctx.addResolvers(ud, ud.names[etSyncState  ], syncStateProcs)
-  ctx.addResolvers(ud, ud.names[etPending    ], pendingProcs)
-  ctx.addResolvers(ud, ud.names[etQuery      ], queryProcs)
+  ctx.addResolvers(ud, ud.names[ethAccount    ], accountProcs)
+  ctx.addResolvers(ud, ud.names[ethLog        ], logProcs)
+  ctx.addResolvers(ud, ud.names[ethTransaction], txProcs)
+  ctx.addResolvers(ud, ud.names[ethBlock      ], blockProcs)
+  ctx.addResolvers(ud, ud.names[ethCallResult ], callResultProcs)
+  ctx.addResolvers(ud, ud.names[ethSyncState  ], syncStateProcs)
+  ctx.addResolvers(ud, ud.names[ethPending    ], pendingProcs)
+  ctx.addResolvers(ud, ud.names[ethQuery      ], queryProcs)
