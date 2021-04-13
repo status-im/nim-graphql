@@ -10,6 +10,9 @@
 # This document describe builtin types/schema available during
 # runtime execution
 
+# IMPORTANT!: Please update the `IntrosTypes` enum every time
+# you add new types to this schema
+
 # Builtin directives
 
 "Builtin @skip directive"
@@ -27,8 +30,8 @@ directive @deprecated(
   reason: String = "No longer supported"
 ) on FIELD_DEFINITION | ENUM_VALUE
 
-"Builtin @specifiedBy directive"
-directive @specifiedBy(
+"Builtin @specifiedByURL directive"
+directive @specifiedByURL(
   url: String!
 ) on SCALAR
 
@@ -93,6 +96,9 @@ type __Type {
 
   "should be non-null for NON_NULL and LIST only, must be null for the others"
   ofType: __Type
+
+  "should be non-null for SCALAR only, must be null for the others"
+  specifiedByURL: String
 }
 
 " Builtin __Field type"

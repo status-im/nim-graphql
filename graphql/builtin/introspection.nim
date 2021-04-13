@@ -26,13 +26,13 @@ proc skipDeprecated(ctx: GraphqlRef, dirs: Dirs, includeDeprecated: bool): bool 
     if dir.name.sym.name == deprecated:
       return not includeDeprecated
 
-proc deprecateReason(dirs: Dirs): RespResult =
+proc directiveValue(dirs: Dirs, dirName, dirArg: Keyword): RespResult =
   for dir in dirs:
-    if toKeyword(dir.name.sym.name) != kwDeprecated:
+    if toKeyword(dir.name.sym.name) != dirName:
       continue
     let args = dir.args
     for arg in args:
-      if toKeyword(arg.name.name) == kwReason:
+      if toKeyword(arg.name.name) == dirArg:
         return ok(arg.val)
   ok(respNull())
 
@@ -243,16 +243,23 @@ proc typeOfType(ud: RootRef, params: Args, parent: Node): RespResult {.introsPra
   else:
     ok(respNull())
 
+proc typeSpecifiedByURL(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
+  if parent.kind == nkSym and parent.sym.kind == skScalar:
+    directiveValue(Scalar(parent.sym.ast).dirs, kwSpecifiedByURL, kwUrl)
+  else:
+    ok(respNull())
+
 const typeProtos* = {
-  "kind"         : typeKind,
-  "name"         : typeName,
-  "description"  : typeDescription,
-  "fields"       : typeFields,
-  "interfaces"   : typeInterfaces,
-  "possibleTypes": typePossibleTypes,
-  "enumValues"   : typeEnumValues,
-  "inputFields"  : typeInputFields,
-  "ofType"       : typeOfType
+  "kind"          : typeKind,
+  "name"          : typeName,
+  "description"   : typeDescription,
+  "fields"        : typeFields,
+  "interfaces"    : typeInterfaces,
+  "possibleTypes" : typePossibleTypes,
+  "enumValues"    : typeEnumValues,
+  "inputFields"   : typeInputFields,
+  "ofType"        : typeOfType,
+  "specifiedByURL": typeSpecifiedByURL
 }
 
 proc fieldName(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
@@ -276,7 +283,7 @@ proc fieldDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.intr
   deprecated(ObjectField(parent).dirs)
 
 proc fieldDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  deprecateReason(ObjectField(parent).dirs)
+  directiveValue(ObjectField(parent).dirs, kwDeprecated, kwReason)
 
 const fieldProtos* = {
   "name"             : introspection.fieldName,
@@ -321,7 +328,7 @@ proc enumValDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.in
   deprecated(EnumVal(parent).dirs)
 
 proc enumValDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.introsPragma.} =
-  deprecateReason(EnumVal(parent).dirs)
+  directiveValue(EnumVal(parent).dirs, kwDeprecated, kwReason)
 
 const enumValueProtos* = {
   "name"             : enumValName,

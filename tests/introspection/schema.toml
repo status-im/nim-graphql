@@ -223,23 +223,30 @@ type Query {
     "directives":[
       {
         "name":"skip",
-        "description":"Builtin@skipdirective",
+        "description":"Builtin @skip directive",
         "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
         "args":[{"name":"if"}],
         "isRepeatable":false
       },
       {
         "name":"deprecated",
-        "description":"Builtin@deprecateddirective",
+        "description":"Builtin @deprecated directive",
         "locations":["FIELD_DEFINITION","ENUM_VALUE"],
         "args":[{"name":"reason"}],
         "isRepeatable":false
       },
       {
         "name":"include",
-        "description":"Builtin@includedirective",
+        "description":"Builtin @include directive",
         "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
         "args":[{"name":"if"}],
+        "isRepeatable":false
+      },
+      {
+        "name":"specifiedByURL",
+        "description":"Builtin @specifiedByURL directive","
+        locations":["SCALAR"],
+        "args":[{"name":"url"}],
         "isRepeatable":false
       }
     ]
@@ -1107,5 +1114,28 @@ type Query {
       }
     ]
   }
+}
+"""
+
+[[units]]
+  name = "get specifiedByURL string from scalar"
+  code = """
+scalar DateTime @specifiedByURL(url: "http://graphql.com")
+type Query {
+  name: String
+}
+{
+  scalar: __type(name: "DateTime") {
+    specifiedByURL
+  }
+  object: __type(name: "Query") {
+    specifiedByURL
+  }
+}
+"""
+  result = """
+{
+  "scalar":{"specifiedByURL":"http://graphql.com"},
+  "object":{"specifiedByURL":null}
 }
 """

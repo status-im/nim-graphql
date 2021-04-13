@@ -181,8 +181,9 @@ proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
   for n in ctx.intros:
     intros.incl n
 
-  for n in keys(ctx.typeTable):
+  for n, v in ctx.typeTable:
     if n notin intros:
+      assert sfBuiltin notin v.flags
       names.add n
 
   for n in keys(ctx.scalarTable):

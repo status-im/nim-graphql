@@ -61,7 +61,7 @@ directive @mydir(arg: Node) on QUERY
 """
 
 [[units]]
-  name = "diricetive arg type mismatch list"
+  name = "directive arg type mismatch list"
   error = "[5, 24]: Error: 'Node' is an 'interface', expect '{scalar, enum, input object}'"
   code = """
 interface Node {

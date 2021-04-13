@@ -51,6 +51,8 @@ type
     kwDeprecated  = "deprecated"
     kwIf          = "if"
     kwReason      = "reason"
+    kwSpecifiedByURL = "specifiedByURL"
+    kwUrl         = "url"
 
     # Type system instrospection
     introsSchema       = "__schema"
