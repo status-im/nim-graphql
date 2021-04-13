@@ -26,12 +26,10 @@ const
 proc registerBuiltinScalars(ctx: GraphqlRef)
 proc loadBuiltinSchema(ctx: GraphqlRef)
 proc registerInstrospection(ctx: GraphqlRef)
-proc introsNames(ctx: GraphqlRef)
 
 proc init*(ctx: GraphqlRef) =
   ctx.names = newNameCache()
   ctx.emptyNode = Node(kind: nkEmpty, pos: Pos())
-  ctx.introsNames()
   ctx.registerBuiltinScalars()
   ctx.loadBuiltinSchema()
   ctx.registerInstrospection()
@@ -176,23 +174,10 @@ proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool) =
 
 proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
   let size = max(max(ctx.typeTable.len, ctx.scalarTable.len), ctx.resolver.len)
-  var names = newSeqOfCap[Name](size)
-  var intros = initHashSet[Name]()
-  for n in ctx.intros:
-    intros.incl n
-
+  var names = initHashSet[Name]()
   for n, v in ctx.typeTable:
-    if n notin intros:
-      assert sfBuiltin notin v.flags
-      names.add n
-
-  for n in keys(ctx.scalarTable):
-    if n notin intros:
-      names.add n
-
-  for n in keys(ctx.resolver):
-    if n notin intros:
-      names.add n
+    if sfBuiltin notin v.flags:
+      names.incl n
 
   ctx.rootQuery = nil
   ctx.rootMutation = nil
@@ -216,10 +201,6 @@ proc getNameCounter*(ctx: GraphqlRef): NameCounter =
 
 proc purgeNames*(ctx: GraphqlRef, savePoint: NameCounter) =
   ctx.names.purge(savePoint)
-
-proc introsNames(ctx: GraphqlRef) =
-  for n in IntrosTypes:
-    ctx.intros[n] = ctx.names.insert($n)
 
 proc registerBuiltinScalars(ctx: GraphqlRef) =
   ctx.customScalars(builtinScalars)
@@ -245,9 +226,8 @@ proc loadBuiltinSchema(ctx: GraphqlRef) =
     doAssert(ctx.errKind == ErrNone)
 
   # instrospection root
-  let name = ctx.intros[inQuery]
   for n in doc.root:
-    if n.sym.name == name:
+    if toKeyword(n.sym.name) == introsRoot:
       ctx.rootIntros = n
     n.sym.flags.incl sfBuiltin
 

@@ -58,6 +58,7 @@ type
     introsSchema       = "__schema"
     introsType         = "__type"
     introsTypeName     = "__typename"
+    introsRoot         = "__Query"
 
     # ExecutableDirectiveLocation
     LocQUERY                = "QUERY"

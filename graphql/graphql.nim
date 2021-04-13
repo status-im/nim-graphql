@@ -39,28 +39,6 @@ type
     ErrOperationNotFound
     ErrScalarError
 
-  # Please update this list every time you add more types to the
-  # builtin schema
-  IntrosTypes* = enum
-    inQuery          = "__Query"
-    inSchema         = "__Schema"
-    inType           = "__Type"
-    inField          = "__Field"
-    inInputValue     = "__InputValue"
-    inEnumValue      = "__EnumValue"
-    inDirective      = "__Directive"
-    inTypeKind       = "__TypeKind"
-    inDirLoc         = "__DirectiveLocation"
-    inInt            = "Int"
-    inFloat          = "Float"
-    inString         = "String"
-    inBoolean        = "Boolean"
-    inID             = "ID"
-    inSkip           = "skip"
-    inInclude        = "include"
-    inDeprecated     = "deprecated"
-    inSpecifiedByURL = "specifiedByURL"
-
   FieldRef* = ref FieldObj
   FieldObj* = object
     respName*  : Node
@@ -101,7 +79,6 @@ type
     execTable*    : Table[Name, ExecRef]
     resolver*     : Table[Name, ResolverRef]
     names*        : NameCache
-    intros*       : array[IntrosTypes, Name]
     emptyNode*    : Node
     rootQuery*    : Node
     rootMutation* : Node

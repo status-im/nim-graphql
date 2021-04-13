@@ -10,9 +10,6 @@
 # This document describe builtin types/schema available during
 # runtime execution
 
-# IMPORTANT!: Please update the `IntrosTypes` enum every time
-# you add new types to this schema
-
 # Builtin directives
 
 "Builtin @skip directive"
