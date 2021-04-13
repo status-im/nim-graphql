@@ -100,7 +100,8 @@ proc scalarLong(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   ## Long is a 64 bit unsigned integer.
   ## TODO: validate max-int 64 bit
   if node.kind == nkInt:
-    ok(node)
+    # convert it into nkString node
+    ok(Node(kind: nkString, stringVal: node.intVal, pos: node.pos))
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
