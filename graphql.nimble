@@ -22,20 +22,23 @@ requires "nim >= 1.2.0",
          "json_serialization",
          "chronicles"
 
-proc test(env, path: string) =
+proc test(env, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG
   var lang = "c"
   if existsEnv"TEST_LANG":
     lang = getEnv"TEST_LANG"
 
-  exec "nim " & lang & " " & env &
-    " -r --hints:off --warnings:off " & path
+  let run = if shouldRun: " -r" else: ""
+
+  exec "nim " & lang & " " & env & run &
+    " --hints:off --warnings:off " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"
   test "--threads:on", "tests/test_all"
   test "--threads:off -d:release", "tests/test_all"
   test "--threads:on -d:release", "tests/test_all"
+  test "-d:release", "playground/swserver", false
 
 proc playground(server: string) =
   exec "nim c -r -d:release playground/swserver " & server

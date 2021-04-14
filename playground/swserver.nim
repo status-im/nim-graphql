@@ -17,7 +17,7 @@ type
     starwars
     ethereum
 
-proc loadSchema(ctx: GraphqlRef, schema: Schema): ParseResult =
+proc loadSchema(ctx: GraphqlRef, schema: Schema): GraphqlResult =
   notice "loading graphql api", name = schema
   if schema == ethereum:
     ctx.initEthApi()
