@@ -167,6 +167,9 @@ proc getString*(x: JsonRespStream): string =
 proc getBytes*(x: JsonRespStream): seq[byte] =
   x.stream.getOutput(seq[byte])
 
+proc getLen*(x: JsonRespStream): int =
+  x.stream.pos()
+
 proc init*(v: JsonRespStream, doubleEscape: bool = false) =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]

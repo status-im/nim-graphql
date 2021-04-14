@@ -218,6 +218,9 @@ proc getString*(x: TomlRespStream): string =
 proc getBytes*(x: TomlRespStream): seq[byte] =
   x.stream.getOutput(seq[byte])
 
+proc getLen*(x: TomlRespStream): int =
+  x.stream.pos()
+
 proc init*(v: TomlRespStream) =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]

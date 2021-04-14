@@ -17,6 +17,7 @@ proc suite1() =
     test "write raw string":
       var n = JsonRespStream.new()
       n.writeRaw("hello")
+      check n.len == 5
       check n.getString() == "hello"
 
     test "write string":
@@ -144,6 +145,7 @@ proc suite2() =
       var n = TomlRespStream.new()
       n.fieldName("one")
       n.writeRaw("123")
+      check n.len == 10
       check n.getString() == "one = 123\n"
 
     test "write string":

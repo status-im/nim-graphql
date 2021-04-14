@@ -21,6 +21,7 @@ type
   bytesProc    = proc (x: RootRef, v: openArray[byte]) {.respPragma.}
   outputSProc  = proc (x: RootRef): string {.respPragma.}
   outputBProc  = proc (x: RootRef): seq[byte] {.respPragma.}
+  lenProc      = proc (x: RootRef): int {.respPragma.}
 
   RespStream* = ref RespStreamObj
   RespStreamObj* = object
@@ -39,6 +40,7 @@ type
     writeFloatP: floatProc
     getStringP: outputSProc
     getBytesP: outputBProc
+    getLenP: lenProc
 
 proc beginListImpl[T](x: RootRef) =
   mixin beginList
@@ -96,10 +98,15 @@ proc getBytesImpl[T](x: RootRef): seq[byte] =
   mixin getBytes
   getBytes(T(x))
 
+proc getLenImpl[T](x: RootRef): int =
+  mixin getLen
+  getLen(T(x))
+
 proc respStream*[T: RootRef](x: T): RespStream =
   mixin beginList, endList, beginMap, endMap
-  mixin writeString, writeBool
+  mixin writeString, writeBool, writeRaw
   mixin writeInt, writeNull, writeFloat
+  mixin getString, getBytes, getLen
 
   new result
   result.obj = x
@@ -117,6 +124,7 @@ proc respStream*[T: RootRef](x: T): RespStream =
   result.writeFloatP    = writeFloatImpl[T]
   result.getStringP     = getStringImpl[T]
   result.getBytesP      = getBytesImpl[T]
+  result.getLenP        = getLenImpl[T]
 
 proc beginList*(x: RespStream) =
   x.beginListP(x.obj)
@@ -153,12 +161,15 @@ proc writeNull*(x: RespStream) =
 
 proc write*(x: RespStream, raw: openArray[byte]) =
   x.writeBytesP(x.obj, raw)
-  
+
 proc getString*(x: RespStream): string =
   x.getStringP(x.obj)
 
 proc getBytes*(x: RespStream): seq[byte] =
   x.getBytesP(x.obj)
+
+proc len*(x: RespStream): int =
+  x.getLenP(x.obj)
 
 template respMap*(x: RespStream, body: untyped) =
   beginMap(x)
