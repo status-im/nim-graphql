@@ -10,6 +10,7 @@
 import
   std/[os, strutils, unittest],
   toml_serialization,
+  ../graphql/common/response,
   ../graphql, ./test_config, ./test_utils
 
 type
@@ -17,6 +18,7 @@ type
     name: string
     skip: bool
     errors: seq[string]
+    path: string
     opName: string
     code: string
     result: string
@@ -52,6 +54,13 @@ proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPra
 proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(100))
 
+proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var list = respList()
+  list.add resp(345)
+  list.add respNull()
+  list.add resp(789)
+  ok(list)
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
@@ -60,7 +69,8 @@ const queryProtos = {
 
 const humanProtos = {
   "name": humanNameImpl,
-  "age": humanAgeImpl
+  "age": humanAgeImpl,
+  "number": humanNumberImpl
 }
 
 proc setupContext(): GraphqlRef =
@@ -90,16 +100,23 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     debugEcho ctx.errors
     return
 
-  var resp = JsonRespStream.new()
+  let resp = JsonRespStream.new()
   let res = ctx.executeRequest(resp, unit.opName)
   if res.isErr:
     check res.isErr == (unit.errors.len > 0)
     let errors = res.error
     check errors.len == unit.errors.len
-    for i in 0..<errors.len:
+    if errors.len > unit.errors.len:
+      debugEcho ctx.errors
+    for i in 0..<min(errors.len, unit.errors.len):
       check $errors[i] == unit.errors[i]
+    let rpath = JsonRespStream.new()
+    serialize(ctx.path, rpath)
+    let path =  rpath.getString()
+    check path == unit.path
   else:
     check unit.errors.len == 0
+    check unit.path.len == 0
 
   # don't skip result comparison even though there are errors
   let unitRes = removeWhitespaces(unit.result)

@@ -50,7 +50,7 @@ proc serialize*(n: Node, resp: RespStream) =
   of nkFloat:
     # no preprocessing
     resp.writeRaw(n.floatVal)
-  of nkString:    
+  of nkString:
     resp.write(n.stringVal)
   of nkList:
     respList(resp):

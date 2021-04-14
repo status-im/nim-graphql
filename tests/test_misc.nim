@@ -21,6 +21,6 @@ proc suite1() =
       check res.isOk
       res = ctx.parseVar("invalid", "\"unclosed string")
       check res.isErr
-      check $res.error == "[1, 17]: Error: Please terminate string with '\"'"
+      check $res.error == "@[[1, 17]: Error: Please terminate string with '\"']"
 
 suite1()

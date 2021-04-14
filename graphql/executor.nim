@@ -34,10 +34,11 @@ proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
 proc name(field: FieldRef): string =
   $field.respName.name
 
-proc coerceScalar(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
+proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType: Node, resval: Node): Node =
   scalar @= getScalar(fieldType)
   let res = scalar.parseLit(resval)
   if res.isErr:
+    ctx.error(ErrScalarError, fieldName, res.error)
     respNull()
   else:
     res.get()
@@ -83,7 +84,10 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
       ctx.fatal(ErrIncompatType, field.field.name, nkList, resval.kind)
     let innerType = fieldType[0]
     var res = respList()
-    for resItem in resval:
+    let index = resp(0)
+    ctx.path.add index
+    for i, resItem in resval:
+      index.intVal = $i # replace path node with the current index
       let resultItem = ctx.completeValue(innerType, field, resItem)
       res.add resultItem
       if ctx.errKind != ErrNone:
@@ -94,7 +98,7 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
 
   case fieldType.sym.kind
   of skScalar:
-    result ::= coerceScalar(fieldType, resval)
+    result ::= coerceScalar(field.respName, fieldType, resval)
   of skEnum:
     result ::= coerceEnum(fieldType, resval)
   of skObject:
@@ -149,10 +153,13 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
 
   let rootIntros = ctx.rootIntros.sym.name
   let objectName = objectType.sym.name
+  let currName = resp($fieldSet[0].respName)
+  ctx.path.add currName
   result = respMap(objectName)
   for n in fieldSet:
     if skip(parentFieldType, n.parentType, objectName, rootIntros):
       continue
+    currName.stringVal = $n.respName # replace the path name
     let field = ctx.executeField(n, parent)
     result[n.name] = field
     if ctx.errKind != ErrNone:
@@ -170,6 +177,7 @@ proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   discard
 
 proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
+  ctx.path = respList()
   exec := getOperation(opName)
   case exec.opSym.sym.kind
   of skQuery:        visit executeQuery(exec, resp)

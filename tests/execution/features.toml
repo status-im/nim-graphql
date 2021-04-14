@@ -208,3 +208,58 @@ type Query {
   }
 }
 """
+
+[[units]]
+  name = "execution path"
+  errors = ["[11, 5]: Error: scalar 'age': expect string, but got 'Int'"]
+  path = """["human","age"]"""
+  code = """
+type Human {
+  name: String
+  age: String
+}
+type Query {
+  human: Human
+}
+{
+  human {
+    name
+    age
+  }
+}
+"""
+  result = """
+{
+  "human":{
+    "name":"spiderman",
+    "age":null
+  }
+}
+"""
+
+[[units]]
+  name = "execution path"
+  errors = ["Fatal Error: Field 'number' should not return null"]
+  path = """["human","number",1]"""
+  code = """
+type Human {
+  name: String
+  number: [Int!]
+}
+type Query {
+  human: Human
+}
+{
+  human {
+    number
+    name
+  }
+}
+"""
+  result = """
+{
+  "human":{
+    "number":[345,null]
+  }
+}
+"""

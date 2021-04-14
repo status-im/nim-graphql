@@ -83,7 +83,8 @@ type
     rootQuery*    : Node
     rootMutation* : Node
     rootSubs*     : Node
-    rootIntros*   : Node
+    rootIntros*   : Node # always nkSym to __Query
+    path*         : Node # always a one dimension nkList
 
 template findType*(name: Name): Symbol =
   ctx.typeTable.getOrDefault(name)

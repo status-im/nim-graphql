@@ -996,12 +996,6 @@ proc identicalArguments(fieldA, fieldB: FieldRef): bool =
       return false
   return true
 
-import strutils
-proc printPath(field: FieldRef, level: int) =
-  debugEcho repeat(' ', level), $field.respName.name
-  for n in field.fieldSet:
-    printPath(n, level + 1)
-
 proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
   for x, fieldA in fieldSet:
     if fieldA.merged: continue
@@ -1025,7 +1019,6 @@ proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
         fieldB.merged = true
         # TODO: shallow copy?
         fieldA.fieldSet = mergedSet
-        fieldB.fieldSet = mergedSet
 
 proc validateVarUsage(ctx: GraphqlRef, symNode: Node) =
   for v in values(symNode.sym.vars):

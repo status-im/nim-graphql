@@ -109,7 +109,9 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     check res.isErr == (unit.errors.len > 0)
     let errors = res.error
     check errors.len == unit.errors.len
-    for i in 0..<errors.len:
+    if errors.len > unit.errors.len:
+      debugEcho ctx.errors
+    for i in 0..<min(errors.len, unit.errors.len):
       check $errors[i] == unit.errors[i]
     return
 
