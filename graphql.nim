@@ -32,7 +32,7 @@ export
   api.GraphqlRef,
   api.ScalarResult,
   api.RespResult,
-  api.ParseResult,
+  api.GraphqlResult,
   api.GraphqlError,
   api.NameCounter,
 

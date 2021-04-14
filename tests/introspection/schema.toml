@@ -1,6 +1,6 @@
 [[units]]
   name = "operation not found"
-  error = "Fatal Error: Operation not found: ':anonymous'"
+  errors = ["Fatal Error: Operation not found: ':anonymous'"]
   code = """
 type Query {
   name: String
@@ -291,7 +291,7 @@ type Query {
 
 [[units]]
   name = "instrospection __type(\"__Typex\") not found"
-  error = "Fatal Error: Field '__type' cannot be resolved: \"'__Typex' not defined\""
+  errors = ["Fatal Error: Field '__type' cannot be resolved: \"'__Typex' not defined\""]
   code = """
 type Query {
   name: String

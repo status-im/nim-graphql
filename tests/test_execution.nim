@@ -16,7 +16,7 @@ type
   Unit = object
     name: string
     skip: bool
-    error: string
+    errors: seq[string]
     opName: string
     code: string
     result: string
@@ -87,21 +87,24 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   ctx.validate(doc.root)
   check ctx.errKind == ErrNone
   if ctx.errKind != ErrNone:
-    debugEcho ctx.err
+    debugEcho ctx.errors
     return
 
   var resp = JsonRespStream.new()
   let res = ctx.executeRequest(resp, unit.opName)
   if res.isErr:
-    check res.isErr == (unit.error.len > 0)
-    check $res.error == unit.error
-    return
+    check res.isErr == (unit.errors.len > 0)
+    let errors = res.error
+    check errors.len == unit.errors.len
+    for i in 0..<errors.len:
+      check $errors[i] == unit.errors[i]
+  else:
+    check unit.errors.len == 0
 
+  # don't skip result comparison even though there are errors
   let unitRes = removeWhitespaces(unit.result)
   let execRes = removeWhitespaces(resp.getString)
   check unitRes == execRes
-
-  check (unit.error.len == 0)
 
 proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
   let parts = splitFile(fileName)

@@ -87,7 +87,8 @@ proc runConverter(ctx: GraphqlRef, unit: var Unit) =
 
   ctx.validate(doc.root)
   if ctx.errKind != ErrNone:
-    unit.error = $ctx.err
+    assert(ctx.errors.len == 1)
+    unit.error = $ctx.errors[0]
     return
 
 proc runConverter(ctx: GraphqlRef, savePoint: NameCounter, path, output: string) =
@@ -120,7 +121,8 @@ proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   ctx.validate(doc.root)
   if ctx.errKind != ErrNone:
     check (ctx.errKind != ErrNone) == (unit.error.len > 0)
-    check $ctx.err == unit.error
+    check ctx.errors.len == 1
+    check $ctx.errors[0] == unit.error
     return
 
   check (unit.error.len == 0)
@@ -168,7 +170,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
   ctx.validate(doc.root)
   check ctx.errKind == ErrNone
   if ctx.errKind != ErrNone:
-    debugEcho $ctx.err
+    debugEcho $ctx.errors
     return
 
 proc validateSchemas() =

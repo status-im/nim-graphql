@@ -13,14 +13,6 @@ import
   ./common/[ast, names, errors, ast_helper],
   ./graphql
 
-const
-  introsKeywords = {introsSchema, introsType, introsTypeName}
-
-proc error(ctx: GraphqlRef, msg: string) =
-  ctx.errKind     = ErrInternal
-  ctx.err.level   = elFatal
-  ctx.err.message = msg
-
 proc `$$`(node: Node): string =
   case node.kind
   of nkNonNullType:
@@ -889,6 +881,9 @@ proc skipField(ctx: GraphqlRef, dirs: Dirs): bool =
       discard
 
 proc fieldSelection(ctx: GraphqlRef, scope, sels, parentType: Node, fieldSet: var FieldSet) =
+  const
+    introsKeywords = {introsSchema, introsType, introsTypeName}
+
   for field in sels:
     case field.kind
     of nkFragmentSpread:
@@ -1295,10 +1290,11 @@ proc secondPass(ctx: GraphqlRef, root: Node) =
     ctx.error(ErrOnlyOne, anonSym.ast[0], "anonymous operation")
 
 proc validate*(ctx: GraphqlRef, root: Node) =
-  if root.kind != nkMembers:
-    ctx.error("expect nkMembers")
-    return
+  # reset errors before new validation
+  ctx.errKind = ErrNone
+  ctx.errors.setLen(0)
 
+  assert(root.kind == nkMembers, "expect nkMembers")
   for i, n in root:
     case n.kind
     of nkQuery:          visit visitOp(root, i, skQuery)

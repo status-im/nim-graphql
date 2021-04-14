@@ -13,9 +13,15 @@ import
   ./common/[names, ast, ast_helper, response, respstream],
   ./graphql
 
-# errors
-# data
-# extensions
+template `@=`(dest: untyped, validator: untyped) =
+  let dest {.inject.} = callValidator(ctx, validator)
+  if ctx.errKind != ErrNone:
+    return respNull()
+
+template invalidNull*(cond: untyped, body: untyped) =
+  if cond:
+    body
+    return respNull()
 
 proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
   let name = if opName.len == 0: ctx.names.anonName
@@ -29,7 +35,7 @@ proc name(field: FieldRef): string =
   $field.respName.name
 
 proc coerceScalar(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
-  scalar := getScalar(fieldType)
+  scalar @= getScalar(fieldType)
   let res = scalar.parseLit(resval)
   if res.isErr:
     respNull()
@@ -78,8 +84,10 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
     let innerType = fieldType[0]
     var res = respList()
     for resItem in resval:
-      resultItem := completeValue(innerType, field, resItem)
+      let resultItem = ctx.completeValue(innerType, field, resItem)
       res.add resultItem
+      if ctx.errKind != ErrNone:
+        break
     return res
 
   doAssert(fieldType.kind == nkSym, "internal error, requires fieldType == nkSym")
@@ -92,7 +100,7 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
   of skObject:
     result ::= executeSelectionSet(field.fieldSet, fieldType, fieldType, resval)
   of skInterface, skUnion:
-    objectType := resolveAbstractType(field, fieldType, resval)
+    objectType @= resolveAbstractType(field, fieldType, resval)
     result ::= executeSelectionSet(field.fieldSet, fieldType, objectType, resval)
   else:
     unreachable()
@@ -113,16 +121,16 @@ proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
   let parentTypeName = field.parentType.sym.name
   let fieldName = field.field.name
   let resolverSet = ctx.resolver.getOrDefault(parentTypeName)
-  invalid resolverSet.isNil:
+  invalidNull resolverSet.isNil:
     ctx.fatal(ErrTypeUndefined, parentTypeName)
   let resolver = resolverSet.resolvers.getOrDefault(fieldName.name)
-  invalid resolver.isNil:
+  invalidNull resolver.isNil:
     ctx.fatal(ErrNoImpl, fieldName, parentTypeName)
 
   let parentType = field.parentType.sym
   let args = fillArgs(fieldName.name, parentType, field.field.args)
   let res = resolver(resolverSet.ud, args, parent)
-  invalid res.isErr:
+  invalidNull res.isErr:
     ctx.fatal(ErrValueError, field.name, res.error)
 
   result ::= completeValue(field.typ, field, res.get)
@@ -130,8 +138,10 @@ proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
 proc skip(fieldType, parentType: Node, objectName, rootIntros: Name): bool =
   let name = parentType.sym.name
   if name == rootIntros:
+    # never skip "__type", "__schema", or "__typename"
     return false
   if fieldType.kind == nkSym and fieldType.sym.kind == skUnion:
+    # skip fragment on union that does not match queried type
     return objectName != name
 
 proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
@@ -143,15 +153,17 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
   for n in fieldSet:
     if skip(parentFieldType, n.parentType, objectName, rootIntros):
       continue
-    field := executeField(n, parent)
+    let field = ctx.executeField(n, parent)
     result[n.name] = field
+    if ctx.errKind != ErrNone:
+      break
 
 proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
-  res := executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
+  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
   serialize(res, resp)
 
 proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
-  res := executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
+  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
   serialize(res, resp)
 
 proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
@@ -166,9 +178,12 @@ proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
   else:
     unreachable()
 
-proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): ParseResult =
+proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): GraphqlResult =
   ctx.executeRequestImpl(resp, opName)
+  if resp.len == 0:
+    # no output, write a null literal
+    resp.writeNull()
   if ctx.errKind == ErrNone:
     ok()
   else:
-    err(ctx.err)
+    err(ctx.errors)

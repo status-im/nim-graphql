@@ -86,17 +86,17 @@ template parseVariableImpl(name: string, value: untyped): untyped =
   var parser = Parser.init(stream)
   let node = parser.parseVariable()
   if parser.error != errNone:
-    return err(parser.err)
+    return err(@[parser.err])
   let varname = ctx.names.insert(name)
   ctx.varTable[varname] = node
   ok()
 
 proc parseVar*(ctx: GraphqlRef, name: string,
-               value: string): ParseResult =
+               value: string): GraphqlResult =
   parseVariableImpl(name, value)
 
 proc parseVar*(ctx: GraphqlRef, name: string,
-               value: openArray[byte]): ParseResult =
+               value: openArray[byte]): GraphqlResult =
   parseVariableImpl(name, value)
 
 proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: Name,
@@ -123,10 +123,10 @@ template validation(ctx: GraphqlRef, parser: Parser,
   parser.parseDocument(doc)
   close stream
   if parser.error != errNone:
-    return err(parser.err)
+    return err(@[parser.err])
   ctx.validate(doc.root)
   if ctx.errKind != ErrNone:
-    return err(ctx.err)
+    return err(ctx.errors)
   ok()
 
 template parseSchemaImpl(schema, conf: untyped): untyped =
@@ -135,13 +135,13 @@ template parseSchemaImpl(schema, conf: untyped): untyped =
   var doc: SchemaDocument
   ctx.validation(parser, stream, doc)
 
-proc parseSchema*(ctx: GraphqlRef, schema: string, conf = defaultParserConf()): ParseResult =
+proc parseSchema*(ctx: GraphqlRef, schema: string, conf = defaultParserConf()): GraphqlResult =
   parseSchemaImpl(schema, conf)
 
-proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte], conf = defaultParserConf()): ParseResult =
+proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte], conf = defaultParserConf()): GraphqlResult =
   parseSchemaImpl(schema, conf)
 
-proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string, conf = defaultParserConf()): ParseResult =
+proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string, conf = defaultParserConf()): GraphqlResult =
   var stream = memFileInput(fileName)
   var parser = Parser.init(stream, ctx.names, conf)
   var doc: SchemaDocument
@@ -153,13 +153,13 @@ template parseQueryImpl(schema, conf: untyped): untyped =
   var doc: QueryDocument
   ctx.validation(parser, stream, doc)
 
-proc parseQuery*(ctx: GraphqlRef, query: string, conf = defaultParserConf()): ParseResult =
+proc parseQuery*(ctx: GraphqlRef, query: string, conf = defaultParserConf()): GraphqlResult =
   parseQueryImpl(query, conf)
 
-proc parseQuery*(ctx: GraphqlRef, query: openArray[byte], conf = defaultParserConf()): ParseResult =
+proc parseQuery*(ctx: GraphqlRef, query: openArray[byte], conf = defaultParserConf()): GraphqlResult =
   parseQueryImpl(query, conf)
 
-proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string): ParseResult =
+proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string): GraphqlResult =
   var stream = memFileInput(fileName)
   var parser = Parser.init(stream, ctx.names)
   var doc: QueryDocument
@@ -170,10 +170,8 @@ proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool) =
   ctx.execTable.clear()
   if includeVariables:
     ctx.varTable.clear()
-  ctx.errKind = ErrNone
 
 proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
-  let size = max(max(ctx.typeTable.len, ctx.scalarTable.len), ctx.resolver.len)
   var names = initHashSet[Name]()
   for n, v in ctx.typeTable:
     if sfBuiltin notin v.flags:
@@ -193,8 +191,6 @@ proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
   if includeResolvers:
     for n in names:
       ctx.resolver.del(n)
-
-  ctx.errKind = ErrNone
 
 proc getNameCounter*(ctx: GraphqlRef): NameCounter =
   ctx.names.getCounter()
@@ -222,7 +218,7 @@ proc loadBuiltinSchema(ctx: GraphqlRef) =
 
   ctx.validate(doc.root)
   if ctx.errKind != ErrNone:
-    debugEcho ctx.err
+    debugEcho ctx.errors
     doAssert(ctx.errKind == ErrNone)
 
   # instrospection root
