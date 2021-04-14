@@ -9,13 +9,14 @@
 
 import
   std/json,
-  json_serialization
+  json_serialization,
+  ../graphql
 
 type
   ServerResponse* = object
     errors*: JsonNode
-    data*: JsonNode    
-  
+    data*: JsonNode
+
 proc decodeResponse*(input: string): ServerResponse =
   Json.decode(input, ServerResponse)
 
@@ -25,3 +26,50 @@ proc removeWhitespaces*(x: string): string =
   for c in x:
     if c notin whites:
       result.add c
+
+{.push hint[XDeclaredButNotUsed]: off.}
+{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+
+proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp("superman"))
+
+proc queryColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp(567))
+
+proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let ctx = GraphqlRef(ud)
+  let name = ctx.createName("Human")
+  ok(respMap(name))
+
+proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp("spiderman"))
+
+proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp(100))
+
+proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var list = respList()
+  list.add resp(345)
+  list.add respNull()
+  list.add resp(789)
+  ok(list)
+
+const queryProtos = {
+  "name": queryNameImpl,
+  "color": queryColorImpl,
+  "human": queryHumanImpl
+}
+
+const humanProtos = {
+  "name": humanNameImpl,
+  "age": humanAgeImpl,
+  "number": humanNumberImpl
+}
+
+proc initMockApi*(ctx: GraphqlRef) =
+  ctx.addVar("myFalse", false)
+  ctx.addVar("myTrue", true)
+  ctx.addResolvers(ctx, "Query", queryProtos)
+  ctx.addResolvers(ctx, "Human", humanProtos)
+
+{.pop.}

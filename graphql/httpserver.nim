@@ -11,7 +11,8 @@ import
   std/[strutils, json],
   chronicles, json_serialization,
   chronos, chronos/apps/http/httpserver,
-  ./graphql, ./api, ./builtin/json_respstream
+  ./graphql, ./api, ./builtin/json_respstream,
+  ./server_common
 
 type
   VarPair = object
@@ -63,63 +64,10 @@ proc jsonDecode[T](input: openArray[byte], value: var T): GraphqlHttpResult[void
 proc jsonDecode[T](input: string, value: var T): GraphqlHttpResult[void] =
   jsonDecodeImpl(input, value)
 
-proc errorResp(msg: string): string =
-  var r = JsonRespStream.new()
-  respMap(r):
-    r.fieldName("errors")
-    respList(r):
-      respMap(r):
-        r.fieldName("message")
-        r.write(msg)
-  r.getString()
-
-proc errorResp(err: ErrorDesc): string =
-  var r = JsonRespStream.new()
-  respMap(r):
-    r.fieldName("errors")
-    respList(r):
-      respMap(r):
-        r.fieldName("message")
-        r.write(err.message)
-        r.fieldName("locations")
-        respList(r):
-          respMap(r):
-            r.fieldName("line")
-            r.write(err.pos.line.int)
-            r.fieldName("column")
-            r.write(err.pos.col.int)
-  r.getString()
-
-proc errorResp(err: ErrorDesc, data: openArray[byte]): string =
-  var r = JsonRespStream.new()
-  respMap(r):
-    r.fieldName("errors")
-    respList(r):
-      respMap(r):
-        r.fieldName("message")
-        r.write(err.message)
-        r.fieldName("locations")
-        respList(r):
-          respMap(r):
-            r.fieldName("line")
-            r.write(err.pos.line.int)
-            r.fieldName("column")
-            r.write(err.pos.col.int)
-    r.fieldName("data")
-    r.write(data)
-  r.getString()
-
-proc okResp(data: openArray[byte]): string =
-  var r = JsonRespStream.new()
-  respMap(r):
-    r.fieldName("data")
-    r.write(data)
-  r.getString()
-
 template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
-    return errorResp(res.error)
+    return jsonErrorResp(res.error)
 
 proc toString(n: JsonNode, isVariable: bool = false): string =
   if n.isNil:
@@ -141,15 +89,15 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
   # when using compiler switch --threads:on
   {.gcsafe.}:
     for n in ro.variables:
-      exec parsevar(n.name, toString(n.value, true))
+      exec parseVar(n.name, toString(n.value, true))
 
     exec parseQuery(toString(ro.query))
     let resp = JsonRespStream.new()
     let res = ctx.executeRequest(resp, toString(ro.operationName))
     if res.isErr:
-      errorResp(res.error, resp.getBytes())
+      jsonErrorResp(res.error, resp.getBytes(), ctx.path)
     else:
-      okResp(resp.getBytes())
+      jsonOkResp(resp.getBytes())
 
 proc decodeRequest(ro: var RequestObject, k, v: string): GraphqlHttpResult[void] =
   case k
@@ -168,7 +116,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
 
   let request = r.get()
   if request.uri.path != "/graphql":
-    let error = errorResp("path '$1' not found" % [request.uri.path])
+    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
     return await request.respond(Http200, error, server.defRespHeader)
 
   var conSet: set[ContentType]
@@ -183,7 +131,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
   for k, v in request.query.stringItems():
     let res = ro.decodeRequest(k, v)
     if res.isErr:
-      let error = errorResp(res.error)
+      let error = jsonErrorResp(res.error)
       return await request.respond(Http200, error, server.defRespHeader)
 
   if request.hasBody:
@@ -193,7 +141,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
     else:
       let res = jsonDecode(body, ro)
       if res.isErr:
-        let error = errorResp(res.error)
+        let error = jsonErrorResp(res.error)
         return await request.respond(Http200, error, server.defRespHeader)
 
   let res = server.execRequest(ro)

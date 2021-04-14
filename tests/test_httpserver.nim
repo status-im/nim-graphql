@@ -36,28 +36,30 @@ const
   caseFolder = "tests" / "serverclient"
   serverAddress = initTAddress("127.0.0.1:8547")
 
-{.push hint[XDeclaredButNotUsed]: off.}
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
-proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp("superman"))
-{.pop.}
-
 proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
-  var graphql = GraphqlRef.new()
-  graphql.addResolvers(nil, "Query", [("name", queryNameImpl)])
+  var ctx = GraphqlRef.new()
+  ctx.initMockApi()
 
   const schema = """
     type Query {
       name: String
+      color: Int
+      human: Human
+    }
+
+    type Human {
+      name: String
+      age: Int
+      number: [Int!]
     }
   """
-  let r = graphql.parseSchema(schema)
+  let r = ctx.parseSchema(schema)
   if r.isErr:
     debugEcho r.error
     return
 
-  let res = GraphqlHttpServerRef.new(graphql, serverAddress, socketFlags = socketFlags)
+  let res = GraphqlHttpServerRef.new(ctx, serverAddress, socketFlags = socketFlags)
   if res.isErr():
     debugEcho res.error
     return
@@ -68,6 +70,7 @@ proc setupClient(address: TransportAddress): GraphqlHttpClientRef =
   GraphqlHttpClientRef.new(address)
 
 proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var TestStatus) =
+  client.operationName(unit.opName)
   let res = waitFor client.sendRequest(unit.code)
   check res.isOk
   if res.isErr:
@@ -76,7 +79,9 @@ proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var T
 
   let resp = decodeResponse(res.get())
   if not resp.errors.isNil:
-    check unit.error.len != 0
+    if unit.error.len == 0:
+      debugEcho $resp.errors
+    check unit.error.len != 0    
     let node = parseJson(unit.error)
     check $node == $resp.errors
 

@@ -26,3 +26,82 @@
   }
 ]
 """
+
+[[units]]
+  name = "simple field alias"
+  code = """
+query {
+  name
+  jumbo: name
+}
+"""
+  result = """
+{
+  "name":"superman",
+  "jumbo":"superman"
+}
+"""
+
+[[units]]
+  name = "field in set can merge should merge"
+  code = """
+{
+  human { name }
+  human { name }
+  human { age }
+  human { age }
+}
+"""
+  result = """
+{
+  "human":{
+    "name":"spiderman",
+    "age":100
+  }
+}
+"""
+
+[[units]]
+  name = "execution path"
+  code = """
+{
+  human {
+    number
+    name
+  }
+}
+"""
+  result = """
+{
+  "human":{
+    "number":[345,null]
+  }
+}
+"""
+  error = """
+[{
+  "message":"Field 'number' should not return null",
+  "locations":[{"line":0,"column":0}],
+  "path":["human","number",1]
+}]
+"""
+
+[[units]]
+  name = "query contains schema"
+  code = """
+type Human {
+  name: String
+}
+{
+  human {
+    number
+    name
+  }
+}
+"""
+  error = """
+[{
+  "message":"get 'type', expect valid operation type or fragment",
+  "locations":[{"line":1,"column":1}]
+}]
+"""

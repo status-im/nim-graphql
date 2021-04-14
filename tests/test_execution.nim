@@ -34,51 +34,9 @@ type
 const
   caseFolder = "tests" / "execution"
 
-{.push hint[XDeclaredButNotUsed]: off.}
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
-
-proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp("superman"))
-
-proc queryColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp(567))
-
-proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let ctx = GraphqlRef(ud)
-  let name = ctx.createName("Human")
-  ok(respMap(name))
-
-proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp("spiderman"))
-
-proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp(100))
-
-proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  var list = respList()
-  list.add resp(345)
-  list.add respNull()
-  list.add resp(789)
-  ok(list)
-
-const queryProtos = {
-  "name": queryNameImpl,
-  "color": queryColorImpl,
-  "human": queryHumanImpl
-}
-
-const humanProtos = {
-  "name": humanNameImpl,
-  "age": humanAgeImpl,
-  "number": humanNumberImpl
-}
-
 proc setupContext(): GraphqlRef =
   var ctx = new(GraphqlRef)
-  ctx.addVar("myFalse", false)
-  ctx.addVar("myTrue", true)
-  ctx.addResolvers(ctx, "Query", queryProtos)
-  ctx.addResolvers(ctx, "Human", humanProtos)
+  ctx.initMockApi()
   ctx
 
 proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
@@ -190,5 +148,3 @@ when isMainModule:
   main()
 else:
   executeCases()
-
-{.pop.}
