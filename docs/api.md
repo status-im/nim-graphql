@@ -67,7 +67,7 @@ If you find anything not listed or not exported in this list, please submit an i
   - `GraphqlRef`.
   - `ScalarResult`.
   - `RespResult`.
-  - `ParseResult`.
+  - `GraphqlResult`.
   - `GraphqlError`.
   - `NameCounter`.
   - `Node`.
