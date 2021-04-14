@@ -41,16 +41,34 @@ proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPra
 proc queryColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(567))
 
+proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let ctx = GraphqlRef(ud)
+  let name = ctx.createName("Human")
+  ok(respMap(name))
+
+proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp("spiderman"))
+
+proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp(100))
+
 const queryProtos = {
   "name": queryNameImpl,
-  "color": queryColorImpl
+  "color": queryColorImpl,
+  "human": queryHumanImpl
+}
+
+const humanProtos = {
+  "name": humanNameImpl,
+  "age": humanAgeImpl
 }
 
 proc setupContext(): GraphqlRef =
   var ctx = new(GraphqlRef)
   ctx.addVar("myFalse", false)
   ctx.addVar("myTrue", true)
-  ctx.addResolvers(nil, "Query", queryProtos)
+  ctx.addResolvers(ctx, "Query", queryProtos)
+  ctx.addResolvers(ctx, "Human", humanProtos)
   ctx
 
 proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =

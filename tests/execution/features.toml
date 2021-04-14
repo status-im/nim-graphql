@@ -182,3 +182,29 @@ query {
   "jumbo":"superman"
 }
 """
+
+[[units]]
+  name = "field in set can merge should merge"
+  code = """
+type Human {
+  name: String
+  age: Int
+}
+type Query {
+  human: Human
+}
+{
+  human { name }
+  human { name }
+  human { age }
+  human { age }
+}
+"""
+  result = """
+{
+  "human":{
+    "name":"spiderman",
+    "age":100
+  }
+}
+"""

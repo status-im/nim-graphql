@@ -947,10 +947,12 @@ proc sameResponseShape(fieldA, fieldB: FieldRef): bool =
   var mergedSet = fieldA.fieldSet
   mergedSet.add fieldB.fieldSet
   for x, subFieldA in mergedSet:
-    if fieldA.merged: continue
+    if subFieldA.merged:
+      continue
     for y, subFieldB in mergedSet:
       if x == y: continue
-      if fieldB.merged: continue
+      if subFieldB.merged:
+        continue
       if subFieldA.respName.name != subFieldB.respName.name:
         continue
       if not sameResponseShape(subFieldB, subFieldA):
@@ -999,6 +1001,12 @@ proc identicalArguments(fieldA, fieldB: FieldRef): bool =
       return false
   return true
 
+import strutils
+proc printPath(field: FieldRef, level: int) =
+  debugEcho repeat(' ', level), $field.respName.name
+  for n in field.fieldSet:
+    printPath(n, level + 1)
+
 proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
   for x, fieldA in fieldSet:
     if fieldA.merged: continue
@@ -1007,6 +1015,7 @@ proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
       if fieldB.merged: continue
       if fieldA.respName.name != fieldB.respName.name:
         continue
+
       invalid not sameResponseShape(fieldA, fieldB):
         ctx.error(ErrMergeConflict, fieldA.respName, "return type mismatch")
       if sameType(fieldA.parentType, fieldB.parentType) or
@@ -1019,7 +1028,9 @@ proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
         mergedSet.add fieldB.fieldSet
         visit fieldInSetCanMerge(mergedSet)
         fieldB.merged = true
-        return
+        # TODO: shallow copy?
+        fieldA.fieldSet = mergedSet
+        fieldB.fieldSet = mergedSet
 
 proc validateVarUsage(ctx: GraphqlRef, symNode: Node) =
   for v in values(symNode.sym.vars):
@@ -1034,7 +1045,8 @@ proc skipOrInclude(field: FieldRef) =
       continue
     skipOrInclude(n)
     s.add n
-  swap(field.fieldSet, s)
+  # replace the old fieldSet with reduced fieldSet
+  field.fieldSet = s
 
 proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node) =
   var exec = ExecRef(opSym: opSym, opType: opType)
