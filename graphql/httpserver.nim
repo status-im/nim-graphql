@@ -9,26 +9,14 @@
 
 import
   std/[strutils, json],
-  chronicles, json_serialization,
-  chronos, chronos/apps/http/httpserver,
+  chronicles, chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream,
   ./server_common
 
 type
-  VarPair = object
-    name: string
-    value: JsonNode
-
-  VarTable = seq[VarPair]
-
   ContentType = enum
     ctGraphQl
     ctJson
-
-  RequestObject = object
-    query: JsonNode
-    operationName: JsonNode
-    variables: VarTable
 
   GraphqlHttpServerState* {.pure.} = enum
     Closed
@@ -45,38 +33,10 @@ type
 
   GraphqlHttpServerRef* = ref GraphqlHttpServer
 
-proc readValue*(reader: var JsonReader, value: var VarTable) =
-  for key, val in readObject(reader, string, JsonNode):
-    value.add VarPair(name: key, value: val)
-
-template jsonDecodeImpl(input, value: untyped): GraphqlHttpResult[void] =
-  try:
-    var stream = unsafeMemoryInput(input)
-    var reader = init(ReaderType(Json), stream)
-    reader.readValue(value)
-    return ok()
-  except JsonReaderError as e:
-    return err(e.formatMsg(""))
-
-proc jsonDecode[T](input: openArray[byte], value: var T): GraphqlHttpResult[void] =
-  jsonDecodeImpl(input, value)
-
-proc jsonDecode[T](input: string, value: var T): GraphqlHttpResult[void] =
-  jsonDecodeImpl(input, value)
-
 template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
     return jsonErrorResp(res.error)
-
-proc toString(n: JsonNode, isVariable: bool = false): string =
-  if n.isNil:
-    return ""
-  if not isVariable and n.kind == JNull:
-    return ""
-  if not isVariable and n.kind == JString:
-    return n.str
-  $n
 
 proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsafe.} =
   let ctx = server.graphql
@@ -85,30 +45,23 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
   ctx.purgeQueries(includeVariables = true)
   ctx.purgeNames(server.savePoint)
 
-  # TODO: get rid of this {.gcsafe.} if possible
-  # when using compiler switch --threads:on
-  {.gcsafe.}:
-    for n in ro.variables:
-      exec parseVar(n.name, toString(n.value, true))
+  ctx.addVariables(ro.variables)
 
-    exec parseQuery(toString(ro.query))
-    let resp = JsonRespStream.new()
-    let res = ctx.executeRequest(resp, toString(ro.operationName))
-    if res.isErr:
-      jsonErrorResp(res.error, resp.getBytes(), ctx.path)
-    else:
-      jsonOkResp(resp.getBytes())
-
-proc decodeRequest(ro: var RequestObject, k, v: string): GraphqlHttpResult[void] =
-  case k
-  of "query":
-    return jsonDecode(v, ro.query)
-  of "operationName":
-    return jsonDecode(v, ro.operationName)
-  of "variables":
-    return jsonDecode(v, ro.variables)
+  exec parseQuery(toString(ro.query))
+  let resp = JsonRespStream.new()
+  let res = ctx.executeRequest(resp, toString(ro.operationName))
+  if res.isErr:
+    jsonErrorResp(res.error, resp.getBytes(), ctx.path)
   else:
-    return ok()
+    jsonOkResp(resp.getBytes())
+
+proc getContentTypes(request: HttpRequestRef): set[ContentType] =
+  let conType = request.headers.getList("content-type")
+  for n in conType:
+    if n == "application/graphql":
+      result.incl ctGraphql
+    elif n == "application/json":
+      result.incl ctJson
 
 proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
   if r.isErr():
@@ -119,30 +72,26 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
     let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
     return await request.respond(Http200, error, server.defRespHeader)
 
-  var conSet: set[ContentType]
-  let conType = request.headers.getList("content-type")
-  for n in conType:
-    if n == "application/graphql":
-      conSet.incl ctGraphql
-    elif n == "application/json":
-      conSet.incl ctJson
+  let ctx = server.graphql
+  let contentTypes = request.getContentTypes()
 
-  var ro: RequestObject
+  var ro = RequestObject.init()
   for k, v in request.query.stringItems():
-    let res = ro.decodeRequest(k, v)
+    let res = ctx.decodeRequest(ro, k, v)
     if res.isErr:
       let error = jsonErrorResp(res.error)
       return await request.respond(Http200, error, server.defRespHeader)
 
   if request.hasBody:
     let body = await request.getBody()
-    if ctGraphql in conSet:
-      ro.query = %(cast[string](body))
+    if ctGraphql in contentTypes:
+      ro.query = toQueryNode(cast[string](body))
     else:
-      let res = jsonDecode(body, ro)
+      let res = ctx.parseLiteral(body)
       if res.isErr:
         let error = jsonErrorResp(res.error)
         return await request.respond(Http200, error, server.defRespHeader)
+      requestNodeToObject(res.get(), ro)
 
   let res = server.execRequest(ro)
   return await request.respond(Http200, res, server.defRespHeader)

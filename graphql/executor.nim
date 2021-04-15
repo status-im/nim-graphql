@@ -230,8 +230,9 @@ proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
   else:
     unreachable()
 
-proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): GraphqlResult =
-  ctx.executeRequestImpl(resp, opName)
+proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    ctx.executeRequestImpl(resp, opName)
   if resp.len == 0:
     # no output, write a null literal
     resp.writeNull()

@@ -29,6 +29,7 @@ type
   ParserFlag* = enum
     pfExperimentalFragmentVariables
     pfAcceptReservedWords # any name prefixed with "__"
+    pfJsonCompatibility # input object keys can be string
 
   RecursionGuard* = enum
     rgTypeRef       = "TypeDef"
@@ -303,6 +304,9 @@ template repeat*(lg: LoopGuard, tok: TokKind, body: untyped) =
 template rgReset*(x: RecursionGuard) =
   q.rgCount[x] = 0
 
+template rgReset*(q: var Parser, x: RecursionGuard) =
+  q.rgCount[x] = 0
+
 # put this in the recursive proc
 template rgCheck*(x: RecursionGuard, limit: int) =
   inc(q.rgCount[x])
@@ -354,11 +358,18 @@ proc listVal(q: var Parser, isConst: bool, val: var Node) =
     valLit := valueLiteral(isConst)
     val <- valLit
 
+proc inputFieldName(q: var Parser, fieldName: var Node) =
+  if pfJsonCompatibility in q.flags and currToken == tokString:
+    fieldName = newNode(nkString)
+    fieldName.stringVal = q.lex.token
+    nextToken
+  else:
+    fieldName ::= name
+
 # input:: field: T
 proc objectField(q: var Parser, isConst: bool, field: var Node) =
-  fieldName := name
+  fieldName := inputFieldName
   expect tokColon
-  rgReset(rgValueLiteral)
   fieldVal := valueLiteral(isConst)
   field = newTree(nkInputField, fieldName, fieldVal)
 
@@ -366,6 +377,8 @@ proc objectField(q: var Parser, isConst: bool, field: var Node) =
 proc objectVal(q: var Parser, isConst: bool, input: var Node) =
   expect tokLCurly
   input = newNode(nkInput)
+  if pfJsonCompatibility in q.flags and currToken == tokRCurly:
+    return
   repeatUntil(q.conf.maxFields, tokRCurly):
     field := objectField(isConst)
     input <- field

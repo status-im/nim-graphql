@@ -8,8 +8,18 @@
 # those terms.
 
 import
-  common/[respstream, errors, response, ast],
+  std/tables,
+  stew/results, faststreams/inputs,
+  common/[respstream, errors, response, ast, names, types],
+  lexer, common_parser, graphql,
   builtin/json_respstream
+
+type
+  ParseResult* = Result[Node, seq[ErrorDesc]]
+  RequestObject* = object
+    query*: Node
+    operationName*: Node
+    variables*: Node
 
 proc errorResp*(r: RespStream, msg: string) =
   respMap(r):
@@ -74,3 +84,72 @@ proc jsonOkResp*(data: openArray[byte]): string =
   let resp = JsonRespStream.new()
   okResp(resp, data)
   resp.getString()
+
+proc addVariables*(ctx: GraphqlRef, vars: Node) =
+  for n in vars:
+    if n.len != 2: continue
+    # support both json/graphql object key
+    if n[0].kind == nkString:
+      let varname = ctx.names.insert(n[0].stringVal)
+      ctx.varTable[varname] = n[1]
+    else:
+      ctx.varTable[n[0].name] = n[1]
+
+proc parseLiteral(ctx: GraphqlRef, input: InputStream): ParseResult =
+  var parser = Parser.init(input, ctx.names)
+  var values: Node
+
+  # we want to parse a json object
+  parser.flags.incl pfJsonCompatibility
+  parser.lex.next()
+  parser.rgReset(rgValueLiteral) # recursion guard
+  parser.valueLiteral(true, values)
+  if parser.error != errNone:
+    return err(@[parser.err])
+  ok(values)
+
+proc parseLiteral*(ctx: GraphqlRef, input: string): ParseResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseLiteral(stream)
+
+proc parseLiteral*(ctx: GraphqlRef, input: openArray[byte]): ParseResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseLiteral(stream)
+
+proc decodeRequest*(ctx: GraphqlRef, ro: var RequestObject, k, v: string): ParseResult =
+  let res = ctx.parseLiteral(v)
+  if res.isErr:
+    return res
+
+  result = res
+  case k
+  of "query":         ro.query = res.get()
+  of "operationName": ro.operationName = res.get()
+  of "variables":     ro.variables = res.get()
+  else: discard
+
+proc toQueryNode*(data: string): Node =
+  Node(kind: nkString, stringVal: data, pos: Pos())
+
+proc init*(_: type RequestObject): RequestObject =
+  let empty = Node(kind: nkEmpty, pos: Pos())
+  result.query         = empty
+  result.operationName = empty
+  result.variables     = empty
+
+proc requestNodeToObject*(node: Node, ro: var RequestObject) =
+  for n in node:
+    if n.len != 2: continue
+    case $n[0]
+    of "query": ro.query = n[1]
+    of "operationName": ro.operationName = n[1]
+    of "variables": ro.variables = n[1]
+
+proc toString*(node: Node): string =
+  if node.isNil:
+    return ""
+  if node.kind == nkEmpty:
+    return ""
+  $node

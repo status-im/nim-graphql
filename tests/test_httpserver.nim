@@ -81,7 +81,7 @@ proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var T
   if not resp.errors.isNil:
     if unit.error.len == 0:
       debugEcho $resp.errors
-    check unit.error.len != 0    
+    check unit.error.len != 0
     let node = parseJson(unit.error)
     check $node == $resp.errors
 

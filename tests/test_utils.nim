@@ -18,7 +18,10 @@ type
     data*: JsonNode
 
 proc decodeResponse*(input: string): ServerResponse =
-  Json.decode(input, ServerResponse)
+  try:
+    result = Json.decode(input, ServerResponse)
+  except JsonReaderError as e:
+    debugEcho e.formatMsg("")
 
 proc removeWhitespaces*(x: string): string =
   # TODO: do not remove white spaces in string/multiline string

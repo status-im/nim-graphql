@@ -81,9 +81,8 @@ proc parseVariable(q: var Parser): Node =
     return
   q.valueLiteral(isConst = true, result)
 
-template parseVariableImpl(name: string, value: untyped): untyped =
-  var stream = unsafeMemoryInput(value)
-  var parser = Parser.init(stream)
+proc parseVariable(ctx: GraphqlRef, name: string, input: InputStream): GraphqlResult =
+  var parser = Parser.init(input, ctx.names)
   let node = parser.parseVariable()
   if parser.error != errNone:
     return err(@[parser.err])
@@ -92,12 +91,16 @@ template parseVariableImpl(name: string, value: untyped): untyped =
   ok()
 
 proc parseVar*(ctx: GraphqlRef, name: string,
-               value: string): GraphqlResult =
-  parseVariableImpl(name, value)
+               value: string): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(value)
+    ctx.parseVariable(name, stream)
 
 proc parseVar*(ctx: GraphqlRef, name: string,
-               value: openArray[byte]): GraphqlResult =
-  parseVariableImpl(name, value)
+               value: openArray[byte]): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(value)
+    ctx.parseVariable(name, stream)
 
 proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: Name,
                    resolvers: openArray[tuple[name: string, resolver: ResolverProc]]) =
@@ -135,17 +138,23 @@ template parseSchemaImpl(schema, conf: untyped): untyped =
   var doc: SchemaDocument
   ctx.validation(parser, stream, doc)
 
-proc parseSchema*(ctx: GraphqlRef, schema: string, conf = defaultParserConf()): GraphqlResult =
-  parseSchemaImpl(schema, conf)
+proc parseSchema*(ctx: GraphqlRef, schema: string,
+                  conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    parseSchemaImpl(schema, conf)
 
-proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte], conf = defaultParserConf()): GraphqlResult =
-  parseSchemaImpl(schema, conf)
+proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte],
+                  conf = defaultParserConf()): GraphqlResult =
+  {.gcsafe.}:
+    parseSchemaImpl(schema, conf)
 
-proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string, conf = defaultParserConf()): GraphqlResult =
-  var stream = memFileInput(fileName)
-  var parser = Parser.init(stream, ctx.names, conf)
-  var doc: SchemaDocument
-  ctx.validation(parser, stream, doc)
+proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string,
+                          conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = memFileInput(fileName)
+    var parser = Parser.init(stream, ctx.names, conf)
+    var doc: SchemaDocument
+    ctx.validation(parser, stream, doc)
 
 template parseQueryImpl(schema, conf: untyped): untyped =
   var stream = unsafeMemoryInput(query)
@@ -153,17 +162,23 @@ template parseQueryImpl(schema, conf: untyped): untyped =
   var doc: QueryDocument
   ctx.validation(parser, stream, doc)
 
-proc parseQuery*(ctx: GraphqlRef, query: string, conf = defaultParserConf()): GraphqlResult =
-  parseQueryImpl(query, conf)
+proc parseQuery*(ctx: GraphqlRef, query: string,
+                 conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    parseQueryImpl(query, conf)
 
-proc parseQuery*(ctx: GraphqlRef, query: openArray[byte], conf = defaultParserConf()): GraphqlResult =
-  parseQueryImpl(query, conf)
+proc parseQuery*(ctx: GraphqlRef, query: openArray[byte],
+                 conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    parseQueryImpl(query, conf)
 
-proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string): GraphqlResult =
-  var stream = memFileInput(fileName)
-  var parser = Parser.init(stream, ctx.names)
-  var doc: QueryDocument
-  ctx.validation(parser, stream, doc)
+proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string,
+                         conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = memFileInput(fileName)
+    var parser = Parser.init(stream, ctx.names, conf)
+    var doc: QueryDocument
+    ctx.validation(parser, stream, doc)
 
 proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool) =
   ctx.opTable.clear()
