@@ -17,4 +17,5 @@ import
   test_introspection,
   test_execution,
   test_misc,
-  test_httpserver
+  test_httpserver,
+  test_schemaintros

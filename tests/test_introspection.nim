@@ -145,6 +145,8 @@ proc executeCases() =
   let savePoint = ctx.getNameCounter()
   var counter: Counter
   for fileName in walkDirRec(caseFolder):
+    if not fileName.endsWith(".toml"):
+      continue
     ctx.runSuite(savePoint, fileName, counter)
   debugEcho counter
 

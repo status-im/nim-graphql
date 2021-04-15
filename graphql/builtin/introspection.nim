@@ -108,14 +108,14 @@ proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
 
 proc schemaMutationType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
-  if ctx.rootMutation.kind == nkEmpty:
+  if ctx.rootMutation.isNil or ctx.rootMutation.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootMutation)
 
 proc schemaSubscriptionType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
-  if ctx.rootSubs.kind == nkEmpty:
+  if ctx.rootSubs.isNil or ctx.rootSubs.kind == nkEmpty:
     ok(respNull())
   else:
     ok(ctx.rootSubs)
