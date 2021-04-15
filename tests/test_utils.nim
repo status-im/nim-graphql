@@ -43,7 +43,6 @@ proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
 
 proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let ctx = GraphqlRef(ud)
-  debugEcho params[0].val.treeRepr
   ok(params[0].val)
 
 const queryProtos = {
