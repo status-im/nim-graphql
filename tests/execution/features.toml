@@ -286,3 +286,46 @@ query intros {
   "__type":null
 }
 """
+
+[[units]]
+  name = "missing input object field should be filled and ordered by executor"
+  code = """
+input EchoInput {
+  one: String
+  two: Int
+  three: Boolean = false
+  four: Float = 456.7
+  five: ID
+}
+type Echo {
+  one: String
+  two: Int
+  three: Boolean
+  four: Float
+  five: ID
+}
+type Query {
+  echo(arg: EchoInput): Echo
+}
+{
+  echo(arg: {two: 666, one: "Hello"}) {
+    one
+    two
+    three
+    four
+    five
+  }
+}
+"""
+  result = """
+{
+  "echo":{
+    "one":"Hello",
+    "two":666,
+    "three":false,
+    "four":456.7,
+    "five":null
+  }
+}
+"""
+

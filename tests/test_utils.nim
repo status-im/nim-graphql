@@ -41,6 +41,18 @@ proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
   let name = ctx.createName("Human")
   ok(respMap(name))
 
+proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let ctx = GraphqlRef(ud)
+  debugEcho params[0].val.treeRepr
+  ok(params[0].val)
+
+const queryProtos = {
+  "name": queryNameImpl,
+  "color": queryColorImpl,
+  "human": queryHumanImpl,
+  "echo": queryEchoImpl
+}
+
 proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp("spiderman"))
 
@@ -54,16 +66,39 @@ proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
   list.add resp(789)
   ok(list)
 
-const queryProtos = {
-  "name": queryNameImpl,
-  "color": queryColorImpl,
-  "human": queryHumanImpl
-}
-
 const humanProtos = {
   "name": humanNameImpl,
   "age": humanAgeImpl,
   "number": humanNumberImpl
+}
+
+proc echoProc(parent: Node, i: int): RespResult =
+  if parent[i][1].kind == nkEmpty:
+    ok(respNull())
+  else:
+    ok(parent[i][1])
+
+proc echoOneImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  echoProc(parent, 0)
+
+proc echoTwoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  echoProc(parent, 1)
+
+proc echoThreeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  echoProc(parent, 2)
+
+proc echoFourImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  echoProc(parent, 3)
+
+proc echoFiveImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  echoProc(parent, 4)
+
+const echoProtos = {
+  "one": echoOneImpl,
+  "two": echoTwoImpl,
+  "three": echoThreeImpl,
+  "four": echoFourImpl,
+  "five": echoFiveImpl,
 }
 
 proc initMockApi*(ctx: GraphqlRef) =
@@ -71,5 +106,6 @@ proc initMockApi*(ctx: GraphqlRef) =
   ctx.addVar("myTrue", true)
   ctx.addResolvers(ctx, "Query", queryProtos)
   ctx.addResolvers(ctx, "Human", humanProtos)
+  ctx.addResolvers(ctx, "Echo", echoProtos)
 
 {.pop.}

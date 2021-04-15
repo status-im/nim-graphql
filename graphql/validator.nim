@@ -223,7 +223,7 @@ proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node
     invalid not nullableType(field.typ) and dv.kind == nkEmpty:
       ctx.error(ErrFieldNotinArg, nameNode, name)
     if dv.kind != nkEmpty:
-      inVal <- newTree(nkPair, name, dv)
+      inVal <- newTree(nkInputField, name, dv)
 
 proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope: Node) =
   let varName = parent[idx]
