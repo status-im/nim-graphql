@@ -238,7 +238,7 @@ type Query {
 """
 
 [[units]]
-  name = "execution path"
+  name = "execution path with list index"
   errors = ["Fatal Error: Field 'number' should not return null"]
   path = """["human","number",1]"""
   code = """

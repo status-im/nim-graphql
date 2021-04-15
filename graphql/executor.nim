@@ -166,11 +166,13 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
       break
 
 proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
-  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
+  let parent = respMap(exec.opType.sym.name)
+  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, parent)
   serialize(res, resp)
 
 proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
-  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, nil)
+  let parent = respMap(exec.opType.sym.name)
+  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, parent)
   serialize(res, resp)
 
 proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
