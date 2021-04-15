@@ -114,8 +114,7 @@ query {
 {
   "__schema":{
     "types":[
-    {"name":"Query"},
-    {"name":"schema"}
+    {"name":"Query"}
     ]
   }
 }
