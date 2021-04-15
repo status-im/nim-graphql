@@ -1183,3 +1183,34 @@ fragment sentientFragment on Sentient {
 }
 """
 
+[[units]]
+  name = "visited field should not affect next field when doing cyclic detection"
+  code = """
+type Query {
+  name: String
+}
+query IntrospectionQuery {
+	__schema {
+		types {
+			...FullType
+		}
+	}
+}
+fragment FullType on __Type {
+	fields(includeDeprecated: true) {
+	 	type {
+	 		...TypeRef
+	 	}
+	}
+  inputFields {
+		...InputValue
+	}
+}
+fragment InputValue on __InputValue {
+	type { ...TypeRef }
+}
+fragment TypeRef on __Type {
+	kind
+	name
+}
+"""

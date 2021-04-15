@@ -723,6 +723,10 @@ proc validateSpreadUsage(ctx: GraphqlRef, parent: Node, idx: int, visited: var H
 
 proc fragmentInOp(ctx: GraphqlRef, sels: Node, visited: var HashSet[Name], scope: Node) =
   for field in sels:
+    # the `visited` shadowing here is to prevent
+    # wrong cyclic detectection for each branch.
+    # Visited branch should not affect next branch
+    var visited = visited
     case field.kind
     of nkFragmentSpread:
       # fragName, dirs
