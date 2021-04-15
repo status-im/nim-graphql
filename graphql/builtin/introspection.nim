@@ -94,7 +94,8 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
   for v in values(ctx.typeTable):
-    if v.kind == skDirective:
+    # schema is not a queryable entity from introspection pov
+    if v.kind in {skDirective, skSchema}:
       continue
     if ((sfBuiltin in v.flags) != includeBuiltin):
       continue
@@ -156,6 +157,7 @@ proc typeKind(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.}
     of skEnum:        result = ok(resp("ENUM"))
     of skInputObject: result = ok(resp("INPUT_OBJECT"))
     else:
+      debugEcho "KIND: ", parent.sym.kind
       unreachable()
   else:
     unreachable()
