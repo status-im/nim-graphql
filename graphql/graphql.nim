@@ -125,10 +125,19 @@ template invalid*(cond: untyped, body: untyped) =
     body
     return
 
-proc fatal*(ctx: GraphqlRef, err: GraphqlError, msg: varargs[string, `$`]) =
+proc nonEmptyPos(node: Node): Pos =
+  if node.kind in NoSonsNodes:
+    return node.pos
+
+  for n in node:
+    if n.kind != nkEmpty:
+      return n.pos
+
+proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
   ctx.errors.add ErrorDesc(
     level: elFatal,
+    pos: node.nonEmptyPos,
     message:
       case err
       of ErrOperationNotFound:
@@ -146,14 +155,6 @@ proc fatal*(ctx: GraphqlRef, err: GraphqlError, msg: varargs[string, `$`]) =
       else:
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )
-
-proc nonEmptyPos(node: Node): Pos =
-  if node.kind in NoSonsNodes:
-    return node.pos
-
-  for n in node:
-    if n.kind != nkEmpty:
-      return n.pos
 
 func getArticle(x: string): string =
   const vowels = {'a','A','i','I','e','E','o','O'}

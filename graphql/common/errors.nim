@@ -25,8 +25,5 @@ type
     message*: string
 
 proc `$`*(x: ErrorDesc): string =
-  if x.level == elFatal:
-    result = "Fatal Error: " & x.message
-  else:
-    result = "[$1, $2]: $3: $4" % [$x.pos.line,
-      $x.pos.col, $x.level, x.message]
+  "[$1, $2]: $3: $4" % [$x.pos.line,
+    $x.pos.col, $x.level, x.message]

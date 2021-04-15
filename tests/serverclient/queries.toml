@@ -81,7 +81,7 @@ query {
   error = """
 [{
   "message":"Field 'number' should not return null",
-  "locations":[{"line":0,"column":0}],
+  "locations":[{"line":3,"column":5}],
   "path":["human","number",1]
 }]
 """

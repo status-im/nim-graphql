@@ -239,7 +239,7 @@ type Query {
 
 [[units]]
   name = "execution path with list index"
-  errors = ["Fatal Error: Field 'number' should not return null"]
+  errors = ["[10, 5]: Fatal: Field 'number' should not return null"]
   path = """["human","number",1]"""
   code = """
 type Human {
@@ -261,5 +261,28 @@ type Query {
   "human":{
     "number":[345,null]
   }
+}
+"""
+
+[[units]]
+  name = "execution error should have better text position"
+  path = """["__type"]"""
+  errors = ["[5, 3]: Fatal: Field '__type' cannot be resolved: \"'__Querys' not defined\""]
+  opName = "intros"
+  code = """
+type Query {
+  name: String
+}
+query intros {
+  __type(name: "__Querys") {
+    fields {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":null
 }
 """

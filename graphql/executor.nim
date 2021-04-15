@@ -28,7 +28,7 @@ proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
              else: ctx.names.insert(opName)
   let op = ctx.execTable.getOrDefault(name)
   invalid op.isNil:
-    ctx.fatal(ErrOperationNotFound, name)
+    ctx.fatal(ErrOperationNotFound, ctx.emptyNode, name)
   op
 
 proc name(field: FieldRef): string =
@@ -51,7 +51,7 @@ proc coerceEnum(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
 
 proc resolveAbstractType(ctx: GraphqlRef, field: FieldRef, fieldType: Node, resval: Node): Node =
   invalid resval.kind != nkMap:
-    ctx.fatal(ErrIncompatType, field.field.name, nkMap, resval.kind)
+    ctx.fatal(ErrIncompatType, field.respName, field.field.name, nkMap, resval.kind)
 
   if fieldType.sym.kind == skUnion:
     let members = Union(fieldType.sym.ast).members
@@ -73,7 +73,7 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
     let innerType = fieldType[0]
     result ::= completeValue(innerType, field, resval)
     invalid result.kind == nkNull:
-      ctx.fatal(ErrNotNullable, field.field.name)
+      ctx.fatal(ErrNotNullable, field.respName, field.field.name)
     return
 
   if resval.kind == nkNull:
@@ -81,7 +81,7 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
 
   if fieldType.kind == nkListType:
     invalid resval.kind != nkList:
-      ctx.fatal(ErrIncompatType, field.field.name, nkList, resval.kind)
+      ctx.fatal(ErrIncompatType, field.respName, field.field.name, nkList, resval.kind)
     let innerType = fieldType[0]
     var res = respList()
     let index = resp(0)
@@ -126,16 +126,16 @@ proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
   let fieldName = field.field.name
   let resolverSet = ctx.resolver.getOrDefault(parentTypeName)
   invalidNull resolverSet.isNil:
-    ctx.fatal(ErrTypeUndefined, parentTypeName)
+    ctx.fatal(ErrTypeUndefined, field.respName, parentTypeName)
   let resolver = resolverSet.resolvers.getOrDefault(fieldName.name)
   invalidNull resolver.isNil:
-    ctx.fatal(ErrNoImpl, fieldName, parentTypeName)
+    ctx.fatal(ErrNoImpl, field.respName, fieldName, parentTypeName)
 
   let parentType = field.parentType.sym
   let args = fillArgs(fieldName.name, parentType, field.field.args)
   let res = resolver(resolverSet.ud, args, parent)
   invalidNull res.isErr:
-    ctx.fatal(ErrValueError, field.name, res.error)
+    ctx.fatal(ErrValueError, field.respName, field.name, res.error)
 
   result ::= completeValue(field.typ, field, res.get)
 
