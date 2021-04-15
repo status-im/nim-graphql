@@ -84,7 +84,7 @@ const queryProtos* = {
 proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = GraphqlRef(ud)
   if parent.kind == nkSym:
-    ok(parent.sym.ast[0])
+    ok(toDesc(parent.sym.ast[0]))
   else:
     ok(respNull())
 
@@ -168,7 +168,7 @@ proc typeName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.}
 
 proc typeDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym:
-    ok(parent.sym.ast[0])
+    ok(toDesc(parent.sym.ast[0]))
   else:
     ok(respNull())
 

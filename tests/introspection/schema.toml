@@ -1159,3 +1159,80 @@ type Phoenix {
   "__typename": "Phoenix"
 }
 """
+
+[[units]]
+  name = "querying empty description should return null"
+  code = """
+type Query {
+  name: String
+}
+"Human description"
+type Human {
+  name(alias: String): String
+  "Human age"
+  age("convert to days/years" unit: TimeUnit): Int
+}
+enum TimeUnit {
+  DAYS
+  MONTHS
+  YEARS
+}
+enum Fruit {
+  "Tropical fruit"
+  BANANA
+  APPLE
+}
+directive @possible on SCALAR
+"impossible description"
+directive @impossible on SCALAR
+{
+  typedesc_empty: __type(name: "Query") {
+    description
+  }
+  typedesc: __type(name: "Human") {
+    description
+    fields {
+      description
+      args {
+        description
+      }
+    }
+  }
+  enumval_desc: __type(name: "Fruit") {
+    enumValues {
+      description
+    }
+  }
+  __schema {
+    directives {
+      description
+    }
+  }
+}
+"""
+  result = """
+{
+  "typedesc_empty":{
+    "description":null
+  },
+  "typedesc":{
+    "description":"Human description",
+    "fields":[
+      {"description":null,"args":[{"description":null}]},
+      {"description":"Human age","args":[{"description":"convert to days/years"}]}
+    ]
+  },
+  "enumval_desc":{
+    "enumValues":[
+      {"description":"Tropical fruit"},
+      {"description":null}
+    ]
+  },
+  "__schema":{
+    "directives":[
+      {"description":"impossible description"},
+      {"description":null}
+    ]
+  }
+}
+"""
