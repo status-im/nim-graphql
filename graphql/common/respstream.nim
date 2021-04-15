@@ -141,6 +141,10 @@ proc endMap*(x: RespStream) =
 proc fieldName*(x: RespStream, v: string) =
   x.fieldNameP(x.obj, v)
 
+proc field*(x: RespStream, v: string) =
+  ## an alias to fieldName
+  x.fieldNameP(x.obj, v)
+  
 proc write*(x: RespStream, v: string) =
   x.writeStringP(x.obj, v)
 
