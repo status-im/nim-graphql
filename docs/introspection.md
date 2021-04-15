@@ -46,7 +46,7 @@ type __Type {
   ofType: __Type
 
   # should be non-null for custom SCALAR only, must be null for the others
-  specifiedBy: String
+  specifiedByURL: String
 }
 
 type __Field {
