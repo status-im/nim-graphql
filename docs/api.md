@@ -31,8 +31,8 @@ If you find anything not listed or not exported in this list, please submit an i
   - `createName(ctx: GraphqlRef, name: string): Name`. `respMap` will need a name from the system using this proc.
   - `executeRequest(ctx: GraphqlRef, resp: RespStream, opName = ""): ParseResult`. This is your main entrance to the execution engine.
   - `validate(ctx: GraphqlRef, root: Node)`. Usually you don't need to call this directly.
-  - `parseSchema(ctx: GraphqlRef, schema: string): ParseResult`. Parse a scheme from text string.
-  - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string | openArray[byte]): ParseResult`.
+  - `parseSchema(ctx: GraphqlRef, schema: string | openArray[byte]): ParseResult`. Parse a scheme from text string.
+  - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
   - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
   - `parseQueryFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
   - `purgeQueries(ctx: GraphqlRef, includeVariables: bool)`. A server will often call this to remove unused queries.
