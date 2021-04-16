@@ -595,7 +595,7 @@ subscription booleanListCannotGoIntoBoolean($booleanListArg: [Boolean]) {
 
 [[units]]
   name = "nullability must be respected, counter example 182"
-  error = "[9, 48]: Error: variable 'booleanArg' should not nullable"
+  error = "[9, 48]: Error: variable 'booleanArg' of 'nonNullBooleanArg' should not nullable"
   code = """
 type Arguments {
   nonNullBooleanArgField(nonNullBooleanArg: Boolean!): String
@@ -628,7 +628,7 @@ subscription nonNullListToList($nonNullBooleanList: [Boolean]!) {
 
 [[units]]
   name = "a nullable list cannot be passed to a non-null list, counter example 184"
-  error = "[9, 53]: Error: variable 'booleanList' should not nullable"
+  error = "[9, 53]: Error: variable 'booleanList' of 'nonNullBooleanListArg' should not nullable"
   code = """
 type Arguments {
   nonNullBooleanListField(nonNullBooleanListArg: [Boolean]!): String

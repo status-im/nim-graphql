@@ -138,8 +138,6 @@ proc coerceEnum(ctx: GraphqlRef, sym: Symbol, nameNode, inVal: Node) =
   invalid sym.enumVals.getOrDefault(inVal.name).isNil:
     ctx.error(ErrNotPartOf, inVal, sym.name)
 
-proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil))
-
 proc findVar(ctx: GraphqlRef, val: Node, scope: Node): Variable =
   let varsym = scope.sym.vars.getOrDefault(val.name)
   invalid varsym.isNil:
@@ -173,20 +171,24 @@ proc areTypesCompatible(varType, locType: Node): bool =
     varType.kind == nkSym and
     varType.sym.name == locType.sym.name
 
-proc variableUsageAllowed(ctx: GraphqlRef, varDef: Variable, varName, locType, locDefVal: Node) =
+proc variableUsageAllowed(ctx: GraphqlRef, nameNode: Node, varDef: Variable,
+                          varName, locType, locDefVal: Node) =
   let varType = varDef.typ
   if locType.kind == nkNonNullType and varType.kind != nkNonNullType:
     let defVal = varDef.defVal
     let hasNonNullVariableDefaultValue = defVal.kind notin {nkEmpty, nkNull}
     let hasLocationDefaultValue = locDefVal.kind != nkEmpty
     invalid not hasNonNullVariableDefaultValue and not hasLocationDefaultValue:
-      ctx.error(ErrNotNullable, varName, "variable")
+      ctx.error(ErrNotNullable, varName, nameNode, "variable")
     let nullableLocType = locType[0]
     if not areTypesCompatible(varType, nullableLocType):
       ctx.error(ErrTypeMismatch, varName, $$varType, $$nullableLocType)
     return
   if not areTypesCompatible(varType, locType):
     ctx.error(ErrTypeMismatch, varName, $$varType, $$locType)
+
+proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
+                   parent: Node; idx: int, scope = Node(nil))
 
 proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node, scope: Node) =
   invalid inVal.kind != nkInput:
@@ -205,8 +207,11 @@ proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node
     let locType = inputField.typ
     let dv = inputField.defVal
     if val.kind == nkVariable:
+      if scope.sym.kind == skFragment and val.name notin scope.sym.vars:
+        # the variable probably used by other op
+        continue
       varDef := findVar(val, scope)
-      visit variableUsageAllowed(varDef, val, locType, dv)
+      visit variableUsageAllowed(name, varDef, val, locType, dv)
       let rtVal = ctx.varTable.getOrDefault(val.name)
       if rtVal.isNil:
         let defVal = varDef.defVal
@@ -228,12 +233,13 @@ proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node
     if dv.kind != nkEmpty:
       inVal <- newTree(nkInputField, name, dv)
 
-proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope: Node) =
-  let varName = parent[idx]
-  varDef := findVar(varName, scope)
-  visit variableUsageAllowed(varDef, varName, locType, locDefVal)
+proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal,
+                    parent: Node; idx: int, scope: Node) =
+  let inVal = parent[idx]
+  varDef := findVar(inVal, scope)
+  visit variableUsageAllowed(nameNode, varDef, inVal, locType, locDefVal)
   let defVal = varDef.defVal
-  let rtVal = ctx.varTable.getOrDefault(varName.name)
+  let rtVal = ctx.varTable.getOrDefault(inVal.name)
   if rtVal.isNil:
     if defVal.kind != nkEmpty:
       parent[idx] = defVal
@@ -242,18 +248,18 @@ proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node;
         ctx.error(ErrValueError, nameNode, nkEmpty)
       parent[idx] = defVal
   else:
-    rtVal.pos = varName.pos
+    rtVal.pos = inVal.pos
     parent[idx] = rtVal
 
-proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; idx: int, scope = Node(nil)) =
+proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
+                   parent: Node; idx: int, scope = Node(nil)) =
   var inVal = parent[idx]
   case inVal.kind
   of nkEmpty:
     return
   of nkVariable:
     doAssert(not scope.isNil)
-    if scope.sym.kind == skFragment and
-      inVal.name notin scope.sym.vars:
+    if scope.sym.kind == skFragment and inVal.name notin scope.sym.vars:
       # the variable probably used by other op
       return
     visit coerceVariable(nameNode, locType, locDefVal, parent, idx, scope)

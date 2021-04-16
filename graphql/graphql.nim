@@ -207,7 +207,7 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
       of ErrFieldNotinArg:
         "field '$1' of arg '$2' should not empty" % [msg[0], $node]
       of ErrNotNullable:
-        "$1 '$2' should not nullable" % [msg[0], $node]
+        "$1 '$2' of '$3' should not nullable" % [msg[1], $node, msg[0]]
       of ErrRequireSelection:
         "field '$1' return type is '$2' requires selection set" % [$node, msg[0]]
       of ErrDirArgUndefined:

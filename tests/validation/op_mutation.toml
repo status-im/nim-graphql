@@ -467,7 +467,7 @@ mutation {
 
 [[units]]
   name = "mutation field arg value input object field non null string get rt var string"
-  error = "[8, 20]: Error: variable 'myStringVar' should not nullable"
+  error = "[8, 20]: Error: variable 'myStringVar' of 'name' should not nullable"
   code = """
 type Mutation {
   dog(inp: ComplexInput): String
@@ -482,7 +482,7 @@ mutation($myStringVar: String) {
 
 [[units]]
   name = "mutation field arg value input object field non null string get rt var int"
-  error = "[8, 20]: Error: variable 'myIntVar' should not nullable"
+  error = "[8, 20]: Error: variable 'myIntVar' of 'name' should not nullable"
   code = """
 type Mutation {
   dog(inp: ComplexInput): String
@@ -497,7 +497,7 @@ mutation($myIntVar: String) {
 
 [[units]]
   name = "mutation field arg value input object field non null string get rt var null"
-  error = "[8, 20]: Error: variable 'myNullVar' should not nullable"
+  error = "[8, 20]: Error: variable 'myNullVar' of 'name' should not nullable"
   code = """
 type Mutation {
   dog(inp: ComplexInput): String
@@ -551,7 +551,7 @@ mutation($myVar: String) {
 
 [[units]]
   name = "mutation field arg value variable no rt defval null on non nullable string"
-  error = "[5, 13]: Error: variable 'myVar' should not nullable"
+  error = "[5, 13]: Error: variable 'myVar' of 'inp' should not nullable"
   code = """
 type Mutation {
   dog(inp: String!): String
@@ -563,7 +563,7 @@ mutation($myVar: String = null) {
 
 [[units]]
   name = "mutation field arg value variable no rt not defval on non nullable string"
-  error = "[5, 13]: Error: variable 'myVar' should not nullable"
+  error = "[5, 13]: Error: variable 'myVar' of 'inp' should not nullable"
   code = """
 type Mutation {
   dog(inp: String!): String
@@ -623,7 +623,7 @@ mutation($myVar: String) {
 
 [[units]]
   name = "mutation field arg value input object field non null string get no rt no defVal"
-  error = "[8, 20]: Error: variable 'myVar' should not nullable"
+  error = "[8, 20]: Error: variable 'myVar' of 'name' should not nullable"
   code = """
 type Mutation {
   dog(inp: ComplexInput): String
@@ -638,7 +638,7 @@ mutation($myVar: String) {
 
 [[units]]
   name = "mutation field arg value input object and var type incompatible"
-  error = "[8, 20]: Error: variable 'myVar' should not nullable"
+  error = "[8, 20]: Error: variable 'myVar' of 'name' should not nullable"
   code = """
 type Mutation {
   dog(inp: ComplexInput): String
@@ -711,3 +711,69 @@ type Mutation {
 }
 """
 
+[[units]]
+  name = "non nullable input field get nullable var in fragment"
+  error = "[11, 21]: Error: variable 'myvar' of 'id' should not nullable"
+  code = """
+input MonkeyID {
+  id: String!
+}
+type Monkey {
+  name: String
+}
+type Mutation {
+  monkey(arg: MonkeyID): Monkey
+}
+fragment mon on Mutation {
+  monkey(arg: {id: $myvar}) {
+    name
+  }
+}
+mutation monkey($myvar: String) {
+  ... mon
+}
+"""
+
+[[units]]
+  name = "non nullable input field get nullable var"
+  error = "[11, 21]: Error: variable 'myvar' of 'id' should not nullable"
+  code = """
+input MonkeyID {
+  id: String!
+}
+type Monkey {
+  name: String
+}
+type Mutation {
+  monkey(arg: MonkeyID): Monkey
+}
+mutation monkey($myvar: String) {
+  monkey(arg: {id: $myvar}) {
+    name
+  }
+}
+"""
+
+[[units]]
+  name = "non nullable second input field get nullable var in fragment"
+  error = "[12, 33]: Error: variable 'myvar' of 'od' should not nullable"
+  code = """
+input MonkeyID {
+  id: String
+  od: String!
+}
+type Monkey {
+  name: String
+}
+type Mutation {
+  monkey(arg: MonkeyID): Monkey
+}
+fragment mon on Mutation {
+  monkey(arg: {id: $myvar, od: $myvar}) {
+    name
+  }
+}
+mutation monkey($myvar: String) {
+  ... mon
+}
+"""
