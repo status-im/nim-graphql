@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[tables],
+  std/[tables, strutils],
   stew/[results],
   ./common/[names, ast, ast_helper, response, respstream],
   ./graphql
@@ -34,7 +34,7 @@ proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
 proc name(field: FieldRef): string =
   $field.respName.name
 
-proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType: Node, resval: Node): Node =
+proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
   scalar @= getScalar(fieldType)
   let res = ctx.scalar(fieldType, resval)
   if res.isErr:
@@ -43,7 +43,10 @@ proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType: Node, resval: Node): No
   else:
     res.get()
 
-proc coerceEnum(ctx: GraphqlRef, fieldType: Node, resval: Node): Node =
+proc coerceEnum(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
+  if resval.kind != nkString:
+    ctx.error(ErrScalarError, fieldName, resval, "expect '$1' got '$2'" % [$fieldType, $resval.kind])
+    return respNull()
   let name = ctx.names.insert(resval.stringVal)
   if fieldType.sym.enumVals.hasKey(name):
     return resval
@@ -100,7 +103,7 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
   of skScalar:
     result ::= coerceScalar(field.respName, fieldType, resval)
   of skEnum:
-    result ::= coerceEnum(fieldType, resval)
+    result ::= coerceEnum(field.respName, fieldType, resval)
   of skObject:
     result ::= executeSelectionSet(field.fieldSet, fieldType, fieldType, resval)
   of skInterface, skUnion:
