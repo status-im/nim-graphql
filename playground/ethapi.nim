@@ -44,21 +44,21 @@ proc validateHex(x: Node, minLen = 0): NodeResult =
       return err("invalid chars in hex")
   ok(x)
 
-proc scalarBytes32(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBytes32(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes32 is a 32 byte binary string,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node, 32)
 
-proc scalarAddress(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarAddress(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Address is a 20 byte Ethereum address,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node, 20)
 
-proc scalarBytes(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBytes(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes is an arbitrary length binary string,
   ## represented as 0x-prefixed hexadecimal.
   ## An empty byte string is represented as '0x'.
@@ -67,7 +67,7 @@ proc scalarBytes(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosid
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node)
 
-proc scalarBigInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBigInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## BigInt is a large integer. Input is accepted as
   ## either a JSON number or as a string.
   ## Strings may be either decimal or 0x-prefixed hexadecimal.
@@ -80,7 +80,7 @@ proc scalarBigInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosi
     return err("Big Int should not exceed 66 bytes")
   validateHex(node)
 
-proc scalarLong(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Long is a 64 bit unsigned integer.
   ## TODO: validate max-int 64 bit
   if node.kind == nkInt:

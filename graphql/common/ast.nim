@@ -136,7 +136,7 @@ type
     dlINPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION"
 
   NodeResult* = Result[Node, string]
-  ScalarProc* = proc(ctx: RootRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
+  ScalarProc* = proc(ctx: RootRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
 
   Symbol* = ref SymObj
 

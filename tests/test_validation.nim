@@ -30,7 +30,7 @@ type
 const
   caseFolder = "tests" / "validation"
 
-proc scalarMyScalar(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarMyScalar(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:

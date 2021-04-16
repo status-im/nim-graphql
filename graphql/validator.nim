@@ -133,7 +133,7 @@ proc coerceVar(ctx: GraphqlRef, nameNode, locType, parent: Node, idx: int) =
   if coerce.isNil: 
     # skip coercion if not available
     return
-  let res = ctx.coerce(inVal)
+  let res = ctx.coerce(locType, inVal)
   invalid res.isErr:
     ctx.error(ErrScalarError, nameNode, inVal, res.error)
   parent[idx] = res.get()
@@ -316,7 +316,7 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
         visit coerceVar(nameNode, locType, parent, idx)
         inVal = parent[idx] # probably updated by coerceVar
       scalar := getScalar(locType)
-      let res = ctx.scalar(inVal)
+      let res = ctx.scalar(locType, inVal)
       invalid res.isErr:
         ctx.error(ErrScalarError, nameNode, inVal, res.error)
       parent[idx] = res.get()

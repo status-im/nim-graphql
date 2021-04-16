@@ -35,7 +35,7 @@ proc validateInt32(x: string): Result[void, string] =
 
   ok()
 
-proc scalarInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkInt:
     let res = validateInt32(node.intVal)
     if res.isErr:
@@ -45,7 +45,7 @@ proc scalarInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideE
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
-proc scalarFloat(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarFloat(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   # TODO: validate 64 bit float
   case node.kind
   of nkInt:
@@ -56,19 +56,19 @@ proc scalarFloat(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosid
   else:
     err("expect int or float, but got '$1'" % [$node.kind])
 
-proc scalarString(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarString(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:
     err("expect string, but got '$1'" % [$node.kind])
 
-proc scalarBoolean(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBoolean(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkBoolean:
     ok(node)
   else:
     err("expect boolean, but got '$1'" % [$node.kind])
 
-proc scalarID(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarID(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   case node.kind
   of nkInt:
     let n = Node(

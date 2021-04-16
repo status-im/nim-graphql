@@ -478,6 +478,12 @@ const starshipProcs = {
   "coordinates": starshipCoordinates
 }
 
+proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+  if node.kind == nkString:
+    ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
+  else:
+    err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
+
 {.pop.}
 
 proc initStarWarsApi*(ctx: GraphqlRef) =
@@ -494,3 +500,5 @@ proc initStarWarsApi*(ctx: GraphqlRef) =
   ctx.addResolvers(ud, "Query", queryProcs)
   ctx.addResolvers(ud, "Character", charProcs)
   ctx.addResolvers(ud, "Starship", starshipProcs)
+  ctx.customCoercion("Episode", coerceEnum)
+  ctx.customCoercion("LengthUnit", coerceEnum)

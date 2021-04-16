@@ -111,11 +111,11 @@ const echoProtos = {
   "five": echoFiveImpl,
 }
 
-proc coerceEnum(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
   else:
-    err("cannot coerce '$1' to Fruits" % [$node.kind])
+    err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
 
 proc initMockApi*(ctx: GraphqlRef) =
   ctx.addVar("myFalse", false)
