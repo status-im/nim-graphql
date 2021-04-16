@@ -43,10 +43,19 @@ proc customScalar*(ctx: GraphqlRef, nameStr: string, scalarProc: CoercionProc) =
   let name = ctx.names.insert(nameStr)
   ctx.scalarTable[name] = scalarProc
 
-proc customScalars*(ctx: GraphqlRef,
+proc customScalar*(ctx: GraphqlRef,
                     procs: openArray[tuple[name: string, scalarProc: CoercionProc]]) =
   for c in procs:
     ctx.customScalar(c.name, c.scalarProc)
+
+proc customCoercion*(ctx: GraphqlRef, nameStr: string, coerceProc: CoercionProc) =
+  let name = ctx.names.insert(nameStr)
+  ctx.coerceTable[name] = coerceProc
+
+proc customCoercion*(ctx: GraphqlRef,
+                    procs: openArray[tuple[name: string, coerceProc: CoercionProc]]) =
+  for c in procs:
+    ctx.customCoercion(c.name, c.coerceProc)
 
 proc addVar*(ctx: GraphqlRef, name: string, val: int) =
   let name = ctx.names.insert(name)
@@ -212,7 +221,7 @@ proc purgeNames*(ctx: GraphqlRef, savePoint: NameCounter) =
   ctx.names.purge(savePoint)
 
 proc registerBuiltinScalars(ctx: GraphqlRef) =
-  ctx.customScalars(builtinScalars)
+  ctx.customScalar(builtinScalars)
 
 proc loadBuiltinSchema(ctx: GraphqlRef) =
   var stream = unsafeMemoryInput(builtinSchema)

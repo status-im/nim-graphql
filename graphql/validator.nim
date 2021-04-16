@@ -127,16 +127,30 @@ proc findArg(ctx: GraphqlRef, dirName, argName: Node, targs: Arguments): Argumen
       return arg
   ctx.error(ErrDirArgUndefined, argName, dirName)
 
-proc coerceEnum(ctx: GraphqlRef, sym: Symbol, nameNode, inVal: Node) =
+proc coerceVar(ctx: GraphqlRef, nameNode, locType, parent: Node, idx: int) =
+  var inVal = parent[idx]
+  let coerce = ctx.getCoercion(locType)
+  if coerce.isNil: 
+    # skip coercion if not available
+    return
+  let res = ctx.coerce(inVal)
+  invalid res.isErr:
+    ctx.error(ErrScalarError, nameNode, inVal, res.error)
+  parent[idx] = res.get()
+        
+proc coerceEnum(ctx: GraphqlRef, locType, nameNode, parent: Node, idx: int, isVar: bool) =
+  if isVar:
+    visit coerceVar(nameNode, locType, parent, idx)    
+  let inVal = parent[idx]
   invalid inVal.kind != nkEnum:
     if inval.kind == nkList:
-      ctx.error(ErrTypeMismatch, nameNode, inVal.kind, sym.name)
+      ctx.error(ErrTypeMismatch, nameNode, inVal.kind, locType)
     else:
-      ctx.error(ErrEnumError, nameNode, inVal, inVal.kind, sym.name)
+      ctx.error(ErrEnumError, nameNode, inVal, inVal.kind, locType)
 
   # desc, enumval, dirs
-  invalid sym.enumVals.getOrDefault(inVal.name).isNil:
-    ctx.error(ErrNotPartOf, inVal, sym.name)
+  invalid locType.sym.enumVals.getOrDefault(inVal.name).isNil:
+    ctx.error(ErrNotPartOf, inVal, locType)
 
 proc findVar(ctx: GraphqlRef, val: Node, scope: Node): Variable =
   let varsym = scope.sym.vars.getOrDefault(val.name)
@@ -188,9 +202,10 @@ proc variableUsageAllowed(ctx: GraphqlRef, nameNode: Node, varDef: Variable,
     ctx.error(ErrTypeMismatch, varName, $$varType, $$locType)
 
 proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
-                   parent: Node; idx: int, scope = Node(nil))
+                   parent: Node; idx: int, scope = Node(nil), isVar = false)
 
-proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node, scope: Node) =
+proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, 
+                       sym: Symbol, inVal: Node, scope: Node, isVar: bool) =
   invalid inVal.kind != nkInput:
     ctx.error(ErrTypeMismatch, nameNode, inVal.kind, sym.name)
 
@@ -206,7 +221,9 @@ proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node
     inputField := findField(InputField, sym, name)
     let locType = inputField.typ
     let dv = inputField.defVal
+    var isVar = isVar # shadowing to modify
     if val.kind == nkVariable:
+      isVar = true
       if scope.sym.kind == skFragment and val.name notin scope.sym.vars:
         # the variable probably used by other op
         continue
@@ -221,7 +238,7 @@ proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node
           field[1] = defVal
       else:
         field[1] = rtVal
-    visit inputCoercion(name, locType, dv, field, 1, scope)
+    visit inputCoercion(name, locType, dv, field, 1, scope, isVar)
 
   for field in fields:
     let name = field.name
@@ -252,12 +269,14 @@ proc coerceVariable(ctx: GraphqlRef, nameNode, locType, locDefVal,
     parent[idx] = rtVal
 
 proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
-                   parent: Node; idx: int, scope = Node(nil)) =
+                   parent: Node; idx: int, scope = Node(nil), isVar = false) =
   var inVal = parent[idx]
+  var isVar = isVar # shadowing to modify
   case inVal.kind
   of nkEmpty:
     return
   of nkVariable:
+    isVar = true
     doAssert(not scope.isNil)
     if scope.sym.kind == skFragment and inVal.name notin scope.sym.vars:
       # the variable probably used by other op
@@ -273,7 +292,7 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
   of nkNonNullType:
     invalid inVal.kind == nkNull:
       ctx.error(ErrValueError, nameNode, nkNull)
-    visit inputCoercion(nameNode, locType[0], locDefVal, parent, idx, scope)
+    visit inputCoercion(nameNode, locType[0], locDefVal, parent, idx, scope, isVar)
   of nkListType:
     case inVal.kind:
     of nkNull:
@@ -282,26 +301,29 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
       for i in 0..<inVal.len:
         invalid locType[0].kind == nkListType and inVal[i].kind != nkList:
           ctx.error(ErrValueError, nameNode, nkList)
-        visit inputCoercion(nameNode, locType[0], locDefVal, inVal, i, scope):
+        visit inputCoercion(nameNode, locType[0], locDefVal, inVal, i, scope, isVar):
     else:
       var newList = newTree(nkList, inVal)
       parent[idx] = newList
-      visit inputCoercion(nameNode, locType[0], locDefVal, newList, 0, scope)
+      visit inputCoercion(nameNode, locType[0], locDefVal, newList, 0, scope, isVar)
   of nkSym:
     let sym = locType.sym
     if inVal.kind == nkNull:
       return
     case sym.kind
     of skScalar:
+      if isVar:
+        visit coerceVar(nameNode, locType, parent, idx)
+        inVal = parent[idx] # probably updated by coerceVar
       scalar := getScalar(locType)
       let res = ctx.scalar(inVal)
       invalid res.isErr:
         ctx.error(ErrScalarError, nameNode, inVal, res.error)
       parent[idx] = res.get()
     of skEnum:
-      visit coerceEnum(sym, nameNode, inVal):
+      visit coerceEnum(locType, nameNode, parent, idx, isVar):
     of skInputObject:
-      visit coerceInputObject(nameNode, sym, inVal, scope):
+      visit coerceInputObject(nameNode, sym, inVal, scope, isVar):
     else:
       unreachable()
   else:

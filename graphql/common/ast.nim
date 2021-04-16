@@ -145,8 +145,10 @@ type
     of skDirective:
       dirLocs*: set[DirLoc] # Directive locations
     of skScalar:
+      coerce*: ScalarProc
       scalar*: ScalarProc
     of skEnum:
+      coerceEnum*: ScalarProc
       enumVals*: Table[Name, Node]
     of skInputObject:
       inputFields*: Table[Name, Node]

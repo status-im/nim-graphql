@@ -329,3 +329,22 @@ type Query {
 }
 """
 
+[[units]]
+  name = "variable coercion, string to enum"
+  code = """
+enum Fruits {
+  APPLE
+  BANANA
+}
+type Query {
+  checkFruit(arg: Fruits): String
+}
+query ($myApple: Fruits) {
+  checkFruit(arg: $myApple)
+}
+"""
+  result = """
+{
+  "checkFruit":"GOOD"
+}
+"""

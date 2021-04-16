@@ -48,7 +48,7 @@ export
   api.init,
   api.new,
   api.customScalar,
-  api.customScalars,
+  api.customCoercion,
   api.addVar,
   api.parseVar,
   api.addResolvers,

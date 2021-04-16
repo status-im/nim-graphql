@@ -79,6 +79,7 @@ type
     opTable*      : Table[Name, Symbol]
     typeTable*    : Table[Name, Symbol]
     scalarTable*  : Table[Name, CoercionProc]
+    coerceTable*  : Table[Name, CoercionProc]
     varTable*     : Table[Name, Node]
     execTable*    : Table[Name, ExecRef]
     resolver*     : Table[Name, ResolverRef]
@@ -98,6 +99,9 @@ template findOp*(name: Name): Symbol =
 
 template findScalar*(name: Name): CoercionProc =
   ctx.scalarTable.getOrDefault(name)
+
+template findCoerce*(name: Name): CoercionProc =
+  ctx.coerceTable.getOrDefault(name)
 
 macro callValidator*(ctx, validator: untyped): untyped =
   case validator.kind
@@ -234,3 +238,26 @@ proc getScalar*(ctx: GraphqlRef, locType: Node): CoercionProc =
     scalar
   else:
     cast[CoercionProc](locType.sym.scalar)
+
+proc getCoercionProc(node: Node): CoercionProc =
+  assert(node.sym.kind in {skEnum, skScalar})
+  if node.sym.kind == skScalar:
+    cast[CoercionProc](node.sym.coerce)
+  else:
+    cast[CoercionProc](node.sym.coerceEnum)
+
+proc setCoercionProc(node: Node, coerce: CoercionProc) =
+  if node.sym.kind == skScalar:
+    node.sym.coerce = cast[ScalarProc](coerce)
+  else:
+    node.sym.coerceEnum = cast[ScalarProc](coerce)
+
+proc getCoercion*(ctx: GraphqlRef, locType: Node): CoercionProc =
+  var coerce = getCoercionProc(locType)
+  if coerce.isNil:
+    coerce = findCoerce(locType.sym.name)
+    # if it's still nil, we will ignore it in the validator
+    locType.setCoercionProc(coerce)
+    coerce
+  else:
+    coerce

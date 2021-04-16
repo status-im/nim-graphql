@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/json,
+  std/[json, strutils],
   json_serialization,
   ../graphql
 
@@ -48,11 +48,19 @@ proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPra
   let ctx = GraphqlRef(ud)
   ok(params[0].val)
 
+proc queryCheckFruit(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let val = params[0].val
+  if val.kind == nkEnum:
+    ok(resp("GOOD"))
+  else:
+    ok(resp("BAD"))
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
   "human": queryHumanImpl,
-  "echo": queryEchoImpl
+  "echo": queryEchoImpl,
+  "checkFruit": queryCheckFruit
 }
 
 proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -103,11 +111,19 @@ const echoProtos = {
   "five": echoFiveImpl,
 }
 
+proc coerceEnum(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+  if node.kind == nkString:
+    ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
+  else:
+    err("cannot coerce '$1' to Fruits" % [$node.kind])
+
 proc initMockApi*(ctx: GraphqlRef) =
   ctx.addVar("myFalse", false)
   ctx.addVar("myTrue", true)
+  ctx.addVar("myApple", "APPLE")
   ctx.addResolvers(ctx, "Query", queryProtos)
   ctx.addResolvers(ctx, "Human", humanProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)
+  ctx.customCoercion("Fruits", coerceEnum)
 
 {.pop.}
