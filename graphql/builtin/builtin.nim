@@ -10,7 +10,8 @@
 import
   std/strutils,
   stew/results,
-  ../common/[ast]
+  ../common/[ast],
+  ../graphql
 
 proc validateInt32(x: string): Result[void, string] =
   var pos  = 0
@@ -34,7 +35,7 @@ proc validateInt32(x: string): Result[void, string] =
 
   ok()
 
-proc scalarInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkInt:
     let res = validateInt32(node.intVal)
     if res.isErr:
@@ -44,7 +45,7 @@ proc scalarInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
-proc scalarFloat(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarFloat(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   # TODO: validate 64 bit float
   case node.kind
   of nkInt:
@@ -55,19 +56,19 @@ proc scalarFloat(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
   else:
     err("expect int or float, but got '$1'" % [$node.kind])
 
-proc scalarString(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarString(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:
     err("expect string, but got '$1'" % [$node.kind])
 
-proc scalarBoolean(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBoolean(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkBoolean:
     ok(node)
   else:
     err("expect boolean, but got '$1'" % [$node.kind])
 
-proc scalarID(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarID(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   case node.kind
   of nkInt:
     let n = Node(

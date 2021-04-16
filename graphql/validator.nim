@@ -294,7 +294,7 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
     case sym.kind
     of skScalar:
       scalar := getScalar(locType)
-      let res = scalar.parseLit(inVal)
+      let res = ctx.scalar(inVal)
       invalid res.isErr:
         ctx.error(ErrScalarError, nameNode, inVal, res.error)
       parent[idx] = res.get()

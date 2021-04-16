@@ -135,12 +135,8 @@ type
     dlINPUT_OBJECT           = "INPUT_OBJECT"
     dlINPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION"
 
-  ScalarResult* = Result[Node, string]
-  ScalarProc* = proc(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.}
-
-  ScalarRef* = ref ScalarObj
-  ScalarObj* = object
-    parseLit*: ScalarProc
+  NodeResult* = Result[Node, string]
+  ScalarProc* = proc(ctx: RootRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
 
   Symbol* = ref SymObj
 
@@ -149,7 +145,7 @@ type
     of skDirective:
       dirLocs*: set[DirLoc] # Directive locations
     of skScalar:
-      scalar*: ScalarRef
+      scalar*: ScalarProc
     of skEnum:
       enumVals*: Table[Name, Node]
     of skInputObject:

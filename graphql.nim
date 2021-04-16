@@ -30,7 +30,7 @@ export
   api.Name,
   api.Result,
   api.GraphqlRef,
-  api.ScalarResult,
+  api.NodeResult,
   api.RespResult,
   api.GraphqlResult,
   api.GraphqlError,

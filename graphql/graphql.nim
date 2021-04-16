@@ -60,6 +60,9 @@ type
   GraphqlResult* = Result[void, seq[ErrorDesc]]
   RespResult* = Result[Node, string]
 
+  CoercionProc* = proc(ctx: GraphqlRef,
+    node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
+
   ResolverProc* = proc(ud: RootRef, params: Args,
     parent: Node): RespResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
 
@@ -75,7 +78,7 @@ type
     errors*       : seq[ErrorDesc]
     opTable*      : Table[Name, Symbol]
     typeTable*    : Table[Name, Symbol]
-    scalarTable*  : Table[Name, ScalarRef]
+    scalarTable*  : Table[Name, CoercionProc]
     varTable*     : Table[Name, Node]
     execTable*    : Table[Name, ExecRef]
     resolver*     : Table[Name, ResolverRef]
@@ -93,7 +96,7 @@ template findType*(name: Name): Symbol =
 template findOp*(name: Name): Symbol =
   ctx.opTable.getOrDefault(name)
 
-template findScalar*(name: Name): ScalarRef =
+template findScalar*(name: Name): CoercionProc =
   ctx.scalarTable.getOrDefault(name)
 
 macro callValidator*(ctx, validator: untyped): untyped =
@@ -222,12 +225,12 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )
 
-proc getScalar*(ctx: GraphqlRef, locType: Node): ScalarRef =
+proc getScalar*(ctx: GraphqlRef, locType: Node): CoercionProc =
   if locType.sym.scalar.isNil:
     let scalar = findScalar(locType.sym.name)
     invalid scalar.isNil:
       ctx.error(ErrNoImpl, locType, "scalar")
-    locType.sym.scalar = scalar
+    locType.sym.scalar = cast[ScalarProc](scalar)
     scalar
   else:
-    locType.sym.scalar
+    cast[CoercionProc](locType.sym.scalar)

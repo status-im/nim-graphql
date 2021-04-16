@@ -39,14 +39,12 @@ proc new*(_: type GraphqlRef): GraphqlRef =
   ctx.init()
   ctx
 
-proc customScalar*(ctx: GraphqlRef, nameStr: string, scalarProc: ScalarProc) =
+proc customScalar*(ctx: GraphqlRef, nameStr: string, scalarProc: CoercionProc) =
   let name = ctx.names.insert(nameStr)
-  ctx.scalarTable[name] = ScalarRef(
-    parseLit: scalarProc
-  )
+  ctx.scalarTable[name] = scalarProc
 
 proc customScalars*(ctx: GraphqlRef,
-                    procs: openArray[tuple[name: string, scalarProc: ScalarProc]]) =
+                    procs: openArray[tuple[name: string, scalarProc: CoercionProc]]) =
   for c in procs:
     ctx.customScalar(c.name, c.scalarProc)
 

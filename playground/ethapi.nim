@@ -30,7 +30,7 @@ type
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
-proc validateHex(x: Node, minLen = 0): ScalarResult =
+proc validateHex(x: Node, minLen = 0): NodeResult =
   if x.stringVal.len < 2:
     return err("hex is too short")
   if x.stringVal.len != 2 + minLen * 2 and minLen != 0:
@@ -44,21 +44,21 @@ proc validateHex(x: Node, minLen = 0): ScalarResult =
       return err("invalid chars in hex")
   ok(x)
 
-proc scalarBytes32(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBytes32(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes32 is a 32 byte binary string,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node, 32)
 
-proc scalarAddress(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarAddress(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Address is a 20 byte Ethereum address,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node, 20)
 
-proc scalarBytes(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBytes(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Bytes is an arbitrary length binary string,
   ## represented as 0x-prefixed hexadecimal.
   ## An empty byte string is represented as '0x'.
@@ -67,7 +67,7 @@ proc scalarBytes(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node)
 
-proc scalarBigInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarBigInt(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## BigInt is a large integer. Input is accepted as
   ## either a JSON number or as a string.
   ## Strings may be either decimal or 0x-prefixed hexadecimal.
@@ -80,7 +80,7 @@ proc scalarBigInt(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
     return err("Big Int should not exceed 66 bytes")
   validateHex(node)
 
-proc scalarLong(node: Node): ScalarResult {.cdecl, gcsafe, nosideEffect.} =
+proc scalarLong(ctx: GraphqlRef, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Long is a 64 bit unsigned integer.
   ## TODO: validate max-int 64 bit
   if node.kind == nkInt:
