@@ -2,8 +2,8 @@
 
 ```Nim
 type
-  ScalarResult* = Result[Node, string]
-  ScalarProc* = proc(node: Node): ScalarResult
+  NodeResult* = Result[Node, string]
+  CoerceProc* = proc(ctx: Graphql, node: Node): NodeResult
 ```
 
 Unlike other graphql implementations, nim-graphql using a simpler approach to implement scalars.

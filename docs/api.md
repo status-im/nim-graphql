@@ -16,8 +16,10 @@ If you find anything not listed or not exported in this list, please submit an i
 
 #### Graphql API
   - `newContext(): GraphqlRef`. Create a new validation/execution context.
-  - `customScalar(ctx: GraphqlRef, nameStr: string, scalarProc: ScalarProc)`. Add more custom scalar proc to the system.
-  - `customScalars(ctx: GraphqlRef, procs: [(string, ScalarProc)])`. Add a list of custom scalars to the system.
+  - `customScalar(ctx: GraphqlRef, nameStr: string, scalarProc: CoerceProc)`. Add more custom scalar proc to the system.
+  - `customScalar(ctx: GraphqlRef, procs: [(string, CoerceProc)])`. Add a list of custom scalar procs to the system.
+  - `customCoercion(ctx: GraphqlRef, nameStr: string, scalarProc: CoerceProc)`. Add more custom coercion proc to the system.
+  - `customCoercion(ctx: GraphqlRef, procs: [(string, CoerceProc)])`. Add a list of custom coercion procs to the system.
   - `addVar`. Add new variable to the system.
     - `addVar(ctx: GraphqlRef, name: string, val: int)`
     - `addVar(ctx: GraphqlRef, name: string, val: string)`
@@ -65,7 +67,7 @@ If you find anything not listed or not exported in this list, please submit an i
   - `Name`.
   - `Result`.
   - `GraphqlRef`.
-  - `ScalarResult`.
+  - `NodeResult`.
   - `RespResult`.
   - `GraphqlResult`.
   - `GraphqlError`.
