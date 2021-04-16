@@ -607,7 +607,7 @@ directive @mydir(arg: [Node!!]) on QUERY
 
 [[units]]
   name = "directive arg defVal coercion invalid string <- int"
-  error = "[1, 32]: Error: scalar '123': expect string, but got 'Int'"
+  error = "[1, 18]: Error: 'arg' got '123': expect string, but got 'Int'"
   code = """
 directive @mydir(arg: String = 123) on QUERY
 """
@@ -704,7 +704,7 @@ query MyQuery {
 
 [[units]]
   name = "directive arg object def"
-  error = "[2, 24]: Error: scalar '123': expect string, but got 'Int'"
+  error = "[2, 19]: Error: 'arg' got '123': expect string, but got 'Int'"
   code = """
 directive @mydir(arg: String = "hello") on OBJECT
 type Query @mydir(arg: 123) {

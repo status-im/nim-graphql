@@ -127,9 +127,12 @@ proc findArg(ctx: GraphqlRef, dirName, argName: Node, targs: Arguments): Argumen
       return arg
   ctx.error(ErrDirArgUndefined, argName, dirName)
 
-proc coerceEnum(ctx: GraphqlRef, sym: Symbol, inVal: Node) =
+proc coerceEnum(ctx: GraphqlRef, sym: Symbol, nameNode, inVal: Node) =
   invalid inVal.kind != nkEnum:
-    ctx.error(ErrTypeMismatch, inVal, inVal.kind, sym.name)
+    if inval.kind == nkList:
+      ctx.error(ErrTypeMismatch, nameNode, inVal.kind, sym.name)
+    else:
+      ctx.error(ErrEnumError, nameNode, inVal, inVal.kind, sym.name)
 
   # desc, enumval, dirs
   invalid sym.enumVals.getOrDefault(inVal.name).isNil:
@@ -187,7 +190,7 @@ proc variableUsageAllowed(ctx: GraphqlRef, varDef: Variable, varName, locType, l
 
 proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, sym: Symbol, inVal: Node, scope: Node) =
   invalid inVal.kind != nkInput:
-    ctx.error(ErrTypeMismatch, inVal, inVal.kind, nkInput)
+    ctx.error(ErrTypeMismatch, nameNode, inVal.kind, sym.name)
 
   # desc, name, dirs, fields
   let inp = InputObject(sym.ast)
@@ -287,10 +290,10 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal, parent: Node; 
       scalar := getScalar(locType)
       let res = scalar.parseLit(inVal)
       invalid res.isErr:
-        ctx.error(ErrScalarError, inVal, res.error)
+        ctx.error(ErrScalarError, nameNode, inVal, res.error)
       parent[idx] = res.get()
     of skEnum:
-      visit coerceEnum(sym, inVal):
+      visit coerceEnum(sym, nameNode, inVal):
     of skInputObject:
       visit coerceInputObject(nameNode, sym, inVal, scope):
     else:

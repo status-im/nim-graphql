@@ -275,3 +275,4 @@ extend interface Query implements Fruit {
   color: Int
 }
 """
+

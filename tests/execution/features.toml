@@ -211,7 +211,7 @@ type Query {
 
 [[units]]
   name = "execution path"
-  errors = ["[11, 5]: Error: scalar 'age': expect string, but got 'Int'"]
+  errors = ["[11, 5]: Error: 'age' got '100': expect string, but got 'Int'"]
   path = """["human","age"]"""
   code = """
 type Human {

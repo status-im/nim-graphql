@@ -466,7 +466,7 @@ query mymut($arg: [Boolean!!]) {
 
 [[units]]
   name = "query var defVal coercion invalid bool <- string"
-  error = "[1, 31]: Error: scalar 'hello': expect boolean, but got 'String'"
+  error = "[1, 16]: Error: 'arg' got 'hello': expect boolean, but got 'String'"
   code = """
 query myquery($arg: Boolean = "hello") {
   human
@@ -681,7 +681,7 @@ type Dog {
 
 [[units]]
   name = "query field arg value type mismatch"
-  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  error = "[10, 21]: Error: 'dogCommand' got 'true'('Boolean'), expect 'DogCommand'"
   code = """
 type Query {
   dog: Dog
@@ -1043,7 +1043,7 @@ enum Language {
 
 [[units]]
   name = "@include(if: $myFalse)"
-  error = "[7, 23]: Error: scalar '567': expect boolean, but got 'Int'"
+  error = "[7, 18]: Error: 'if' got '567': expect boolean, but got 'Int'"
   code = """
 type Query {
   name: String
@@ -1054,3 +1054,48 @@ query ($myIntVar: Boolean!) {
   color @include(if: $myIntVar)
 }
 """
+
+[[units]]
+  name = "variable type mismatch scalar vs list"
+  error = "[5, 9]: Error: 'name' got 'List': expect string, but got 'List'"
+  code = """
+type Query {
+  color(name: String): Int
+}
+query ($myList: String!) {
+  color(name: $myList)
+}
+"""
+
+[[units]]
+  name = "variable type mismatch enum vs list"
+  error = "[9, 9]: Error: 'name' is a 'List', expect 'Fruits'"
+  code = """
+enum Fruits {
+  Apple
+  Banana
+}
+type Query {
+  color(name: Fruits): Int
+}
+query ($myList: Fruits!) {
+  color(name: $myList)
+}
+"""
+
+[[units]]
+  name = "variable type mismatch input object vs list"
+  error = "[9, 9]: Error: 'name' is a 'List', expect 'Fruits'"
+  code = """
+input Fruits {
+  apple: String
+  banana: String
+}
+type Query {
+  color(name: Fruits): Int
+}
+query ($myList: Fruits!) {
+  color(name: $myList)
+}
+"""
+

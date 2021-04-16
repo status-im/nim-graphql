@@ -29,7 +29,7 @@ input myinput {
 
 [[units]]
   name = "using valid custom scalar defVal in input object field"
-  error = "[3, 21]: Error: scalar '1123': expect string, but got 'Int'"
+  error = "[3, 3]: Error: 'value' got '1123': expect string, but got 'Int'"
   code = """
 scalar myScalar
 input myinput {
@@ -63,7 +63,7 @@ input myinput {
 
 [[units]]
   name = "int32 high overflow"
-  error = "[2, 16]: Error: scalar '2147483648': Int overflow"
+  error = "[2, 3]: Error: 'value' got '2147483648': Int overflow"
   code = """
 input myinput {
   value: Int = 2147483648
@@ -72,9 +72,10 @@ input myinput {
 
 [[units]]
   name = "int32 low overflow"
-  error = "[2, 16]: Error: scalar '-2147483649': Int overflow"
+  error = "[2, 3]: Error: 'value' got '-2147483649': Int overflow"
   code = """
 input myinput {
   value: Int = -2147483649
 }
 """
+

@@ -196,7 +196,7 @@ mutation mymut($arg: [Boolean!!]) {
 
 [[units]]
   name = "mutation var defVal coercion invalid bool <- string"
-  error = "[1, 32]: Error: scalar 'hello': expect boolean, but got 'String'"
+  error = "[1, 17]: Error: 'arg' got 'hello': expect boolean, but got 'String'"
   code = """
 mutation mymut($arg: Boolean = "hello") {
   human
@@ -388,7 +388,7 @@ mutation {
 
 [[units]]
   name = "mutation field arg value type mismatch"
-  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  error = "[10, 21]: Error: 'dogCommand' got 'true'('Boolean'), expect 'DogCommand'"
   code = """
 type Mutation {
   dog: Dog
@@ -597,7 +597,7 @@ mutation($myStringVar: String) {
 
 [[units]]
   name = "mutation field arg value variable rt int"
-  error = "[5, 13]: Error: scalar '567': expect string, but got 'Int'"
+  error = "[5, 7]: Error: 'inp' got '567': expect string, but got 'Int'"
   code = """
 type Mutation {
   dog(inp: String): String

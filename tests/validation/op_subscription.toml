@@ -177,7 +177,7 @@ subscription mymut($arg: [Boolean!!]) {
 
 [[units]]
   name = "subscription var defVal coercion invalid bool <- string"
-  error = "[1, 37]: Error: scalar 'hello': expect boolean, but got 'String'"
+  error = "[1, 22]: Error: 'arg' got 'hello': expect boolean, but got 'String'"
   code = """
 subscription mysubs($arg: Boolean = "hello") {
   human
@@ -383,7 +383,7 @@ subscription {
 
 [[units]]
   name = "subscription field arg value type mismatch"
-  error = "[10, 33]: Error: 'true' is a 'Boolean', expect 'DogCommand'"
+  error = "[10, 21]: Error: 'dogCommand' got 'true'('Boolean'), expect 'DogCommand'"
   code = """
 type Subscription {
   dog: Dog

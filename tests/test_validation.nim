@@ -43,6 +43,8 @@ proc setupContext(): GraphqlRef =
   ctx.addVar("myIntVar", 567)
   ctx.addVar("myNullVar")
   ctx.addVar("myBoolVar", true)
+  let res = ctx.parseVar("myList", "[123, 456, 789]")
+  assert(res.isOk)
   ctx
 
 template setupParser(ctx: GraphqlRef, unit: Unit) =
@@ -188,7 +190,7 @@ when isMainModule:
   proc main() =
     let conf = getConfiguration()
     if conf.convertPath.len != 0:
-      createDir(conf.convertPath)
+      createDir("tests" / conf.convertPath)
       convertCases(conf.convertPath)
       return
 

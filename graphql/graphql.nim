@@ -38,6 +38,7 @@ type
     ErrMergeConflict
     ErrOperationNotFound
     ErrScalarError
+    ErrEnumError
 
   FieldRef* = ref FieldObj
   FieldObj* = object
@@ -214,7 +215,9 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
       of ErrMergeConflict:
         "field '$1' have merge conflict: $2" % [$node, msg[0]]
       of ErrScalarError:
-        "scalar '$1': $2" % [$node, msg[0]]
+        "'$1' got '$2': $3" % [$node, msg[0], msg[1]]
+      of ErrEnumError:
+        "'$1' got '$2'('$3'), expect '$4'" % [$node, msg[0], msg[1], msg[2]]
       else:
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )

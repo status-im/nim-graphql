@@ -38,7 +38,7 @@ proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType: Node, resval: Node): No
   scalar @= getScalar(fieldType)
   let res = scalar.parseLit(resval)
   if res.isErr:
-    ctx.error(ErrScalarError, fieldName, res.error)
+    ctx.error(ErrScalarError, fieldName, resval, res.error)
     respNull()
   else:
     res.get()
