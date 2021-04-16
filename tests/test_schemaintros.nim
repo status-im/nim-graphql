@@ -15,7 +15,7 @@ const
   schemaFolder = "tests" / "schemas"
   introsFolder = "tests" / "introspection"
 
-proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =  
+proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
   var res = ctx.parseSchemaFromFile(fileName)
   check res.isOk
   if res.isErr:
@@ -45,7 +45,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
     check ($jsonRes).len != 0
   except:
     check false
-  
+
 proc main() =
   suite "schema introspection validation":
     var ctx = new(GraphqlRef)
@@ -57,7 +57,7 @@ proc main() =
       let parts = splitFile(fileName)
       test parts.name:
         ctx.runValidator(fileName, testStatusIMPL)
-        ctx.purgeSchema(true, true)
+        ctx.purgeSchema(true, true, true)
         ctx.purgeQueries(true)
         ctx.purgeNames(savePoint)
 

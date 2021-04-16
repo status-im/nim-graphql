@@ -86,6 +86,7 @@ proc parseVariable(q: var Parser): Node =
   nextToken
   if currToken == tokEof:
     return
+  rgReset(rgValueLiteral) # recursion guard
   q.valueLiteral(isConst = true, result)
 
 proc parseVariable(ctx: GraphqlRef, name: string, input: InputStream): GraphqlResult =
@@ -108,6 +109,33 @@ proc parseVar*(ctx: GraphqlRef, name: string,
   {.gcsafe.}:
     var stream = unsafeMemoryInput(value)
     ctx.parseVariable(name, stream)
+
+proc parseVars(ctx: GraphqlRef, input: InputStream): GraphqlResult  =
+  var parser = Parser.init(input, ctx.names)
+  parser.lex.next()
+  if parser.lex.tok == tokEof:
+    return ok()
+
+  var values: Node
+  parser.rgReset(rgValueLiteral) # recursion guard
+  parser.valueLiteral(isConst = true, values)
+  if parser.error != errNone:
+    return err(@[parser.err])
+
+  for n in values:
+    ctx.varTable[n[0].name] = n[1]
+
+  ok()
+
+proc parseVars*(ctx: GraphqlRef, input: string): GraphqlResult  {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseVars(stream)
+
+proc parseVars*(ctx: GraphqlRef, input: openArray[byte]): GraphqlResult  {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseVars(stream)
 
 proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: Name,
                    resolvers: openArray[tuple[name: string, resolver: ResolverProc]]) =
@@ -193,7 +221,8 @@ proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool) =
   if includeVariables:
     ctx.varTable.clear()
 
-proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
+proc purgeSchema*(ctx: GraphqlRef, includeScalars,
+                  includeResolvers, includeCoercion: bool) =
   var names = initHashSet[Name]()
   for n, v in ctx.typeTable:
     if sfBuiltin notin v.flags:
@@ -213,6 +242,10 @@ proc purgeSchema*(ctx: GraphqlRef, includeScalars, includeResolvers: bool) =
   if includeResolvers:
     for n in names:
       ctx.resolver.del(n)
+
+  if includeCoercion:
+    for n in names:
+      ctx.coerceTable.del(n)
 
 proc getNameCounter*(ctx: GraphqlRef): NameCounter =
   ctx.names.getCounter()

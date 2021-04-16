@@ -93,7 +93,7 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
         else:
           ctx.runExecutor(unit, testStatusIMPL)
           ctx.purgeQueries(false)
-          ctx.purgeSchema(false, false)
+          ctx.purgeSchema(false, false, false)
           ctx.purgeNames(savePoint)
           if testStatusIMPL == OK:
             inc counter.ok
@@ -133,7 +133,7 @@ when isMainModule:
       test unit.name:
         ctx.runExecutor(unit, testStatusIMPL)
         ctx.purgeQueries(true)
-        ctx.purgeSchema(true, true)
+        ctx.purgeSchema(true, true, false)
         ctx.purgeNames(savePoint)
 
   var message: string

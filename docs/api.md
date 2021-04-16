@@ -28,6 +28,8 @@ If you find anything not listed or not exported in this list, please submit an i
     - `addVar(ctx: GraphqlRef, name: string)`. Add a `null` variable.
 
   - `parseVar(ctx: GraphqlRef, name: string, value: string | openArray[byte]): ParseResult`. Add new variable to the system by parsing a text string.
+  - `parseVars(ctx: GraphqlRef, value: string | openArray[byte]): ParseResult`. 
+     Add new variables to the system by parsing map. Top level keys will become variables name.
   - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
     - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
   - `createName(ctx: GraphqlRef, name: string): Name`. `respMap` will need a name from the system using this proc.

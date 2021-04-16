@@ -86,6 +86,8 @@ proc jsonOkResp*(data: openArray[byte]): string =
   resp.getString()
 
 proc addVariables*(ctx: GraphqlRef, vars: Node) =
+  if vars.kind != nkInput:
+    return
   for n in vars:
     if n.len != 2: continue
     # support both json/graphql object key
@@ -102,8 +104,10 @@ proc parseLiteral(ctx: GraphqlRef, input: InputStream): ParseResult =
   # we want to parse a json object
   parser.flags.incl pfJsonCompatibility
   parser.lex.next()
+  if parser.lex.tok == tokEof:
+    return ok(ctx.emptyNode)
   parser.rgReset(rgValueLiteral) # recursion guard
-  parser.valueLiteral(true, values)
+  parser.valueLiteral(isConst = true, values)
   if parser.error != errNone:
     return err(@[parser.err])
   ok(values)

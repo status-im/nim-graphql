@@ -101,7 +101,7 @@ proc runConverter(ctx: GraphqlRef, savePoint: NameCounter, path, output: string)
   for unit in mitems(cases.units):
     ctx.runConverter(unit)
     ctx.purgeQueries(false)
-    ctx.purgeSchema(false, false)
+    ctx.purgeSchema(false, false, false)
     ctx.purgeNames(savePoint)
     writeUnit(f, unit)
 
@@ -141,7 +141,7 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
         else:
           ctx.runValidator(unit, testStatusIMPL)
           ctx.purgeQueries(false)
-          ctx.purgeSchema(false, false)
+          ctx.purgeSchema(false, false, false)
           ctx.purgeNames(savePoint)
           if testStatusIMPL == OK:
             inc counter.ok
@@ -183,7 +183,7 @@ proc validateSchemas() =
       test fileName:
         ctx.runValidator(fileName, testStatusIMPL)
         ctx.purgeQueries(true)
-        ctx.purgeSchema(true, true)
+        ctx.purgeSchema(true, true, true)
         ctx.purgeNames(savePoint)
 
 when isMainModule:
@@ -217,7 +217,7 @@ when isMainModule:
       test unit.name:
         ctx.runValidator(unit, testStatusIMPL)
         ctx.purgeQueries(true)
-        ctx.purgeSchema(true, true)
+        ctx.purgeSchema(true, true, true)
         ctx.purgeNames(savePoint)
 
   var message: string
