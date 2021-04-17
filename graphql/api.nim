@@ -215,14 +215,14 @@ proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string,
     var doc: QueryDocument
     ctx.validation(parser, stream, doc)
 
-proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool) =
+proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool = true) =
   ctx.opTable.clear()
   ctx.execTable.clear()
   if includeVariables:
     ctx.varTable.clear()
 
-proc purgeSchema*(ctx: GraphqlRef, includeScalars,
-                  includeResolvers, includeCoercion: bool) =
+proc purgeSchema*(ctx: GraphqlRef, includeScalars = true,
+                  includeResolvers = true, includeCoercion = true) =
   var names = initHashSet[Name]()
   for n, v in ctx.typeTable:
     if sfBuiltin notin v.flags:
