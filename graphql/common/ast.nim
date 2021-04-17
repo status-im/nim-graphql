@@ -314,6 +314,8 @@ proc `$`*(n: Node): string =
     result = $n.name
   of nkSym:
     result = $n.sym.name
+  of nkMap:
+    result = $n.typeName
   else:
     result = $n.kind
 

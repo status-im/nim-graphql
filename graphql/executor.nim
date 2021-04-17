@@ -45,25 +45,40 @@ proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
 
 proc coerceEnum(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
   if resval.kind != nkString:
-    ctx.error(ErrScalarError, fieldName, resval, "expect '$1' got '$2'" % [$fieldType, $resval.kind])
+    ctx.error(ErrScalarError, fieldName, resval,
+              "expect '$1' got '$2'" % [$fieldType, $resval.kind])
     return respNull()
   let name = ctx.names.insert(resval.stringVal)
   if fieldType.sym.enumVals.hasKey(name):
     return resval
   respNull()
 
-proc resolveAbstractType(ctx: GraphqlRef, field: FieldRef, fieldType: Node, resval: Node): Node =
-  invalid resval.kind != nkMap:
-    ctx.fatal(ErrIncompatType, field.respName, field.field.name, nkMap, resval.kind)
+proc getTypeName(ctx: GraphqlRef, field: FieldRef, node: Node): Name =
+  case node.kind
+  of nkString:
+    result = ctx.names.insert(node.stringVal)
+  of nkSym:
+    result = node.sym.name
+  of nkName, nkNamedType:
+    result = node.name
+  of nkMap:
+    result = node.typeName
+  else:
+    ctx.fatal(ErrIncompatType, field.respName, field.field.name,
+              resObjValidKind,  node.kind)
+
+proc resolveAbstractType(ctx: GraphqlRef, field: FieldRef,
+                         fieldType: Node, resval: Node): Node =
+  typeName := getTypeName(field, resval)
 
   if fieldType.sym.kind == skUnion:
     let members = Union(fieldType.sym.ast).members
     for n in members:
-      if n.sym.name == resval.typeName:
+      if n.sym.name == typeName:
         return n
   else:
     for n in fieldType.sym.types:
-      if n.sym.name == resval.typeName:
+      if n.sym.name == typeName:
         return n
 
   ctx.fatal(ErrIncompatType, field.field.name, fieldType, resval.typeName)
@@ -71,7 +86,8 @@ proc resolveAbstractType(ctx: GraphqlRef, field: FieldRef, fieldType: Node, resv
 proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
                          parentFieldType, objectType, parent: Node): Node
 
-proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: Node): Node =
+proc completeValue(ctx: GraphqlRef, fieldType: Node,
+                   field: FieldRef, resval: Node): Node =
   if fieldType.kind == nkNonNullType:
     let innerType = fieldType[0]
     result ::= completeValue(innerType, field, resval)
@@ -84,7 +100,8 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
 
   if fieldType.kind == nkListType:
     invalid resval.kind != nkList:
-      ctx.fatal(ErrIncompatType, field.respName, field.field.name, nkList, resval.kind)
+      ctx.fatal(ErrIncompatType, field.respName,
+                field.field.name, nkList, resval.kind)
     let innerType = fieldType[0]
     var res = respList()
     let index = resp(0)
@@ -97,7 +114,8 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
         break
     return res
 
-  doAssert(fieldType.kind == nkSym, "internal error, requires fieldType == nkSym")
+  doAssert(fieldType.kind == nkSym,
+           "internal error, requires fieldType == nkSym")
 
   case fieldType.sym.kind
   of skScalar:
@@ -105,10 +123,12 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node, field: FieldRef, resval: No
   of skEnum:
     result ::= coerceEnum(field.respName, fieldType, resval)
   of skObject:
-    result ::= executeSelectionSet(field.fieldSet, fieldType, fieldType, resval)
+    result ::= executeSelectionSet(field.fieldSet,
+                                   fieldType, fieldType, resval)
   of skInterface, skUnion:
     objectType @= resolveAbstractType(field, fieldType, resval)
-    result ::= executeSelectionSet(field.fieldSet, fieldType, objectType, resval)
+    result ::= executeSelectionSet(field.fieldSet,
+                                   fieldType, objectType, resval)
   else:
     unreachable()
 
@@ -118,8 +138,9 @@ proc findField(name: Name, input: Node): Node =
       return n
 
 proc fillValue(argType: Node, argVal: Node): Node =
-  ## input object fields should arrive at resolver in exact order as defined in the schema
-  ## and their missing field should be filled using default value or empty node
+  ## input object fields should arrive at resolver in exact
+  ## order as defined in the schema and their missing field
+  ## should be filled using default value or empty node.
 
   if argType.kind == nkNonNullType:
     return fillValue(argType[0], argVal)
@@ -150,8 +171,9 @@ proc fillValue(argType: Node, argVal: Node): Node =
   res
 
 proc fillArgs(fieldName: Name, parent: Symbol, args: Args): Args =
-  ## params should arrive at resolver in exact order as defined in the schema
-  ## and their missing arg should be filled using default value or empty node
+  ## params should arrive at resolver in exact order
+  ## as defined in the schema and their missing arg should be
+  ## filled using default value or empty node.
 
   let field = getField(parent, fieldName).ObjectField
   let targs = field.args
@@ -212,12 +234,14 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
 
 proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   let parent = respMap(exec.opType.sym.name)
-  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, parent)
+  let res = ctx.executeSelectionSet(exec.fieldSet,
+                       exec.opType, exec.opType, parent)
   serialize(res, resp)
 
 proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
   let parent = respMap(exec.opType.sym.name)
-  let res = ctx.executeSelectionSet(exec.fieldSet, exec.opType, exec.opType, parent)
+  let res = ctx.executeSelectionSet(exec.fieldSet,
+                       exec.opType, exec.opType, parent)
   serialize(res, resp)
 
 proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
@@ -233,7 +257,8 @@ proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
   else:
     unreachable()
 
-proc executeRequest*(ctx: GraphqlRef, resp: RespStream, opName = ""): GraphqlResult {.gcsafe.} =
+proc executeRequest*(ctx: GraphqlRef, resp: RespStream,
+                     opName = ""): GraphqlResult {.gcsafe.} =
   {.gcsafe.}:
     ctx.executeRequestImpl(resp, opName)
   if resp.len == 0:

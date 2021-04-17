@@ -91,6 +91,8 @@ type
     rootIntros*   : Node # always nkSym to __Query
     path*         : Node # always a one dimension nkList
 
+const resObjValidKind* = {nkString, nkSym, nkName, nkNamedType, nkMap}
+
 template findType*(name: Name): Symbol =
   ctx.typeTable.getOrDefault(name)
 

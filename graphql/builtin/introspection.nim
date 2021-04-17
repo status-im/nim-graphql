@@ -70,10 +70,10 @@ proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.
     ok(resp(sym))
 
 proc queryTypename(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  if parent.kind != nkMap:
-    return err("__typename expect a 'Map' but got '$1'" % [$parent.kind])
+  if parent.kind notin resObjValidKind:
+    return err("__typename expect one of $1 but got '$2'" % [$resObjValidKind, $parent.kind])
 
-  ok(resp($parent.typeName))
+  ok(resp($parent))
 
 const queryProtos* = {
   "__schema"   : querySchema,
