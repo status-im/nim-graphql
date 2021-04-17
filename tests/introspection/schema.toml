@@ -1235,3 +1235,86 @@ directive @impossible on SCALAR
   }
 }
 """
+
+[[units]]
+  name = "introspection __typename on builtin types"
+  code = """
+type Query {
+  name: String
+}
+query {
+  int_t: __type(name: "Int") {
+    __typename
+  }
+
+  float_t: __type(name: "Float") {
+    __typename
+  }
+
+  string_t: __type(name: "String") {
+    __typename
+  }
+
+  bool_t: __type(name: "Boolean") {
+    __typename
+  }
+
+  id_t: __type(name: "ID") {
+    __typename
+  }
+
+  query_t: __type(name: "__Query") {
+    __typename
+  }
+
+  schema_t: __type(name: "__Schema") {
+    __typename
+  }
+
+  type_t: __type(name: "__Type") {
+    __typename
+  }
+
+  field_t: __type(name: "__Field") {
+    __typename
+  }
+
+  input_t: __type(name: "__InputValue") {
+    __typename
+  }
+
+  enumval_t: __type(name: "__EnumValue") {
+    __typename
+  }
+
+  typekind_t: __type(name: "__TypeKind") {
+    __typename
+  }
+
+  dir_t: __type(name: "__Directive") {
+    __typename
+  }
+
+  dirloc_t: __type(name: "__DirectiveLocation") {
+    __typename
+  }
+}
+"""
+  result = """
+{
+  "int_t":{"__typename":"Int"},
+  "float_t":{"__typename":"Float"},
+  "string_t":{"__typename":"String"},
+  "bool_t":{"__typename":"Boolean"},
+  "id_t":{"__typename":"ID"},
+  "query_t":{"__typename":"__Query"},
+  "schema_t":{"__typename":"__Schema"},
+  "type_t":{"__typename":"__Type"},
+  "field_t":{"__typename":"__Field"},
+  "input_t":{"__typename":"__InputValue"},
+  "enumval_t":{"__typename":"__EnumValue"},
+  "typekind_t":{"__typename":"__TypeKind"},
+  "dir_t":{"__typename":"__Directive"},
+  "dirloc_t":{"__typename":"__DirectiveLocation"}
+}
+"""
