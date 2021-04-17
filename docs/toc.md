@@ -17,6 +17,7 @@
 - [Scalars](scalars.md)
   - [Builtin scalars](scalars.md#builtin-scalars)
   - [Custom scalars](scalars.md#custom-scalars)
+  - [Variable coercion](scalars.md#variable-coercion)
 
 - [Directives](directives.md)
   - [Builtin directives](directives.md#)
