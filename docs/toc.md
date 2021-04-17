@@ -4,9 +4,9 @@
   - [Graphql core](#graphql-core)
   - [Security features](#security-features)
 
-- [Tutorials](tutorial.md)
+- [Tutorial](tutorial.md)
   - [Important notes](tutorial.md#important-notes)
-  - [Star wars tutorial](tutorial.md#star-wars-tutorial)
+  - [Star Wars tutorial](tutorial.md#star-wars-tutorial)
 
 - [Resolver explained](resolver.md)
   - [How resolver works](resolver.md#how-resolver-works)
