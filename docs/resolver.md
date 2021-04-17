@@ -21,13 +21,16 @@ Unions, interfaces, scalars, lists, and non-nulls returned by a resolver are che
 And this returned object is passed to inner resolver as `parent` parameter.
 Only `Object` type not validated by the execution engine because it will be validated by the inner resolvers.
 
-- Unions and interfaces *must* return a named map object. `respMap` is the obvious choice.
+- Unions and interfaces can be one of `{nkString, nkName, nkNamedType, nkMap}`.
+  `respMap` is the common choice to construct an object.
 - When constructing a list, the inner type should match the inner resolver return type.
   `respList` will help you construct a list object.
 - Scalars usually can accept more than one compatible types. The validation is in the scalar implementation.
 - Although the final response of an `Object` is a map, but when constructing an object within a resolver,
   you don't need to create an actual map. The execution engine will do this.
   You can just return an id or a name of the object. Then the inner resolvers will use this id or name to resolve the object fields.
+  But because introspection `__typename` and the possibility of using them with union and interface,
+  better to construct object as one of `{nkString, nkName, nkNamedType, nkMap}`.
 
 
 ### Userdata
