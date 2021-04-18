@@ -49,7 +49,11 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
 
   exec parseQuery(toString(ro.query))
   let resp = JsonRespStream.new()
-  let res = ctx.executeRequest(resp, toString(ro.operationName))
+  let opName = if ro.operationName.kind == nkNull:
+                 ""
+               else:
+                 toString(ro.operationName)
+  let res = ctx.executeRequest(resp, opName)
   if res.isErr:
     jsonErrorResp(res.error, resp.getBytes(), ctx.path)
   else:
