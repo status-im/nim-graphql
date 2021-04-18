@@ -206,14 +206,23 @@ proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
 
   result ::= completeValue(field.typ, field, res.get)
 
+proc equalsOrImplement(objName: Name, parentType: Node): bool =
+  if objName == parentType.sym.name:
+    return true
+
+  if parentType.sym.kind == skInterface:
+    for n in parentType.sym.types:
+      if n.sym.name == objName:
+        return true
+
 proc skip(fieldType, parentType: Node, objectName, rootIntros: Name): bool =
-  let name = parentType.sym.name
-  if name == rootIntros:
+  let parent = parentType.sym.name
+  if parent == rootIntros:
     # never skip "__type", "__schema", or "__typename"
     return false
   if fieldType.kind == nkSym and fieldType.sym.kind == skUnion:
     # skip fragment on union that does not match queried type
-    return objectName != name
+    return not equalsOrImplement(objectName, parentType)
 
 proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
                          parentFieldType, objectType, parent: Node): Node =
