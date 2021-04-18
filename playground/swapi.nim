@@ -348,22 +348,6 @@ const charProcs = {
   "appearsIn": charAppearsIn
 }
 
-proc humanId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[0][1])
-
-proc humanName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[1][1])
-
-proc humanFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  var ctx = Starwars(ud)
-  ctx.fillFriends(parent)
-
-proc humanFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  discard
-
-proc humanAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[3][1])
-
 proc humanHomePlanet(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[4][1])
 
@@ -391,42 +375,26 @@ proc humanStarships(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
   ok(list)
 
 const human = {
-  "id": humanId,
-  "name": humanName,
+  "id": charId,
+  "name": charName,
+  "friends": charFriends,
+  "friendsConnection": charFriendsConnection,
+  "appearsIn": charAppearsIn,
   "homePlanet": humanHomePlanet,
   "height": humanHeight,
   "mass": humanMass,
-  "friends": humanFriends,
-  "friendsConnection": humanFriendsConnection,
-  "appearsIn": humanAppearsIn,
   "starships": humanStarships
 }
-
-proc droidId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[0][1])
-
-proc droidName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[1][1])
-
-proc droidFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  var ctx = Starwars(ud)
-  ctx.fillFriends(parent)
-
-proc droidFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  discard
-
-proc droidAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[3][1])
 
 proc droidPrimaryFunction(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[4][1])
 
 const droidProcs = {
-  "id": droidId,
-  "name": droidName,
-  "friends": droidFriends,
-  "friendsConnection": droidFriendsConnection,
-  "appearsIn": droidAppearsIn,
+  "id": charId,
+  "name": charName,
+  "friends": charFriends,
+  "friendsConnection": charFriendsConnection,
+  "appearsIn": charAppearsIn,
   "primaryFunction": droidPrimaryFunction
 }
 
