@@ -130,17 +130,17 @@ proc findArg(ctx: GraphqlRef, dirName, argName: Node, targs: Arguments): Argumen
 proc coerceVar(ctx: GraphqlRef, nameNode, locType, parent: Node, idx: int) =
   var inVal = parent[idx]
   let coerce = ctx.getCoercion(locType)
-  if coerce.isNil: 
+  if coerce.isNil:
     # skip coercion if not available
     return
   let res = ctx.coerce(locType, inVal)
   invalid res.isErr:
     ctx.error(ErrScalarError, nameNode, inVal, res.error)
   parent[idx] = res.get()
-        
+
 proc coerceEnum(ctx: GraphqlRef, locType, nameNode, parent: Node, idx: int, isVar: bool) =
   if isVar:
-    visit coerceVar(nameNode, locType, parent, idx)    
+    visit coerceVar(nameNode, locType, parent, idx)
   let inVal = parent[idx]
   invalid inVal.kind != nkEnum:
     if inval.kind == nkList:
@@ -204,7 +204,7 @@ proc variableUsageAllowed(ctx: GraphqlRef, nameNode: Node, varDef: Variable,
 proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
                    parent: Node; idx: int, scope = Node(nil), isVar = false)
 
-proc coerceInputObject(ctx: GraphqlRef, nameNode: Node, 
+proc coerceInputObject(ctx: GraphqlRef, nameNode: Node,
                        sym: Symbol, inVal: Node, scope: Node, isVar: bool) =
   invalid inVal.kind != nkInput:
     ctx.error(ErrTypeMismatch, nameNode, inVal.kind, sym.name)
@@ -574,17 +574,24 @@ proc cyclicInterface(ctx: GraphqlRef, impls: Node, visited: var HashSet[Name]) =
     noCyclic(name, visited)
     visit cyclicInterface(imp.implements, visited)
 
+proc hasImplements(astNode: Node, name: Name): bool =
+  let impls = Object(astNode).implements
+  for n in impls:
+    if n.sym.name == name:
+      return true
+    if hasImplements(n.sym.ast, name):
+      return true
+
 proc fillPossibleTypes(ctx: GraphqlRef, symNode: Node) =
   if symNode.sym.types.len > 0:
     return
 
+  let name = symNode.sym.name
   for sym in values(ctx.typeTable):
     if sym.kind notin {skObject, skInterface}:
       continue
-    let impls = Object(sym.ast).implements
-    for n in impls:
-      if n.sym.name == symNode.sym.name:
-        symNode.sym.types.add newSymNode(sym, sym.ast.pos)
+    if hasImplements(sym.ast, name):
+      symNode.sym.types.add newSymNode(sym, sym.ast.pos)
 
 proc interfaceInterface(ctx: GraphqlRef, symNode: Node) =
   # desc, name, ifaces, dirs, fields

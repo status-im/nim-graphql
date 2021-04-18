@@ -974,6 +974,50 @@ type Query {
 """
 
 [[units]]
+  name = "__type possibleTypes for interfaces multi level"
+  code = """
+interface Tree {
+  name: String
+}
+interface Hardwood implements Tree {
+  name: String
+}
+type Redwood implements Hardwood  {
+  name: String
+}
+type Query {
+  name: String
+}
+{
+  tree:  __type(name: "Tree") {
+    possibleTypes {
+      name
+    }
+  }
+  hardwood:  __type(name: "Hardwood") {
+    possibleTypes {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "tree":{
+    "possibleTypes":[
+      {"name":"Redwood"},
+      {"name":"Hardwood"}
+    ]
+  },
+  "hardwood":{
+    "possibleTypes":[
+      {"name":"Redwood"}
+    ]
+  }
+}
+"""
+
+[[units]]
   name = "__type inputFields"
   code = """
 input Pet {
