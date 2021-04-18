@@ -225,6 +225,43 @@ proc fillFriends(ctx: Starwars, parent: Node): RespResult =
       list.add respNull()
   ok(list)
 
+proc toResp(ctx: Starwars, c: Character): Node =
+  if c.kind == kHuman:
+    humanToResp(ctx, c)
+  else:
+    droidToResp(ctx, c)
+
+proc search(c: Character, text: string): bool =
+  if text in c.id: return true
+  if text in c.name: return true
+  for n in c.friends:
+    if text in n: return true
+
+  if c.kind == kHuman:
+    let h = Human(c)
+    if text in h.homePlanet: return true
+    for n in h.starships:
+      if text in n: return true
+  else:
+    let d = Droid(c)
+    if text in d.primaryFunction: return true
+
+proc search(c: Starship, text: string): bool =
+  if text in c.id: return true
+  if text in c.name: return true
+
+proc search(ctx: Starwars, text: string): Node =
+  var list = respList()
+  for n in ctx.characters:
+    if search(n, text):
+       list.add toResp(ctx, n)
+
+  for n in ctx.ships:
+    if search(n, text):
+      list.add shipToResp(ctx, n)
+
+  list
+
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
@@ -243,7 +280,10 @@ proc queryReviews(ud: RootRef, params: Args, parent: Node): RespResult {.apiPrag
   discard
 
 proc querySearch(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  discard
+  var ctx = Starwars(ud)
+  let text = params[0].val
+  let list = ctx.search(text.stringVal)
+  ok(list)
 
 proc queryCharacter(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
