@@ -373,3 +373,108 @@ query {
   "int_t":null
 }
 """
+
+[[units]]
+  name = "spread fragment with interface and object"
+  code = """
+interface Creature {
+  name: String
+}
+type Human implements Creature {
+  name: String
+  age: Int
+}
+enum COLORS {
+  RED
+  YELLOW
+  GREEN
+}
+type Bird implements Creature {
+  name: String
+  color: COLORS
+}
+type Query {
+  creatures: [Creature]
+}
+{
+  creatures {
+    __typename
+    ... on Creature {
+      name
+    }
+    ... on Human {
+      age
+    }
+    ... on Bird {
+      color
+    }
+  }
+}
+"""
+  result = """
+ {
+   "creatures":[
+     {
+       "__typename":"Human",
+       "name":"spiderman",
+       "age":100
+     },
+     {
+        "__typename":"Bird",
+        "name":"parrot",
+        "color":"RED"
+     }
+   ]
+ }
+"""
+
+[[units]]
+  name = "spread fragment with union and object"
+  code = """
+type Human {
+  name: String
+  age: Int
+}
+enum COLORS {
+  RED
+  YELLOW
+  GREEN
+}
+type Bird {
+  name: String
+  color: COLORS
+}
+union Creature = Human | Bird
+type Query {
+  creatures: [Creature]
+}
+{
+  creatures {
+    __typename
+    ... on Human {
+      name
+      age
+    }
+    ... on Bird {
+      name
+      color
+    }
+  }
+}
+"""
+  result = """
+ {
+   "creatures":[
+     {
+       "__typename":"Human",
+       "name":"spiderman",
+       "age":100
+     },
+     {
+        "__typename":"Bird",
+        "name":"parrot",
+        "color":"RED"
+     }
+   ]
+ }
+"""

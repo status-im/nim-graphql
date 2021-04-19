@@ -1333,6 +1333,7 @@ proc secondPass(ctx: GraphqlRef, root: Node) =
 proc validate*(ctx: GraphqlRef, root: Node) =
   # reset errors before new validation
   ctx.errKind = ErrNone
+  ctx.path = nil
   ctx.errors.setLen(0)
 
   assert(root.kind == nkMembers, "expect nkMembers")

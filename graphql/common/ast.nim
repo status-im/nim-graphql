@@ -87,7 +87,7 @@ type
       sym*: Symbol
     of nkMap:
       typeName*: Name
-      map*: seq[(string, Node)]
+      map*: seq[tuple[key: string, val: Node]]
     else:
       sons*: seq[Node]
 

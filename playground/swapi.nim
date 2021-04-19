@@ -215,7 +215,7 @@ proc findHuman(ctx: Starwars, id: string): RespResult =
   err("can't find human with id: " & id)
 
 proc fillFriends(ctx: Starwars, parent: Node): RespResult =
-  let ids = parent.map[2][1]
+  let ids = parent.map[2].val
   var list = respList()
   for n in ids:
     var res = ctx.findChar(n.stringVal)
@@ -325,10 +325,10 @@ const queryProcs = {
 }
 
 proc charId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[0][1])
+  ok(parent.map[0].val)
 
 proc charName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[1][1])
+  ok(parent.map[1].val)
 
 proc charFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
@@ -338,7 +338,7 @@ proc charFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult 
   discard
 
 proc charAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[3][1])
+  ok(parent.map[3].val)
 
 const charProcs = {
   "id": charId,
@@ -349,10 +349,10 @@ const charProcs = {
 }
 
 proc humanHomePlanet(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[4][1])
+  ok(parent.map[4].val)
 
 proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let height = parent.map[5][1]
+  let height = parent.map[5].val
   let unit = params[0].val
   if $unit == "FOOT":
     ok(resp(3.28084 * parseFloat(height.floatVal)))
@@ -360,11 +360,11 @@ proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
     ok(height)
 
 proc humanMass(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[6][1])
+  ok(parent.map[6].val)
 
 proc humanStarships(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
-  var ships = parent.map[7][1]
+  var ships = parent.map[7].val
   var list = respList()
   for n in ships:
     var res = ctx.findShip(n.stringVal)
@@ -387,7 +387,7 @@ const human = {
 }
 
 proc droidPrimaryFunction(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[4][1])
+  ok(parent.map[4].val)
 
 const droidProcs = {
   "id": charId,
@@ -459,13 +459,13 @@ const reviewProcs = {
 }
 
 proc starshipId(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[0][1])
+  ok(parent.map[0].val)
 
 proc starshipName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[1][1])
+  ok(parent.map[1].val)
 
 proc starshipLength(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(parent.map[2][1])
+  ok(parent.map[2].val)
 
 proc starshipCoordinates(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var list = respList()

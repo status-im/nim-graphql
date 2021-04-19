@@ -220,7 +220,8 @@ proc skip(fieldType, parentType: Node, objectName, rootIntros: Name): bool =
   if parent == rootIntros:
     # never skip "__type", "__schema", or "__typename"
     return false
-  if fieldType.kind == nkSym and fieldType.sym.kind == skUnion:
+    
+  if fieldType.kind == nkSym and fieldType.sym.kind in {skUnion, skInterface}:
     # skip fragment on union that does not match queried type
     return not equalsOrImplement(objectName, parentType)
 

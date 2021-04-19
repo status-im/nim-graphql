@@ -42,7 +42,9 @@ proc queryColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
 proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let ctx = GraphqlRef(ud)
   let name = ctx.createName("Human")
-  ok(respMap(name))
+  let human = respMap(name)
+  human["name"] = resp("spiderman")
+  ok(human)
 
 proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let ctx = GraphqlRef(ud)
@@ -55,16 +57,28 @@ proc queryCheckFruit(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
   else:
     ok(resp("BAD"))
 
+proc queryCreatures(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let ctx = GraphqlRef(ud)
+  let human = respMap(ctx.createName("Human"))
+  human["name"] = resp("spiderman")
+  let bird = respMap(ctx.createName("Bird"))
+  bird["name"] = resp("parrot")
+  var list = respList()
+  list.add human
+  list.add bird
+  ok(list)
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
   "human": queryHumanImpl,
   "echo": queryEchoImpl,
-  "checkFruit": queryCheckFruit
+  "checkFruit": queryCheckFruit,
+  "creatures": queryCreatures
 }
 
-proc humanNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  ok(resp("spiderman"))
+proc creatureNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(parent.map[0].val)
 
 proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(100))
@@ -77,11 +91,23 @@ proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
   ok(list)
 
 const humanProtos = {
-  "name": humanNameImpl,
+  "name": creatureNameImpl,
   "age": humanAgeImpl,
   "number": humanNumberImpl
 }
 
+const creatureProtos = {
+  "name": creatureNameImpl
+}
+
+proc birdColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp("RED"))
+  
+const birdProtos = {
+  "name": creatureNameImpl,
+  "color": birdColorImpl
+}
+  
 proc echoProc(parent: Node, i: int): RespResult =
   if parent[i][1].kind == nkEmpty:
     ok(respNull())
@@ -120,6 +146,8 @@ proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
 proc initMockApi*(ctx: GraphqlRef) =
   ctx.addResolvers(ctx, "Query", queryProtos)
   ctx.addResolvers(ctx, "Human", humanProtos)
+  ctx.addResolvers(ctx, "Creature", creatureProtos)
+  ctx.addResolvers(ctx, "Bird", birdProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)
   ctx.customCoercion("Fruits", coerceEnum)
 
