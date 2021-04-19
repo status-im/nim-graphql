@@ -37,6 +37,7 @@ type Query {
 
 [[units]]
   name = "@skip(if: $myTrue)"
+  variables = "{myTrue: true}"
   code = """
 type Query {
   name: String
@@ -55,6 +56,7 @@ query ($myTrue: Boolean!) {
 
 [[units]]
   name = "@skip(if: $myFalse)"
+  variables = "{myFalse: false}"
   code = """
 type Query {
   name: String
@@ -111,6 +113,7 @@ type Query {
 
 [[units]]
   name = "@include(if: $myTrue)"
+  variables = "{myTrue: true}"
   code = """
 type Query {
   name: String
@@ -130,6 +133,7 @@ query ($myTrue: Boolean!) {
 
 [[units]]
   name = "@include(if: $myFalse)"
+  variables = "{myFalse: false}"
   code = """
 type Query {
   name: String
@@ -328,6 +332,7 @@ type Query {
 
 [[units]]
   name = "variable coercion, string to enum"
+  variables = """{myApple: "APPLE"}"""
   code = """
 enum Fruits {
   APPLE

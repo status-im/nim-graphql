@@ -18,6 +18,7 @@ type
     skip: bool
     errors: seq[string]
     opName: string
+    variables: string
     code: string
     result: string
 
@@ -96,6 +97,13 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   if parser.error != errNone:
     debugEcho parser.err
     return
+
+  if unit.variables.len != 0:
+    let res = ctx.parseVars(unit.variables)
+    check res.isOk
+    if res.isErr:
+      debugEcho res.error
+      return
 
   ctx.validate(doc.root)
   check ctx.errKind == ErrNone

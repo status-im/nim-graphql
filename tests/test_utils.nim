@@ -118,9 +118,6 @@ proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
     err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
 
 proc initMockApi*(ctx: GraphqlRef) =
-  ctx.addVar("myFalse", false)
-  ctx.addVar("myTrue", true)
-  ctx.addVar("myApple", "APPLE")
   ctx.addResolvers(ctx, "Query", queryProtos)
   ctx.addResolvers(ctx, "Human", humanProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)

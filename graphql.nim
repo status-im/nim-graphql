@@ -51,6 +51,7 @@ export
   api.customCoercion,
   api.addVar,
   api.parseVar,
+  api.parseVars,
   api.addResolvers,
   api.createName,
   api.executeRequest,
