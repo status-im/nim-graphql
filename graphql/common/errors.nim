@@ -9,7 +9,7 @@
 
 import
   strutils,
-  ./types
+  ./types, ./ast
 
 type
   ErrorLevel* = enum
@@ -23,7 +23,12 @@ type
     level*: ErrorLevel
     pos*: Pos
     message*: string
+    path*: Node
 
 proc `$`*(x: ErrorDesc): string =
-  "[$1, $2]: $3: $4" % [$x.pos.line,
-    $x.pos.col, $x.level, x.message]
+  if x.path.isNil:
+    "[$1, $2]: $3: $4" % [$x.pos.line,
+      $x.pos.col, $x.level, x.message]
+  else:
+    "[$1, $2]: $3: $4: $5" % [$x.pos.line,
+      $x.pos.col, $x.level, x.message, $x.path.sons]

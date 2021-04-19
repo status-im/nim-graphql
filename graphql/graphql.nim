@@ -143,11 +143,13 @@ proc nonEmptyPos(node: Node): Pos =
     if n.kind != nkEmpty:
       return n.pos
 
+
 proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
   ctx.errors.add ErrorDesc(
     level: elFatal,
     pos: node.nonEmptyPos,
+    path: copyTree(ctx.path),
     message:
       case err
       of ErrOperationNotFound:
@@ -179,6 +181,7 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
   ctx.errors.add ErrorDesc(
     pos: node.nonEmptyPos,
     level: elError,
+    path: copyTree(ctx.path),
     message:
       case err
       of ErrDuplicateName:

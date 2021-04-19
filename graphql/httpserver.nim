@@ -55,7 +55,7 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
                  toString(ro.operationName)
   let res = ctx.executeRequest(resp, opName)
   if res.isErr:
-    jsonErrorResp(res.error, resp.getBytes(), ctx.path)
+    jsonErrorResp(res.error, resp.getBytes())
   else:
     jsonOkResp(resp.getBytes())
 

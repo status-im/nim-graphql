@@ -18,7 +18,6 @@ type
     name: string
     skip: bool
     errors: seq[string]
-    path: string
     opName: string
     code: string
     result: string
@@ -68,13 +67,8 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
       debugEcho ctx.errors
     for i in 0..<min(errors.len, unit.errors.len):
       check $errors[i] == unit.errors[i]
-    let rpath = JsonRespStream.new()
-    serialize(ctx.path, rpath)
-    let path =  rpath.getString()
-    check path == unit.path
   else:
     check unit.errors.len == 0
-    check unit.path.len == 0
 
   # don't skip result comparison even though there are errors
   let unitRes = removeWhitespaces(unit.result)

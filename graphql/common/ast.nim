@@ -346,6 +346,26 @@ proc nullableType*(node: Node): bool =
   else:
     unreachable()
 
+proc copyTree*(n: Node): Node =
+  if n.isNil:
+    return
+  result = Node(kind: n.kind, pos: n.pos)
+  case n.kind
+  of nkInt:     result.intVal    = n.intVal
+  of nkFloat:   result.floatVal  = n.floatVal
+  of nkBoolean: result.boolVal   = n.boolVal
+  of nkString:  result.stringVal = n.stringVal
+  of nkEnum, nkVariable, nkName, nkNamedType:
+    result.name = n.name
+  of nkSym:
+    result.sym = n.sym
+  of nkMap:
+    result.typeName = n.typeName
+    result.map = n.map
+  else:
+    for c in n.sons:
+      result.sons.add copyTree(c)
+
 proc getField*(sym: Symbol, name: Name): Node =
   case sym.kind
   of skInterface:

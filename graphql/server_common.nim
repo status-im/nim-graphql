@@ -29,7 +29,7 @@ proc errorResp*(r: RespStream, msg: string) =
         r.fieldName("message")
         r.write(msg)
 
-proc serialize(r: RespStream, err: ErrorDesc, path: Node) =
+proc serialize(r: RespStream, err: ErrorDesc) =
   respMap(r):
     r.fieldName("message")
     r.write(err.message)
@@ -40,23 +40,23 @@ proc serialize(r: RespStream, err: ErrorDesc, path: Node) =
         r.write(err.pos.line.int)
         r.fieldName("column")
         r.write(err.pos.col.int)
-    if not path.isNil:
+    if not err.path.isNil and err.path.len > 0:
       r.fieldName("path")
-      response.serialize(path, r)
+      response.serialize(err.path, r)
 
 proc errorResp*(r: RespStream, err: seq[ErrorDesc]) =
   respMap(r):
     r.fieldName("errors")
     respList(r):
       for c in err:
-        serialize(r, c, nil)
+        serialize(r, c)
 
-proc errorResp*(r: RespStream, err: seq[ErrorDesc], data: openArray[byte], path: Node) =
+proc errorResp*(r: RespStream, err: seq[ErrorDesc], data: openArray[byte]) =
   respMap(r):
     r.fieldName("errors")
     respList(r):
       for i, c in err:
-        serialize(r, c, if i < err.len-1: nil else: path)
+        serialize(r, c)
     r.fieldName("data")
     r.write(data)
 
@@ -75,9 +75,9 @@ proc jsonErrorResp*(err: seq[ErrorDesc]): string =
   errorResp(resp, err)
   resp.getString()
 
-proc jsonErrorResp*(err: seq[ErrorDesc], data: openArray[byte], path: Node): string =
+proc jsonErrorResp*(err: seq[ErrorDesc], data: openArray[byte]): string =
   let resp = JsonRespStream.new()
-  errorResp(resp, err, data, path)
+  errorResp(resp, err, data)
   resp.getString()
 
 proc jsonOkResp*(data: openArray[byte]): string =
