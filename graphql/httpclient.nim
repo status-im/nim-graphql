@@ -9,53 +9,55 @@
 
 import
   std/[uri],
+  faststreams/inputs,
   stew/results, chronicles,
-  chronos, httputils,
-  chronos/apps/http/httpcommon,
-  ./builtin/json_respstream
+  chronos, httputils, chronos/apps/http/httpcommon,
+  ./common/[ast, names, response, types, errors],
+  ./builtin/json_respstream, ./common_parser, ./lexer
 
 type
-  VarPair = object
-    name: string
-    value: string
-
-  VarTable = seq[VarPair]
-
   ContentType = enum
     ctGraphQl = "application/graphql"
     ctJson    = "application/json"
 
+  VarPair = object
+    name: string
+    value: Node
+
+  ParseResult* = Result[void, ErrorDesc]
   ClientResult* = Result[string, string]
 
   GraphqlHttpClientRef* = ref GraphqlHttpClientObj
   GraphqlHttpClientObj* = object of RootObj
-    opName: string
-    varTable: VarTable
-    meth: HttpMethod
-    address: TransportAddress
-    uri: Uri
-    contentType: ContentType
-    bodyTimeout: Duration
+    opName        : string
+    varTable      : seq[VarPair]
+    names         : NameCache
+    meth          : HttpMethod
+    address       : TransportAddress
+    uri           : Uri
+    contentType   : ContentType
+    bodyTimeout   : Duration
     headersTimeout: Duration
 
 const
   HttpBodyTimeout = 12.seconds
   HttpHeadersTimeout = 120.seconds
 
-proc init*(cr: GraphqlHttpClientRef,
+proc init*(ctx: GraphqlHttpClientRef,
            address: TransportAddress,
            uri: Uri,
            meth: HttpMethod,
            contentType: ContentType,
            bodyTimeout: Duration,
            headersTimeout: Duration) =
-  cr.varTable = @[]
-  cr.address = address
-  cr.meth = meth
-  cr.uri = uri
-  cr.contentType = contentType
-  cr.bodyTimeout = bodyTimeout
-  cr.headersTimeout = headersTimeout
+  ctx.names = newNameCache()
+  ctx.varTable = @[]
+  ctx.address = address
+  ctx.meth = meth
+  ctx.uri = uri
+  ctx.contentType = contentType
+  ctx.bodyTimeout = bodyTimeout
+  ctx.headersTimeout = headersTimeout
 
 proc new*(_: type GraphqlHttpClientRef,
           address: TransportAddress,
@@ -73,22 +75,51 @@ proc new*(_: type GraphqlHttpClientRef,
     headersTimeout)
 
 proc addVar*(ctx: GraphqlHttpClientRef, name: string, val: int) =
-  ctx.varTable.add VarPair(name: name, value: $val)
+  ctx.varTable.add VarPair(name: name, value: resp(val))
 
 proc addVar*(ctx: GraphqlHttpClientRef, name: string, val: string) =
-  ctx.varTable.add VarPair(name: name, value: "\"" & val & "\"")
+  ctx.varTable.add VarPair(name: name, value: resp(val))
 
 proc addVar*(ctx: GraphqlHttpClientRef, name: string, val: float64) =
-  ctx.varTable.add VarPair(name: name, value: $val)
+  ctx.varTable.add VarPair(name: name, value: resp(val))
 
 proc addVar*(ctx: GraphqlHttpClientRef, name: string, val: bool) =
-  ctx.varTable.add VarPair(name: name, value: $val)
+  ctx.varTable.add VarPair(name: name, value: resp(val))
 
 proc addVar*(ctx: GraphqlHttpClientRef, name: string) =
-  ctx.varTable.add VarPair(name: name, value: "null")
+  ctx.varTable.add VarPair(name: name, value: respNull())
 
 proc addEnumVar*(ctx: GraphqlHttpClientRef, name: string, val: string) =
-  ctx.varTable.add VarPair(name: name, value: val)
+  ctx.varTable.add VarPair(name: name,
+    value: Node(kind: nkEnum, pos: Pos(), name: ctx.names.insert(val))
+  )
+
+proc parseVars(ctx: GraphqlHttpClientRef, input: InputStream): ParseResult  =
+  var parser = Parser.init(input, ctx.names)
+  parser.lex.next()
+  if parser.lex.tok == tokEof:
+    return ok()
+
+  var values: Node
+  parser.rgReset(rgValueLiteral) # recursion guard
+  parser.valueLiteral(isConst = true, values)
+  if parser.error != errNone:
+    return err(parser.err)
+
+  for n in values:
+    ctx.varTable.add VarPair(name: $n[0].name, value: n[1])
+
+  ok()
+
+proc parseVars*(ctx: GraphqlHttpClientRef, input: string): ParseResult  {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseVars(stream)
+
+proc parseVars*(ctx: GraphqlHttpClientRef, input: openArray[byte]): ParseResult  {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = unsafeMemoryInput(input)
+    ctx.parseVars(stream)
 
 proc operationName*(ctx: GraphqlHttpClientRef, name: string) =
   ctx.opName = name
@@ -114,7 +145,7 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string): Future[ClientResult
     respMap(r):
       for n in ctx.varTable:
         r.fieldName(n.name)
-        r.write(n.value)
+        serialize(n.value, r)
 
   let body = r.getString()
   var request = $ctx.meth & " " & $ctx.uri & " HTTP/1.0\r\n"
