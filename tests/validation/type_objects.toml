@@ -415,7 +415,7 @@ type Query implements Fruit & Plant {
 
 [[units]]
   name = "object implements interfaces missing field"
-  error = "[6, 3]: Error: 'leaves' is not part of 'Query'"
+  error = "[6, 3]: Error: field 'leaves' is required in 'Query', see 'Plant'"
   code = """
 interface Fruit {
   name: String
@@ -582,7 +582,7 @@ type Query {
 
 [[units]]
   name = "object implements two level interface missing first level fields"
-  error = "[2, 3]: Error: 'leaves' is not part of 'Tree'"
+  error = "[2, 3]: Error: field 'leaves' is required in 'Tree', see 'Plant'"
   code = """
 interface Plant {
   leaves: Int
@@ -599,7 +599,7 @@ type Query implements Tree {
 
 [[units]]
   name = "object implements two level interface missing second level fields"
-  error = "[7, 3]: Error: 'leaves' is not part of 'Query'"
+  error = "[7, 3]: Error: field 'leaves' is required in 'Query', see 'Tree'"
   code = """
 interface Plant {
   leaves: Int

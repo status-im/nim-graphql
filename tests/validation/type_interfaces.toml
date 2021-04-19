@@ -379,7 +379,7 @@ interface Querio implements Fruit & Plant {
 
 [[units]]
   name = "interface implements interfaces missing field"
-  error = "[6, 3]: Error: 'leaves' is not part of 'Querio'"
+  error = "[6, 3]: Error: field 'leaves' is required in 'Querio', see 'Plant'"
   code = """
 interface Fruit {
   name: String
@@ -494,4 +494,3 @@ union CatOrDog = Cat | Dog
 union DogOrHuman = Dog | Human
 union HumanOrAlien = Human | Alien
 """
-

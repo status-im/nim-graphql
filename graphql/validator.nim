@@ -115,6 +115,12 @@ proc findField(name: Name, inputVal: Node): Node =
     if n[0].name == name:
       return n
 
+proc findField(ctx: GraphqlRef, sym: Symbol, name, iName: Node): ObjectField =
+  let field = sym.getField(name.name)
+  invalid field.isNil:
+    ctx.error(ErrFieldIsRequired, name, sym.name, iName)
+  ObjectField(field)
+
 proc findArg(ctx: GraphqlRef, parentType, fieldName, argName: Node, targs: Arguments): Argument =
   for arg in targs:
     if arg.name.name == argName.name:
@@ -536,7 +542,7 @@ proc isValidImplementation(ctx: GraphqlRef, impls: Node, symNode: Node) =
     for thatField in thatFields:
       # desc, name, args, type, dirs
       let thatFieldName = thatField.name
-      thisField := findField(ObjectField, symNode.sym, thatFieldName)
+      thisField := findField(symNode.sym, thatFieldName, iface.name)
       let thatArgs = thatField.args
       let thisArgs = thisField.args
       var args = initHashSet[Name]()

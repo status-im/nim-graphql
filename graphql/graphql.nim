@@ -29,6 +29,7 @@ type
     ErrIncompatType
     ErrNotUsed
     ErrNotPartOf
+    ErrFieldIsRequired
     ErrNoRoot
     ErrFieldArgUndefined
     ErrFieldNotinArg
@@ -212,6 +213,8 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
         "'$1' is not used" % [$node]
       of ErrNotPartOf:
         "'$1' is not part of '$2'" % [$node, msg[0]]
+      of ErrFieldIsRequired:
+        "field '$1' is required in '$2', see '$3'" % [$node, msg[0], msg[1]]
       of ErrNoRoot:
         "no root operation '$1' available" % [msg[0]]
       of ErrFieldArgUndefined:

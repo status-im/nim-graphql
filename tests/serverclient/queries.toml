@@ -22,7 +22,8 @@
 [
   {
     "message":"'namex' is not part of 'Query'",
-    "locations":[{"line":2,"column":3}]
+    "locations":[{"line":2,"column":3}],
+    "path":["name"]
   }
 ]
 """
