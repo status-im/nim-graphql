@@ -39,6 +39,8 @@ task test, "Run all tests":
   test "--threads:off -d:release", "tests/test_all"
   test "--threads:on -d:release", "tests/test_all"
   test "-d:release", "playground/swserver", false
+  test "-d:release", "playground/tests/test_all"
+  test "--threads:on -d:release", "playground/tests/test_all"
 
 proc playground(server: string) =
   exec "nim c -r -d:release playground/swserver " & server

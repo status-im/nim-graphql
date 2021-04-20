@@ -1,0 +1,35 @@
+[[units]]
+  name = "types introspection"
+  code = """
+{
+  __schema {
+    types {
+      name
+    }
+  }
+}
+"""
+  result = """
+ {
+  "__schema":{
+    "types":[
+      {"name":"Episode"},
+      {"name":"Mutation"},
+      {"name":"Droid"},
+      {"name":"ColorInput"},
+      {"name":"LengthUnit"},
+      {"name":"Query"},
+      {"name":"Character"},
+      {"name":"Subscription"},
+      {"name":"Starship"},
+      {"name":"FriendsConnection"},
+      {"name":"Review"},
+      {"name":"PageInfo"},
+      {"name":"Human"},
+      {"name":"SearchResult"},
+      {"name":"FriendsEdge"},
+      {"name":"ReviewInput"}
+    ]
+  }
+}
+"""

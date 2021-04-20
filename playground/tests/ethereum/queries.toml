@@ -1,0 +1,36 @@
+[[units]]
+  name = "types introspection"
+  code = """
+{
+  __schema {
+    types {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "types":[
+      {"name":"Log"},
+      {"name":"CallData"},
+      {"name":"SyncState"},
+      {"name":"BigInt"},
+      {"name":"Mutation"},
+      {"name":"Address"},
+      {"name":"Block"},
+      {"name":"CallResult"},
+      {"name":"Query"},
+      {"name":"FilterCriteria"},
+      {"name":"Bytes"},
+      {"name":"Bytes32"},
+      {"name":"BlockFilterCriteria"},
+      {"name":"Pending"},
+      {"name":"Transaction"},
+      {"name":"Long"},
+      {"name":"Account"}
+    ]
+  }
+}
+"""
