@@ -331,6 +331,41 @@ type Query {
 """
 
 [[units]]
+  name = "missing params should be filled and ordered by executor"
+  code = """
+type Echo {
+  one: String
+  two: Int
+  three: Boolean
+  four: Float
+  five: ID
+}
+type Query {
+  echoArg(one: String, two: Int, three: Boolean = false, four: Float = 456.7, five: ID): Echo
+}
+{
+  echoArg(two: 666, one: "Hello") {
+    one
+    two
+    three
+    four
+    five
+  }
+}
+"""
+  result = """
+{
+  "echoArg":{
+    "one":"Hello",
+    "two":666,
+    "three":false,
+    "four":456.7,
+    "five":null
+  }
+}
+"""
+
+[[units]]
   name = "variable coercion, string to enum"
   variables = """{myApple: "APPLE"}"""
   code = """

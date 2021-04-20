@@ -50,6 +50,10 @@ proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPra
   let ctx = GraphqlRef(ud)
   ok(params[0].val)
 
+proc queryEchoArgImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let ctx = GraphqlRef(ud)
+  ok(Node(params))
+
 proc queryCheckFruit(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   let val = params[0].val
   if val.kind == nkEnum:
@@ -73,6 +77,7 @@ const queryProtos = {
   "color": queryColorImpl,
   "human": queryHumanImpl,
   "echo": queryEchoImpl,
+  "echoArg": queryEchoArgImpl,
   "checkFruit": queryCheckFruit,
   "creatures": queryCreatures
 }
@@ -102,12 +107,12 @@ const creatureProtos = {
 
 proc birdColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp("RED"))
-  
+
 const birdProtos = {
   "name": creatureNameImpl,
   "color": birdColorImpl
 }
-  
+
 proc echoProc(parent: Node, i: int): RespResult =
   if parent[i][1].kind == nkEmpty:
     ok(respNull())
