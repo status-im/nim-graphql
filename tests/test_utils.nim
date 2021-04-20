@@ -98,7 +98,8 @@ proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
 const humanProtos = {
   "name": creatureNameImpl,
   "age": humanAgeImpl,
-  "number": humanNumberImpl
+  "number": humanNumberImpl,
+  "echoArg": queryEchoArgImpl
 }
 
 const creatureProtos = {

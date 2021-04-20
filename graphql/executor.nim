@@ -132,62 +132,6 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node,
   else:
     unreachable()
 
-proc findField(name: Name, input: Node): Node =
-  for n in input:
-    if n[0].name == name:
-      return n
-
-proc fillValue(argType: Node, argVal: Node): Node =
-  ## input object fields should arrive at resolver in exact
-  ## order as defined in the schema and their missing field
-  ## should be filled using default value or empty node.
-
-  if argType.kind == nkNonNullType:
-    return fillValue(argType[0], argVal)
-
-  if argType.kind == nkListType:
-    let innerType = argType[0]
-    for i, n in argVal:
-      argVal[i] = fillValue(innerType, n)
-    return argVal
-
-  if argVal.kind != nkInput:
-    # all other basic datatypes need no ordering or
-    # modification, they already filled by the validator
-    return argVal
-
-  var res = Node(kind: nkInput, pos: argVal.pos)
-  let sym = argType.sym
-  assert(sym.kind == skInputObject)
-  let tFields = InputObject(sym.ast).fields
-  for tField in tFields:
-    let iField = findField(tField.name.name, argVal)
-    if iField.isNil:
-      let val = fillValue(tField.typ, tField.defVal)
-      res <- newTree(nkInputField, tField.name, val)
-    else:
-      let val = fillValue(tField.typ, iField[1])
-      res <- newTree(nkInputField, iField[0], val)
-  res
-
-proc fillArgs(fieldName: Name, parent: Symbol, args: Args): Args =
-  ## params should arrive at resolver in exact order
-  ## as defined in the schema and their missing arg should be
-  ## filled using default value or empty node.
-
-  let field = getField(parent, fieldName).ObjectField
-  let targs = field.args
-  var res = Node(kind: nkArguments, pos: Node(args).pos)
-  for targ in targs:
-    let arg = findArg(targ.name, args)
-    if Node(arg).isNil:
-      let val = fillValue(targ.typ, targ.defVal)
-      res <- newTree(nkPair, targ.name, val)
-    else:
-      let val = fillValue(targ.typ, arg.val)
-      res <- newTree(nkPair, arg.name, val)
-  Args(res)
-
 proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
   let parentTypeName = field.parentType.sym.name
   let fieldName = field.field.name
@@ -198,9 +142,7 @@ proc executeField(ctx: GraphqlRef, field: FieldRef, parent: Node): Node =
   invalidNull resolver.isNil:
     ctx.fatal(ErrNoImpl, field.respName, fieldName, parentTypeName)
 
-  let parentType = field.parentType.sym
-  let args = fillArgs(fieldName.name, parentType, field.field.args)
-  let res = resolver(resolverSet.ud, args, parent)
+  let res = resolver(resolverSet.ud, field.field.args, parent)
   invalidNull res.isErr:
     ctx.fatal(ErrValueError, field.respName, field.name, res.error)
 
@@ -220,7 +162,7 @@ proc skip(fieldType, parentType: Node, objectName, rootIntros: Name): bool =
   if parent == rootIntros:
     # never skip "__type", "__schema", or "__typename"
     return false
-    
+
   if fieldType.kind == nkSym and fieldType.sym.kind in {skUnion, skInterface}:
     # skip fragment on union that does not match queried type
     return not equalsOrImplement(objectName, parentType)
