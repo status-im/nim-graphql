@@ -90,19 +90,14 @@ proc addVariables*(ctx: GraphqlRef, vars: Node) =
     return
   for n in vars:
     if n.len != 2: continue
-    # support both json/graphql object key
-    if n[0].kind == nkString:
-      let varname = ctx.names.insert(n[0].stringVal)
-      ctx.varTable[varname] = n[1]
-    else:
-      ctx.varTable[n[0].name] = n[1]
+    ctx.varTable[n[0].name] = n[1]
 
-proc parseLiteral(ctx: GraphqlRef, input: InputStream): ParseResult =
+proc parseLiteral(ctx: GraphqlRef, input: InputStream, flags: set[ParserFlag]): ParseResult =
   var parser = Parser.init(input, ctx.names)
   var values: Node
 
   # we want to parse a json object
-  parser.flags.incl pfJsonCompatibility
+  parser.flags.incl flags
   parser.lex.next()
   if parser.lex.tok == tokEof:
     return ok(ctx.emptyNode)
@@ -112,15 +107,20 @@ proc parseLiteral(ctx: GraphqlRef, input: InputStream): ParseResult =
     return err(@[parser.err])
   ok(values)
 
-proc parseLiteral*(ctx: GraphqlRef, input: string): ParseResult {.gcsafe.} =
+proc parseLiteral*(ctx: GraphqlRef, input: string, flags = {pfJsonCompatibility, pfJsonKeyToName}): ParseResult {.gcsafe.} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
-    ctx.parseLiteral(stream)
+    ctx.parseLiteral(stream, flags)
 
-proc parseLiteral*(ctx: GraphqlRef, input: openArray[byte]): ParseResult {.gcsafe.} =
+proc parseLiteral*(ctx: GraphqlRef, input: openArray[byte], flags = {pfJsonCompatibility, pfJsonKeyToName}): ParseResult {.gcsafe.} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
-    ctx.parseLiteral(stream)
+    ctx.parseLiteral(stream, flags)
+
+proc parseLiteralFromFile*(ctx: GraphqlRef, fileName: string, flags = {pfJsonCompatibility, pfJsonKeyToName}): ParseResult {.gcsafe.} =
+  {.gcsafe.}:
+    var stream = memFileInput(fileName)
+    ctx.parseLiteral(stream, flags)
 
 proc decodeRequest*(ctx: GraphqlRef, ro: var RequestObject, k, v: string): ParseResult =
   let res = ctx.parseLiteral(v)

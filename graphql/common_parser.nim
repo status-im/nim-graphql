@@ -30,6 +30,7 @@ type
     pfExperimentalFragmentVariables
     pfAcceptReservedWords # any name prefixed with "__"
     pfJsonCompatibility # input object keys can be string
+    pfJsonKeyToName
 
   RecursionGuard* = enum
     rgTypeRef       = "TypeDef"
@@ -314,6 +315,12 @@ template rgCheck*(x: RecursionGuard, limit: int) =
     q.parserError(errRecursionLimit, limit, x)
     return
 
+template rgPush(x: RecursionGuard): untyped =
+  q.rgCount[x]
+
+template rgPop(x: RecursionGuard, v: int): untyped =
+  q.rgCount[x] = v
+
 proc valueLiteral*(q: var Parser, isConst: bool, val: var Node)
 
 # reserved word(prefixed with '__') used exclusively for instrospection
@@ -353,15 +360,24 @@ proc resName*(q: var Parser, name: var Node) =
 proc listVal(q: var Parser, isConst: bool, val: var Node) =
   expect tokLBracket
   val = newNode(nkList)
+  if pfJsonCompatibility in q.flags and currToken == tokRBracket:
+    nextToken()
+    return
   repeatUntil(q.conf.maxListElems, tokRBracket):
-    # no need for rgReset here
+    let savePoint = rgPush(rgValueLiteral)
     valLit := valueLiteral(isConst)
     val <- valLit
+    rgPop(rgValueLiteral, savePoint)
 
 proc inputFieldName(q: var Parser, fieldName: var Node) =
   if pfJsonCompatibility in q.flags and currToken == tokString:
-    fieldName = newNode(nkString)
-    fieldName.stringVal = q.lex.token
+    if pfJsonKeyToName in q.flags:
+      # convert json string to nkName
+      fieldName = newNode(nkName)
+      fieldName.name = q.lex.names.insert(q.lex.token)
+    else:
+      fieldName = newNode(nkString)
+      fieldName.stringVal = q.lex.token
     nextToken
   else:
     fieldName ::= name
@@ -370,14 +386,17 @@ proc inputFieldName(q: var Parser, fieldName: var Node) =
 proc objectField(q: var Parser, isConst: bool, field: var Node) =
   fieldName := inputFieldName
   expect tokColon
+  let savePoint = rgPush(rgValueLiteral)
   fieldVal := valueLiteral(isConst)
   field = newTree(nkInputField, fieldName, fieldVal)
+  rgPop(rgValueLiteral, savePoint)
 
 # input:: {field: T ...}
 proc objectVal(q: var Parser, isConst: bool, input: var Node) =
   expect tokLCurly
   input = newNode(nkInput)
   if pfJsonCompatibility in q.flags and currToken == tokRCurly:
+    nextToken()
     return
   repeatUntil(q.conf.maxFields, tokRCurly):
     field := objectField(isConst)

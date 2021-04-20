@@ -34,3 +34,73 @@
   }
 }
 """
+
+[[units]]
+  name = "query.block(number)"
+  code = """
+{
+  block(number: 2) {
+    number
+    hash
+    parent { number }
+    nonce
+    transactionsRoot
+    transactionCount
+    stateRoot
+    receiptsRoot
+    miner {
+      address
+      balance
+      transactionCount
+      code
+    }
+    extraData
+    gasLimit
+    gasUsed
+    timestamp
+    logsBloom
+    mixHash
+    difficulty
+    totalDifficulty
+    ommerCount
+    #ommers
+    #ommerAt
+    ommerHash
+    #transactions
+    #transactionAt
+    #logs
+    #account
+    #call
+    #estimateGas
+  }
+}
+"""
+  result = """
+{
+  "block":{
+    "number":"2",
+    "hash":"0x70cb7d8e9f3895bfab5c3207ba0463dadb2287736d6ec0957e9c4226431f0b1e",
+    "parent":{"number":"1"},
+    "nonce":"0x0000000000000000",
+    "transactionsRoot":"0x9ed7cc64483d41f8937581cc496a95cb8d2e366f361913a62f27f9879a698016",
+    "transactionCount":3,
+    "stateRoot":"0xfe04e8f1515b5d2b7453057de665247ee2accefca424956e554bea7a6efb73f1",
+    "receiptsRoot":"0xdaffb2da8d1eafea70777e581037f67c5f6566d7aa1ac183c7ac851eb7188b85",
+    "miner":{
+      "address":"0x8888f1f195afa192cfee860698584c030f4c9db1",
+      "balance":"0x01314fb37062cbcda2","transactionCount":"0",
+      "code":"0x"
+    },
+    "extraData":"0x42",
+    "gasLimit":"3141592",
+    "gasUsed":"687437",
+    "timestamp":"0x54c99451",
+    "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+    "difficulty":"0x020000",
+    "totalDifficulty":"0x020000",
+    "ommerCount":0,
+    "ommerHash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
+  }
+}
+"""

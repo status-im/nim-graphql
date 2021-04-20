@@ -8,9 +8,10 @@
 # those terms.
 
 import
-  std/[strutils],
+  std/[strutils, os],
   stew/[results],
-  ../graphql
+  ../graphql, ../graphql/server_common,
+  ./utils
 
 type
   EthTypes = enum
@@ -26,6 +27,8 @@ type
   EthServer = ref EthServerObj
   EthServerObj = object of RootObj
     names: array[EthTypes, Name]
+    blocks: Node
+    accounts: Node
 
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
@@ -33,7 +36,7 @@ type
 proc validateHex(x: Node, minLen = 0): NodeResult =
   if x.stringVal.len < 2:
     return err("hex is too short")
-  if x.stringVal.len != 2 + minLen * 2 and minLen != 0:
+  if x.stringVal.len > 2 + minLen * 2 and minLen != 0:
     return err("expect hex with len '$1', got '$2'" % [$(2 * minLen + 2), $x.stringVal.len])
   if x.stringVal.len mod 2 != 0:
     return err("hex must have even number of nibbles")
@@ -67,18 +70,38 @@ proc scalarBytes(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcs
     return err("expect hex string, but got '$1'" % [$node.kind])
   validateHex(node)
 
+proc validateInt(node: Node): NodeResult =
+  for c in node.stringVal:
+    if c notin Digits:
+      return err("invalid char in int: '$1'" % [$c])
+
+  node.stringVal = "0x" & convertBase(node.stringVal, 10, 16)
+  if node.stringVal.len > 66:
+    return err("int overflow")
+
+  ok(node)
+
 proc scalarBigInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## BigInt is a large integer. Input is accepted as
   ## either a JSON number or as a string.
   ## Strings may be either decimal or 0x-prefixed hexadecimal.
   ## Output values are all 0x-prefixed hexadecimal.
-  if node.kind != nkString:
-    return err("expect hex string, but got '$1'" % [$node.kind])
-  if node.stringVal.len > 66:
-    # 256 bits = 32 bytes = 64 hex nibbles
-    # 64 hex nibbles + '0x' prefix = 66 bytes
-    return err("Big Int should not exceed 66 bytes")
-  validateHex(node)
+  if node.kind == nkInt:
+    # convert it into hex nkString node
+    validateInt(Node(kind: nkString, stringVal: node.intVal, pos: node.pos))
+  elif node.kind == nkString:
+    if {'x', 'X'} in node.stringVal:
+      # probably a hex string
+      if node.stringVal.len > 66:
+        # 256 bits = 32 bytes = 64 hex nibbles
+        # 64 hex nibbles + '0x' prefix = 66 bytes
+        return err("Big Int should not exceed 66 bytes")
+      validateHex(node)
+    else:
+      # convert it into hex nkString node
+      validateInt(node)
+  else:
+    return err("expect hex/dec string or int, but got '$1'" % [$node.kind])
 
 proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   ## Long is a 64 bit unsigned integer.
@@ -89,20 +112,77 @@ proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
+proc findKey(node: Node, key: string): RespResult =
+  for n in node:
+    if n[0].stringVal == key:
+      return ok(n[1])
+
+  err("cannot find key: " & key)
+
+proc toBlock(n: Node, name: Name): Node =
+  let map = respMap(name)
+  map["blocks"] = n[3][1]
+  map["txs"] = n[4][1]
+  map["ommers"] = n[2][1]
+  map
+
+proc toAccount(node: Node, address: Node, name: Name): Node =
+  let map = respMap(name)
+  map["address"] = address
+  for n in node:
+    map[n[0].stringVal] = n[1]
+  map
+
+proc findMap(node: Node, key: string): RespResult =
+  for n in node.map:
+    if n.key == key:
+      return ok(n.val)
+
+  err("cannot find key: " & key)
+
+proc findLong(node: Node, key: string): RespResult =
+  let res = findKey(node, key)
+  if res.isErr:
+    return res
+  let node = res.get()
+  let intVal = parseHexInt(node.stringVal)
+  ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+
+proc findMapLong(node: Node, key: string): RespResult =
+  let res = findMap(node, key)
+  if res.isErr:
+    return res
+  let node = res.get()
+  let intVal = parseHexInt(node.stringVal)
+  ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+
 proc accountAddress(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMap(parent, "address")
 
 proc accountBalance(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMap(parent, "balance")
 
 proc accountTxCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMapLong(parent, "nonce")
 
 proc accountCode(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMap(parent, "code")
 
 proc accountStorage(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let slot = params[0].val
+  let res = findMap(parent, "storage")
+  if res.isErr:
+    return res
+  let storage = res.get()
+  for n in storage:
+    if n[0].stringVal == slot.stringVal:
+      return ok(n[1])
+  err("cannot find storage with slot: " & slot.stringVal)
 
 const accountProcs = {
   "address": accountAddress,
@@ -200,57 +280,110 @@ const txProcs = {
 
 proc blockNumber(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findLong(blk, "number")
 
 proc blockHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "hash")
 
 proc blockParent(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  let res = findKey(blk, "parentHash")
+  if res.isErr:
+    return res
+  let parentHash = res.get()
+  for n in ctx.blocks:
+    let res = findKey(n[3][1], "hash")
+    if res.isErr:
+      return res
+    if res.get().stringVal == parentHash.stringVal:
+      return ok(n.toBlock(ctx.names[ethBlock]))
+  err("cannot find parent with hash: " & parentHash.stringVal)
 
 proc blockNonce(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "nonce")
 
 proc blockTransactionsRoot(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "transactionsTrie")
 
 proc blockTransactionCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let txs = parent.map[1].val
+  ok(resp(txs.len))
 
 proc blockStateRoot(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "stateRoot")
 
 proc blockReceiptsRoot(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "receiptTrie")
 
 proc blockMiner(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  let res = findKey(blk, "coinbase")
+  if res.isErr:
+    return res
+  let miner = res.get()
+  for n in ctx.accounts:
+    if n[0].stringVal == miner.stringVal:
+      return ok(toAccount(n[1], n[0], ctx.names[ethAccount]))
+  err("eccount not found: " & miner.stringVal)
 
 proc blockExtraData(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findKey(blk, "extraData")
 
 proc blockGasLimit(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findLong(blk, "gasLimit")
 
 proc blockGasUsed(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let blk = parent.map[0].val
+  findLong(blk, "gasUsed")
 
 proc blockTimestamp(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "timestamp")
+  
 proc blockLogsBloom(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "bloom")
+  
 proc blockMixHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "mixHash")
+  
 proc blockDifficulty(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "difficulty")
+  
 proc blockTotalDifficulty(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "difficulty")
+  
 proc blockOmmerCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let ommers = parent.map[2].val
+  ok(resp(ommers.len))
 
 proc blockOmmers(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
@@ -260,7 +393,9 @@ proc blockOmmerAt(ud: RootRef, params: Args, parent: Node): RespResult {.apiPrag
 
 proc blockOmmerHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
-
+  let blk = parent.map[0].val
+  findKey(blk, "uncleHash")
+  
 proc blockTransactions(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
 
@@ -372,6 +507,20 @@ const pendingProcs = {
 
 proc queryBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let number = params[0].val
+  let hash = params[1].val
+  if number.kind == nkString:
+    for n in ctx.blocks:
+      if n[1][1].stringVal == number.stringVal:
+        return ok(n.toBlock(ctx.names[ethBlock]))
+    err("block not found: " & number.stringVal)
+  elif hash.kind == nkString:
+    for n in ctx.blocks:
+      if n[1][1].stringVal == number.stringVal:
+        return ok(n.toBlock(ctx.names[ethBlock]))
+    err("block not found: " & number.stringVal)
+  else:
+    ok(ctx.blocks[ctx.blocks.len - 1].toBlock(ctx.names[ethBlock]))
 
 proc queryBlocks(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
@@ -407,6 +556,14 @@ const queryProcs = {
 
 {.pop.}
 
+proc extractData(ud: EthServer, node: Node) =
+  let data = node[0][1]
+  for n in data:
+    if $n[0] == "blocks":
+      ud.blocks = n[1]
+    elif $n[0] == "postState":
+      ud.accounts = n[1]
+
 proc initEthApi*(ctx: GraphqlRef) =
   ctx.customScalar("Bytes32", scalarBytes32)
   ctx.customScalar("Address", scalarAddress)
@@ -418,6 +575,13 @@ proc initEthApi*(ctx: GraphqlRef) =
   for n in EthTypes:
     let name = ctx.createName($n)
     ud.names[n] = name
+
+  let res = ctx.parseLiteralFromFile("playground" / "data" / "ConstantinopleFixTransition.json", {pfJsonCompatibility})
+  if res.isErr:
+    debugEcho res.error
+    quit(QuitFailure)
+
+  extractData(ud, res.get())
 
   ctx.addResolvers(ud, ud.names[ethAccount    ], accountProcs)
   ctx.addResolvers(ud, ud.names[ethLog        ], logProcs)
