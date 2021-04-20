@@ -117,6 +117,9 @@ you can always use `treeRepr` function to pretty print the `params` nodes.
 debugEcho Node(params).treeRepr
 ```
 
+If one or more of your parameter is an input object, it will undergo similar transformation like parameters list.
+Any missing field will be filled and the order will become exactly like the input object definition in the schema.
+
 ### Response object
 
 Response object share the same `Node` object used by internal AST,
