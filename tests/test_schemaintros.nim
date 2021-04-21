@@ -13,7 +13,7 @@ import
 
 const
   schemaFolder = "tests" / "schemas"
-  introsFolder = "tests" / "introspection"
+  introsFolder = "tests" / "execution"
 
 proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
   var res = ctx.parseSchemaFromFile(fileName)

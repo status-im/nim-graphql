@@ -46,16 +46,16 @@ query {
   name = "field in set can merge should merge"
   code = """
 {
-  human { name }
-  human { name }
-  human { age }
-  human { age }
+  tree { name }
+  tree { name }
+  tree { age }
+  tree { age }
 }
 """
   result = """
 {
-  "human":{
-    "name":"spiderman",
+  "tree":{
+    "name":"hardwood",
     "age":100
   }
 }
@@ -65,7 +65,7 @@ query {
   name = "execution path"
   code = """
 {
-  human {
+  tree {
     number
     name
   }
@@ -73,7 +73,7 @@ query {
 """
   result = """
 {
-  "human":{
+  "tree":{
     "number":[345,null]
   }
 }
@@ -82,7 +82,7 @@ query {
 [{
   "message":"Field 'number' should not return null",
   "locations":[{"line":3,"column":5}],
-  "path":["human","number",1]
+  "path":["tree","number",1]
 }]
 """
 

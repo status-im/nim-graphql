@@ -14,7 +14,6 @@ import
   test_parser,
   test_validation,
   test_respstream,
-  test_introspection,
   test_execution,
   test_misc,
   test_httpserver,

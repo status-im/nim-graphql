@@ -13,7 +13,7 @@ import
   std/[unittest, os, json],
   chronos, toml_serialization,
   ../graphql, ../graphql/[httpserver, httpclient],
-  ./test_config, ./test_utils
+  ../graphql/test_config, ./test_utils
 
 type
   Unit = object
@@ -45,10 +45,10 @@ proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
     type Query {
       name: String
       color: Int
-      human: Human
+      tree: Tree
     }
 
-    type Human {
+    type Tree {
       name: String
       age: Int
       number: [Int!]

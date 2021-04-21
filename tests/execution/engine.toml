@@ -190,24 +190,24 @@ query {
 [[units]]
   name = "field in set can merge should merge"
   code = """
-type Human {
+type Tree {
   name: String
   age: Int
 }
 type Query {
-  human: Human
+  tree: Tree
 }
 {
-  human { name }
-  human { name }
-  human { age }
-  human { age }
+  tree { name }
+  tree { name }
+  tree { age }
+  tree { age }
 }
 """
   result = """
 {
-  "human":{
-    "name":"spiderman",
+  "tree":{
+    "name":"hardwood",
     "age":100
   }
 }
@@ -215,17 +215,17 @@ type Query {
 
 [[units]]
   name = "execution path"
-  errors = ["[11, 5]: Error: 'age' got '100': expect string, but got 'Int': @[human, age]"]
+  errors = ["[11, 5]: Error: 'age' got '100': expect string, but got 'Int': @[tree, age]"]
   code = """
-type Human {
+type Tree {
   name: String
   age: String
 }
 type Query {
-  human: Human
+  tree: Tree
 }
 {
-  human {
+  tree {
     name
     age
   }
@@ -233,8 +233,8 @@ type Query {
 """
   result = """
 {
-  "human":{
-    "name":"spiderman",
+  "tree":{
+    "name":"hardwood",
     "age":null
   }
 }
@@ -242,17 +242,17 @@ type Query {
 
 [[units]]
   name = "execution path with list index"
-  errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[human, number, 1]"]
+  errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[tree, number, 1]"]
   code = """
-type Human {
+type Tree {
   name: String
   number: [Int!]
 }
 type Query {
-  human: Human
+  tree: Tree
 }
 {
-  human {
+  tree {
     number
     name
   }
@@ -260,7 +260,7 @@ type Query {
 """
   result = """
 {
-  "human":{
+  "tree":{
     "number":[345,null]
   }
 }
@@ -375,14 +375,14 @@ type Echo {
   four: Float
   five: ID
 }
-type Human {
+type Tree {
   echoArg(one: String, two: Int, three: Boolean = false, four: Float = 456.7, five: ID): Echo
 }
 type Query {
-  human: Human
+  tree: Tree
 }
 {
-  human {
+  tree {
     echoArg(two: 666, one: "Hello") {
       one
       two
@@ -395,7 +395,7 @@ type Query {
 """
   result = """
 {
-  "human":{
+  "tree":{
     "echoArg":{
       "one":"Hello",
       "two":666,
@@ -457,7 +457,7 @@ query {
 interface Creature {
   name: String
 }
-type Human implements Creature {
+type Tree implements Creature {
   name: String
   age: Int
 }
@@ -479,7 +479,7 @@ type Query {
     ... on Creature {
       name
     }
-    ... on Human {
+    ... on Tree {
       age
     }
     ... on Bird {
@@ -492,8 +492,8 @@ type Query {
  {
    "creatures":[
      {
-       "__typename":"Human",
-       "name":"spiderman",
+       "__typename":"Tree",
+       "name":"redwood",
        "age":100
      },
      {
@@ -508,7 +508,7 @@ type Query {
 [[units]]
   name = "inline fragment with union and object"
   code = """
-type Human {
+type Tree {
   name: String
   age: Int
 }
@@ -521,14 +521,14 @@ type Bird {
   name: String
   color: COLORS
 }
-union Creature = Human | Bird
+union Creature = Tree | Bird
 type Query {
   creatures: [Creature]
 }
 {
   creatures {
     __typename
-    ... on Human {
+    ... on Tree {
       name
       age
     }
@@ -543,8 +543,8 @@ type Query {
  {
    "creatures":[
      {
-       "__typename":"Human",
-       "name":"spiderman",
+       "__typename":"Tree",
+       "name":"redwood",
        "age":100
      },
      {
@@ -562,7 +562,7 @@ type Query {
 interface Creature {
   name: String
 }
-type Human implements Creature {
+type Tree implements Creature {
   name: String
   age: Int
 }
@@ -581,7 +581,7 @@ type Query {
 fragment cName on Creature {
   name
 }
-fragment hAge on Human {
+fragment hAge on Tree {
   age
 }
 fragment bColor on Bird {
@@ -600,8 +600,8 @@ fragment bColor on Bird {
  {
    "creatures":[
      {
-       "__typename":"Human",
-       "name":"spiderman",
+       "__typename":"Tree",
+       "name":"redwood",
        "age":100
      },
      {
@@ -616,7 +616,7 @@ fragment bColor on Bird {
 [[units]]
   name = "spread fragment with union and object"
   code = """
-type Human {
+type Tree {
   name: String
   age: Int
 }
@@ -629,11 +629,11 @@ type Bird {
   name: String
   color: COLORS
 }
-union Creature = Human | Bird
+union Creature = Tree | Bird
 type Query {
   creatures: [Creature]
 }
-fragment human on Human {
+fragment tree on Tree {
   name
   age
 }
@@ -644,7 +644,7 @@ fragment bird on Bird {
 {
   creatures {
     __typename
-    ... human
+    ... tree
     ... bird
   }
 }
@@ -653,8 +653,8 @@ fragment bird on Bird {
  {
    "creatures":[
      {
-       "__typename":"Human",
-       "name":"spiderman",
+       "__typename":"Tree",
+       "name":"redwood",
        "age":100
      },
      {

@@ -9,7 +9,7 @@
 
 import
   std/os,
-  ../../graphql, ../ethapi, ./test_common
+  ../../graphql, ../ethapi, ../../graphql/test_common
 
 const
   caseFolder = "playground" / "tests" / "ethereum"
@@ -26,7 +26,7 @@ proc setupContext(): GraphqlRef =
 when isMainModule:
   let ctx = setupContext()
   processArguments()
-  ctx.main(caseFolder)
+  ctx.main(caseFolder, false)
 else:
   let ctx = setupContext()
-  ctx.executeCases(caseFolder)
+  ctx.executeCases(caseFolder, false)

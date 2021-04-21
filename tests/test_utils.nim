@@ -17,18 +17,22 @@ type
     errors*: JsonNode
     data*: JsonNode
 
+  TestNames = enum
+    tnHuman     = "Human"
+    tnDroid     = "Droid"
+    tnStarship  = "Starship"
+    tnEntity    = "Entity"
+    tnBird      = "Bird"
+    tnTree      = "Tree"
+
+  TestContext = ref object of RootRef
+    names: array[TestNames, Name]
+
 proc decodeResponse*(input: string): ServerResponse =
   try:
     result = Json.decode(input, ServerResponse)
   except JsonReaderError as e:
     debugEcho e.formatMsg("")
-
-proc removeWhitespaces*(x: string): string =
-  # TODO: do not remove white spaces in string/multiline string
-  const whites = {' ', '\t', '\r', '\n'}
-  for c in x:
-    if c notin whites:
-      result.add c
 
 {.push hint[XDeclaredButNotUsed]: off.}
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
@@ -39,19 +43,16 @@ proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPra
 proc queryColorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(567))
 
-proc queryHumanImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let ctx = GraphqlRef(ud)
-  let name = ctx.createName("Human")
-  let human = respMap(name)
-  human["name"] = resp("spiderman")
-  ok(human)
+proc queryTreeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var tc = TestContext(ud)
+  let tree = respMap(tc.names[tnTree])
+  tree["name"] = resp("hardwood")
+  ok(tree)
 
 proc queryEchoImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let ctx = GraphqlRef(ud)
   ok(params[0].val)
 
 proc queryEchoArgImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let ctx = GraphqlRef(ud)
   ok(Node(params))
 
 proc queryCheckFruit(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -62,43 +63,52 @@ proc queryCheckFruit(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
     ok(resp("BAD"))
 
 proc queryCreatures(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  let ctx = GraphqlRef(ud)
-  let human = respMap(ctx.createName("Human"))
-  human["name"] = resp("spiderman")
-  let bird = respMap(ctx.createName("Bird"))
+  var tc = TestContext(ud)
+  let tree = respMap(tc.names[tnTree])
+  tree["name"] = resp("redwood")
+  let bird = respMap(tc.names[tnBird])
   bird["name"] = resp("parrot")
   var list = respList()
-  list.add human
+  list.add tree
   list.add bird
+  ok(list)
+
+proc querySearchImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var tc = TestContext(ud)
+  var list = respList()
+  list.add respMap(tc.names[tnHuman])
+  list.add respMap(tc.names[tnDroid])
+  list.add respMap(tc.names[tnStarship])
   ok(list)
 
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
-  "human": queryHumanImpl,
+  "tree": queryTreeImpl,
   "echo": queryEchoImpl,
   "echoArg": queryEchoArgImpl,
   "checkFruit": queryCheckFruit,
-  "creatures": queryCreatures
+  "creatures": queryCreatures,
+  "search": querySearchImpl
 }
 
 proc creatureNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[0].val)
 
-proc humanAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+proc treeAgeImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp(100))
 
-proc humanNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+proc treeNumberImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var list = respList()
   list.add resp(345)
   list.add respNull()
   list.add resp(789)
   ok(list)
 
-const humanProtos = {
+const treeProtos = {
   "name": creatureNameImpl,
-  "age": humanAgeImpl,
-  "number": humanNumberImpl,
+  "age": treeAgeImpl,
+  "number": treeNumberImpl,
   "echoArg": queryEchoArgImpl
 }
 
@@ -143,6 +153,23 @@ const echoProtos = {
   "five": echoFiveImpl,
 }
 
+proc nameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let tc = TestContext(ud)
+  if parent.typeName == tc.names[tnHuman]:
+    ok(resp("Dr. Jones"))
+  elif parent.typeName == tc.names[tnStarship]:
+    ok(resp("Millenium Falcon"))
+  else:
+    ok(resp("3CPO"))
+
+proc colorImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  ok(resp("YELLOW"))
+
+const droidProtos = {
+  "name": nameImpl,
+  "color": colorImpl
+}
+
 proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
   if node.kind == nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
@@ -150,11 +177,21 @@ proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
     err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
 
 proc initMockApi*(ctx: GraphqlRef) =
-  ctx.addResolvers(ctx, "Query", queryProtos)
-  ctx.addResolvers(ctx, "Human", humanProtos)
+  var tc = TestContext()
+  for c in TestNames:
+    let name = ctx.createName($c)
+    tc.names[c] = name
+
+  ctx.addResolvers(tc, "Entity", [("name", nameImpl)])
+  ctx.addResolvers(tc, "Human", [("name", nameImpl)])
+  ctx.addResolvers(tc, "Droid", droidProtos)
+  ctx.addResolvers(tc, "Starship", [("name", nameImpl)])
+  
+  ctx.addResolvers(tc, "Query", queryProtos)
+  ctx.addResolvers(ctx, "Tree", treeProtos)
   ctx.addResolvers(ctx, "Creature", creatureProtos)
   ctx.addResolvers(ctx, "Bird", birdProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)
-  ctx.customCoercion("Fruits", coerceEnum)
+  ctx.customCoercion("Fruits", coerceEnum)  
 
 {.pop.}

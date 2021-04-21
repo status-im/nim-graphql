@@ -9,6 +9,9 @@ query myquery {
   name
 }
 """
+  result = """
+null
+"""
 
 [[units]]
   name = "operation found"
@@ -300,6 +303,11 @@ type Query {
     name
   }
 }
+"""
+  result = """
+{
+  "__type":null
+}  
 """
 
 [[units]]

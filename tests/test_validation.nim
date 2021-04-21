@@ -10,7 +10,7 @@
 import
   std/[os, strutils, unittest],
   toml_serialization,
-  ../graphql, ./test_config
+  ../graphql, ../graphql/test_config
 
 type
   Unit = object

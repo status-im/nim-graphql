@@ -10,8 +10,8 @@
 import
   std/[os, strutils, unittest],
   toml_serialization,
-  ../../graphql/common/response,
-  ../../graphql, ../../tests/[test_config, test_utils]
+  ./common/response,
+  ../graphql, ./test_config
 
 type
   Unit = object
@@ -30,6 +30,13 @@ type
     skip: int
     fail: int
     ok: int
+
+proc removeWhitespaces(x: string): string =
+  # TODO: do not remove white spaces in string/multiline string
+  const whites = {' ', '\t', '\r', '\n'}
+  for c in x:
+    if c notin whites:
+      result.add c
 
 proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   var stream = unsafeMemoryInput(unit.code)
@@ -75,35 +82,43 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   let execRes = removeWhitespaces(resp.getString)
   check unitRes == execRes
 
-proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter, purgeSchema: bool) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
     for unit in cases.units:
       test unit.name:
         if unit.skip:
+          ctx.purgeQueries(true)
+          ctx.purgeNames(savePoint)
+          if purgeSchema:
+            ctx.purgeSchema(false, false, false)
           skip()
           inc counter.skip
         else:
           ctx.runExecutor(unit, testStatusIMPL)
           ctx.purgeQueries(true)
           ctx.purgeNames(savePoint)
+          if purgeSchema:
+            ctx.purgeSchema(false, false, false)
           if testStatusIMPL == OK:
             inc counter.ok
           else:
             inc counter.fail
 
-proc executeCases*(ctx: GraphqlRef, caseFolder: string) =
+proc executeCases*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
   let savePoint = ctx.getNameCounter()
   var counter: Counter
   for fileName in walkDirRec(caseFolder):
-    ctx.runSuite(savePoint, fileName, counter)
+    if not fileName.endsWith(".toml"):
+      continue
+    ctx.runSuite(savePoint, fileName, counter, purgeSchema)
   debugEcho counter
 
-proc main*(ctx: GraphqlRef, caseFolder: string) =
+proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
   let conf = getConfiguration()
   if conf.testFile.len == 0:
-    executeCases(ctx, caseFolder)
+    executeCases(ctx, caseFolder, purgeSchema)
     return
 
   # disable unittest param handler
@@ -112,7 +127,7 @@ proc main*(ctx: GraphqlRef, caseFolder: string) =
   let fileName = caseFolder / conf.testFile
   let savePoint = ctx.getNameCounter()
   if conf.unit.len == 0:
-    ctx.runSuite(savePoint, fileName, counter)
+    ctx.runSuite(savePoint, fileName, counter, purgeSchema)
     echo counter
     return
 
@@ -124,6 +139,8 @@ proc main*(ctx: GraphqlRef, caseFolder: string) =
       ctx.runExecutor(unit, testStatusIMPL)
       ctx.purgeQueries(true)
       ctx.purgeNames(savePoint)
+      if purgeSchema:
+        ctx.purgeSchema(false, false, false)
 
 proc processArguments*() =
   var message: string

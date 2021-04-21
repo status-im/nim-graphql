@@ -9,7 +9,7 @@
 
 import
   std/os,
-  ../../graphql, ../swapi, ./test_common
+  ../../graphql, ../swapi, ../../graphql/test_common
 
 const
   caseFolder = "playground" / "tests" / "starwars"
@@ -26,7 +26,7 @@ proc setupContext(): GraphqlRef =
 when isMainModule:
   let ctx = setupContext()
   processArguments()
-  ctx.main(caseFolder)
+  ctx.main(caseFolder, false)
 else:
   let ctx = setupContext()
-  ctx.executeCases(caseFolder)
+  ctx.executeCases(caseFolder, false)
