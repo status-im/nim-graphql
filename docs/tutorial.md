@@ -41,6 +41,6 @@ This is a simplified example using Nim-like syntax to describe how to use `purge
     ctx.purgeNames(counter) # remove all names associated with recent queries
 ```
 
-The server can decice how much queries executed before calling `purgeNames`.
+The server can decide how much queries executed before calling `purgeNames`.
 
 ### Star Wars tutorial
