@@ -27,8 +27,8 @@ directive @deprecated(
   reason: String = "No longer supported"
 ) on FIELD_DEFINITION | ENUM_VALUE
 
-"Builtin @specifiedByURL directive"
-directive @specifiedByURL(
+"Builtin @specifiedBy directive"
+directive @specifiedBy(
   url: String!
 ) on SCALAR
 

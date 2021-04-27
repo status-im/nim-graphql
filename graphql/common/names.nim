@@ -51,7 +51,7 @@ type
     kwDeprecated  = "deprecated"
     kwIf          = "if"
     kwReason      = "reason"
-    kwSpecifiedByURL = "specifiedByURL"
+    kwSpecifiedBy = "specifiedBy"
     kwUrl         = "url"
 
     # Type system instrospection

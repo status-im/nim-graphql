@@ -247,7 +247,7 @@ proc typeOfType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma
 
 proc typeSpecifiedByURL(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkSym and parent.sym.kind == skScalar:
-    directiveValue(Scalar(parent.sym.ast).dirs, kwSpecifiedByURL, kwUrl)
+    directiveValue(Scalar(parent.sym.ast).dirs, kwSpecifiedBy, kwUrl)
   else:
     ok(respNull())
 

@@ -224,6 +224,13 @@ type Query {
   "__schema":{
     "directives":[
       {
+        "name":"specifiedBy",
+        "description":"Builtin @specifiedBy directive","
+        locations":["SCALAR"],
+        "args":[{"name":"url"}],
+        "isRepeatable":false
+      },
+      {
         "name":"skip",
         "description":"Builtin @skip directive",
         "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
@@ -242,13 +249,6 @@ type Query {
         "description":"Builtin @include directive",
         "locations":["FIELD","FRAGMENT_SPREAD","INLINE_FRAGMENT"],
         "args":[{"name":"if"}],
-        "isRepeatable":false
-      },
-      {
-        "name":"specifiedByURL",
-        "description":"Builtin @specifiedByURL directive","
-        locations":["SCALAR"],
-        "args":[{"name":"url"}],
         "isRepeatable":false
       }
     ]
@@ -307,7 +307,7 @@ type Query {
   result = """
 {
   "__type":null
-}  
+}
 """
 
 [[units]]
@@ -1171,7 +1171,7 @@ type Query {
 [[units]]
   name = "get specifiedByURL string from scalar"
   code = """
-scalar DateTime @specifiedByURL(url: "http://graphql.com")
+scalar DateTime @specifiedBy(url: "http://graphql.com")
 type Query {
   name: String
 }
