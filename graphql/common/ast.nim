@@ -337,7 +337,7 @@ proc nullableType*(node: Node): bool =
     case node[0].kind
     of nkListType:
       return true
-    of nkSym:
+    of nkSym, nkNamedType:
       return false
     else:
       unreachable()

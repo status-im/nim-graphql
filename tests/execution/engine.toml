@@ -650,18 +650,102 @@ fragment bird on Bird {
 }
 """
   result = """
- {
-   "creatures":[
-     {
-       "__typename":"Tree",
-       "name":"redwood",
-       "age":100
-     },
-     {
-        "__typename":"Bird",
-        "name":"parrot",
-        "color":"RED"
-     }
-   ]
- }
+{
+  "creatures":[
+    {
+      "__typename":"Tree",
+      "name":"redwood",
+      "age":100
+    },
+    {
+       "__typename":"Bird",
+       "name":"parrot",
+       "color":"RED"
+    }
+  ]
+}
+"""
+
+[[units]]
+  name = "graphql-spec#793 case #1"
+  opName = "A"
+  code = """
+type Query {
+  example(inputObject: ExampleInputObject! = {}): Int
+}
+
+input ExampleInputObject {
+  number: Int! = 3
+}
+query A {
+  example
+}
+"""
+  result = """
+{
+  "example":3
+}
+"""
+
+[[units]]
+  name = "graphql-spec#793 case #2"
+  opName = "B"
+  code = """
+type Query {
+  example(inputObject: ExampleInputObject! = {}): Int
+}
+
+input ExampleInputObject {
+  number: Int! = 3
+}
+query B {
+  example(inputObject: {})
+}
+"""
+  result = """
+{
+  "example":3
+}
+"""
+
+[[units]]
+  name = "graphql-spec#793 case #3"
+  opName = "C"
+  code = """
+type Query {
+  example(inputObject: ExampleInputObject! = {}): Int
+}
+
+input ExampleInputObject {
+  number: Int! = 3
+}
+query C {
+  example(inputObject: { number: 3 })
+}
+"""
+  result = """
+{
+  "example":3
+}
+"""
+
+[[units]]
+  name = "graphql-spec#793 case #4"
+  opName = "D"
+  code = """
+type Query {
+  example(inputObject: ExampleInputObject! = {}): Int
+}
+
+input ExampleInputObject {
+  number: Int! = 3
+}
+query D($inputObject: ExampleInputObject! = {}) {
+  example(inputObject: $inputObject)
+}
+"""
+  result = """
+{
+  "example":3
+}
 """

@@ -395,7 +395,8 @@ proc objectField(q: var Parser, isConst: bool, field: var Node) =
 proc objectVal(q: var Parser, isConst: bool, input: var Node) =
   expect tokLCurly
   input = newNode(nkInput)
-  if pfJsonCompatibility in q.flags and currToken == tokRCurly:
+  if currToken == tokRCurly:
+    # input object value can have empty fields
     nextToken()
     return
   repeatUntil(q.conf.maxFields, tokRCurly):

@@ -81,6 +81,11 @@ proc querySearchImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
   list.add respMap(tc.names[tnStarship])
   ok(list)
 
+proc queryExampleImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let obj = params[0].val
+  let number = obj[0][1]
+  ok(number)
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
@@ -89,7 +94,8 @@ const queryProtos = {
   "echoArg": queryEchoArgImpl,
   "checkFruit": queryCheckFruit,
   "creatures": queryCreatures,
-  "search": querySearchImpl
+  "search": querySearchImpl,
+  "example": queryExampleImpl
 }
 
 proc creatureNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
