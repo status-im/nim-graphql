@@ -33,8 +33,7 @@ the documentation is available [here](docs/toc.md).
 
 You can play with our playground graphql http server using graphql
 client such as [Altair GraphQL client](https://altair.sirmuel.design)
-because currently we don't have time to provide a fancy built in interface
-for our playground server.
+or using builtin [graphiql](https://github.com/graphql/graphiql) user interface.
 
 - Using Starwars schema/api.
 ```bash
@@ -55,6 +54,7 @@ $ nim c -r playground/swserver ethereum
 ```
 
 The server is accessible at this address `http://127.0.0.1:8547/graphql`
+and the web user interface at `http://127.0.0.1:8547/graphql/ui`.
 
 ## Installation
 
