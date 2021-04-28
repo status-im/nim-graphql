@@ -490,8 +490,11 @@ const starshipProcs = {
 }
 
 proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
-  if node.kind == nkString:
+  case node.kind
+  of nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
+  of nkEnum:
+    ok(node)
   else:
     err("cannot coerce '$1' to $2" % [$node.kind, $typeNode])
 

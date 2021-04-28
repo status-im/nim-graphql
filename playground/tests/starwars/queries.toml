@@ -84,3 +84,22 @@
   }
 }
 """
+
+[[units]]
+  name = "coerce enum variable"
+  code = """
+query ($eps: Episode = JEDI){
+  hero(episode: $eps) {
+    name
+  }
+}
+"""
+  result = """
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2"
+    }
+  }
+}
+"""
