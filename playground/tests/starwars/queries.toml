@@ -3,7 +3,7 @@
   code = """
 {
   __schema {
-    types {
+    types(includeBuiltin: false) {
       name
     }
   }
@@ -30,6 +30,57 @@
       {"name":"FriendsEdge"},
       {"name":"ReviewInput"}
     ]
+  }
+}
+"""
+
+[[units]]
+  name = "hero without episode"
+  code = """
+{
+  hero {
+    name
+  }
+}
+"""
+  result = """
+{
+  "hero":{
+    "name":"R2-D2"
+  }
+}
+"""
+
+[[units]]
+  name = "hero without episode"
+  code = """
+{
+  hero {
+    name
+  }
+}
+"""
+  result = """
+{
+  "hero":{
+    "name":"R2-D2"
+  }
+}
+"""
+
+[[units]]
+  name = "hero with null episode"
+  code = """
+{
+  hero(episode: null) {
+    name
+  }
+}
+"""
+  result = """
+{
+  "hero":{
+    "name":"R2-D2"
   }
 }
 """

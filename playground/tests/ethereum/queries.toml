@@ -3,7 +3,7 @@
   code = """
 {
   __schema {
-    types {
+    types(includeBuiltin: false) {
       name
     }
   }

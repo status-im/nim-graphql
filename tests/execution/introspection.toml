@@ -82,6 +82,7 @@ query {
     {"name":"Float"},
     {"name":"__Schema"},
     {"name":"__DirectiveLocation"},
+    {"name":"Query"},
     {"name":"Boolean"},
     {"name":"__Query"},
     {"name":"__Directive"},
@@ -107,7 +108,7 @@ type Query {
 }
 query {
   __schema {
-    types {
+    types(includeBuiltin: false) {
       name
     }
   }
@@ -117,7 +118,7 @@ query {
 {
   "__schema":{
     "types":[
-    {"name":"Query"}
+      {"name":"Query"}
     ]
   }
 }
@@ -1255,7 +1256,7 @@ directive @impossible on SCALAR
     }
   }
   __schema {
-    directives {
+    directives(includeBuiltin: false) {
       description
     }
   }
