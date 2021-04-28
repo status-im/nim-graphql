@@ -93,13 +93,20 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
-  for v in values(ctx.typeTable):
-    # schema is not a queryable entity from introspection pov
-    if v.kind in {skDirective, skSchema}:
-      continue
-    if ((sfBuiltin in v.flags) != includeBuiltin):
-      continue
-    list.add resp(v)
+  if includeBuiltin:
+    for v in values(ctx.typeTable):
+      # schema is not a queryable entity from introspection pov
+      if v.kind in {skDirective, skSchema}:
+        continue    
+      list.add resp(v)
+  else:
+    for v in values(ctx.typeTable):
+      # schema is not a queryable entity from introspection pov
+      if v.kind in {skDirective, skSchema}:
+        continue    
+      if sfBuiltin in v.flags:
+        continue
+      list.add resp(v)
   ok(list)
 
 proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -125,12 +132,18 @@ proc schemaDirectives(ud: RootRef, params: Args, parent: Node): RespResult {.api
   let arg = params[0].val
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
-  for v in values(ctx.typeTable):
-    if v.kind != skDirective:
-      continue
-    if ((sfBuiltin in v.flags) != includeBuiltin):
-      continue
-    list.add resp(v)
+  if includeBuiltin:
+    for v in values(ctx.typeTable):
+      if v.kind != skDirective:
+        continue
+      list.add resp(v)
+  else:
+    for v in values(ctx.typeTable):
+      if v.kind != skDirective:
+        continue
+      if sfBuiltin in v.flags:
+        continue
+      list.add resp(v)
   ok(list)
 
 const schemaProtos* = {
