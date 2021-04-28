@@ -1,36 +1,4 @@
 [[units]]
-  name = "operation not found"
-  errors = ["[0, 0]: Fatal: Operation not found: ':anonymous': @[]"]
-  code = """
-type Query {
-  name: String
-}
-query myquery {
-  name
-}
-"""
-  result = """
-null
-"""
-
-[[units]]
-  name = "operation found"
-  opName = "myquery"
-  code = """
-type Query {
-  name: String
-}
-query myquery {
-  name
-}
-"""
-  result = """
-{
-  "name": "superman"
-}
-"""
-
-[[units]]
   name = "schema description"
   code = """
 "Miracle Boots"

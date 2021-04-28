@@ -23,9 +23,20 @@ template invalidNull*(cond: untyped, body: untyped) =
     body
     return respNull()
 
+proc pickOpName(ctx: GraphqlRef, opName: string): Name =
+  if opName.len != 0:
+    return ctx.names.insert(opName)
+
+  result = ctx.names.anonName
+  var i = 1
+  for name, ec in ctx.execTable:
+    result = name
+    invalid i > 1:
+      ctx.fatal(ErrNoRoot, ec.opSym)
+    inc i
+
 proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
-  let name = if opName.len == 0: ctx.names.anonName
-             else: ctx.names.insert(opName)
+  name := pickOpName(opName)
   let op = ctx.execTable.getOrDefault(name)
   invalid op.isNil:
     ctx.fatal(ErrOperationNotFound, ctx.emptyNode, name)

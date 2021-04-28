@@ -153,6 +153,8 @@ proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
     path: copyTree(ctx.path),
     message:
       case err
+      of ErrNoRoot:
+        "Have more than one root operation, requires operationName"
       of ErrOperationNotFound:
         "Operation not found: '$1'" % [msg[0]]
       of ErrTypeUndefined:

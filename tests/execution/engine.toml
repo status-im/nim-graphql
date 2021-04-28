@@ -1,4 +1,71 @@
 [[units]]
+  name = "operation not found"
+  opName = "blabla"
+  errors = ["[0, 0]: Fatal: Operation not found: 'blabla': @[]"]
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+"""
+  result = """
+null
+"""
+
+[[units]]
+  name = "have more than one root operation but no opName"
+  errors = ["[7, 7]: Fatal: Have more than one root operation, requires operationName: @[]"]
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+query banana {
+  name
+}
+"""
+  result = """
+null
+"""
+
+[[units]]
+  name = "operation found although there is no opName"
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+"""
+  result = """
+{
+  "name": "superman"
+}
+"""
+
+[[units]]
+  name = "operation found"
+  opName = "myquery"
+  code = """
+type Query {
+  name: String
+}
+query myquery {
+  name
+}
+"""
+  result = """
+{
+  "name": "superman"
+}
+"""
+
+[[units]]
   name = "@skip(if: false)"
   code = """
 type Query {
