@@ -269,6 +269,9 @@ proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.
   ## Allows us to fetch the undisputed hero of the Star Wars trilogy, R2-D2.
   var ctx = Starwars(ud)
   let episode = params[0].val
+  if episode.kind in {nkEmpty, nkNull}:
+    return ctx.findChar("2001")
+
   if $episode.name == "EMPIRE":
     # Luke is the hero of Episode V.
     return ctx.findChar("1000")
