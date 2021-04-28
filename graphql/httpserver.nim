@@ -11,7 +11,7 @@ import
   std/[strutils, json],
   chronicles, chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream,
-  ./server_common
+  ./server_common, ./graphiql
 
 type
   ContentType = enum
@@ -37,7 +37,6 @@ template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
     return (Http400, jsonErrorResp(res.error))
-
 proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
   let ctx = server.graphql
 
@@ -47,7 +46,8 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, st
 
   ctx.addVariables(ro.variables)
 
-  exec parseQuery(toString(ro.query))
+  let query = toString(ro.query)
+  exec parseQuery(query)
   let resp = JsonRespStream.new()
   let opName = if ro.operationName.kind == nkNull:
                  ""
@@ -67,15 +67,7 @@ proc getContentTypes(request: HttpRequestRef): set[ContentType] =
     elif n == "application/json":
       result.incl ctJson
 
-proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
-  if r.isErr():
-    return dumbResponse()
-
-  let request = r.get()
-  if request.uri.path != "/graphql":
-    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
-    return await request.respond(Http404, error, server.defRespHeader)
-
+proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
   let ctx = server.graphql
   let contentTypes = request.getContentTypes()
 
@@ -100,6 +92,32 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
   let (status, res) = server.execRequest(ro)
   return await request.respond(status, res, server.defRespHeader)
 
+proc processUIRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+  if request.meth != MethodGet:
+    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
+    let header = HttpTable.init([
+      ("Content-Type", "application/json; charset=utf-8"),
+      ("X-Content-Type-Options", "nosniff")
+    ])
+    return await request.respond(Http405, error, header)
+
+  let header = HttpTable.init([("Content-Type", "text/html")])
+  return await request.respond(Http200, graphiql_html, header)
+
+proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
+  if r.isErr():
+    return dumbResponse()
+
+  let request = r.get()
+  case request.uri.path
+  of "/graphql":
+    return await processGraphqlRequest(server, request)
+  of "/graphql/ui":
+    return await processUIRequest(server, request)
+  else:
+    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
+    return await request.respond(Http404, error, server.defRespHeader)
+
 proc new*(t: typedesc[GraphqlHttpServerRef],
           graphql: GraphqlRef,
           address: TransportAddress,
@@ -120,7 +138,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
   )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
-    processGraphqlRequest(server, rf)
+    routingRequest(server, rf)
 
   let sres = HttpServerRef.new(address, processCallback, serverFlags,
                                socketFlags, serverUri, serverIdent,
