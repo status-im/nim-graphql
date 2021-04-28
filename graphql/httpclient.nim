@@ -25,7 +25,12 @@ type
     value: Node
 
   ParseResult* = Result[void, ErrorDesc]
-  ClientResult* = Result[string, string]
+
+  ClientResp* = object
+    code*: int # HTTP code
+    response*: string
+
+  ClientResult* = Result[ClientResp, string]
 
   GraphqlHttpClientRef* = ref GraphqlHttpClientObj
   GraphqlHttpClientObj* = object of RootObj
@@ -185,8 +190,8 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string): Future[ClientResult
               address = transp.remoteAddress()
         return err("response body timeout")
       dataFut.read()
-      ok(dataBuf)
+      ok(ClientResp(code: resp.code, response: dataBuf))
     else:
-      ok("")
+      ok(ClientResp(code: resp.code, response: ""))
   await transp.closeWait()
   return cresp

@@ -36,9 +36,9 @@ type
 template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
-    return jsonErrorResp(res.error)
+    return (Http400, jsonErrorResp(res.error))
 
-proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsafe.} =
+proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
   let ctx = server.graphql
 
   # clean up previous garbage before new execution
@@ -55,9 +55,9 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): string {.gcsa
                  toString(ro.operationName)
   let res = ctx.executeRequest(resp, opName)
   if res.isErr:
-    jsonErrorResp(res.error, resp.getBytes())
+    (Http400, jsonErrorResp(res.error, resp.getBytes()))
   else:
-    jsonOkResp(resp.getBytes())
+    (Http200, jsonOkResp(resp.getBytes()))
 
 proc getContentTypes(request: HttpRequestRef): set[ContentType] =
   let conType = request.headers.getList("content-type")
@@ -74,7 +74,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
   let request = r.get()
   if request.uri.path != "/graphql":
     let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
-    return await request.respond(Http200, error, server.defRespHeader)
+    return await request.respond(Http404, error, server.defRespHeader)
 
   let ctx = server.graphql
   let contentTypes = request.getContentTypes()
@@ -84,7 +84,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
     let res = ctx.decodeRequest(ro, k, v)
     if res.isErr:
       let error = jsonErrorResp(res.error)
-      return await request.respond(Http200, error, server.defRespHeader)
+      return await request.respond(Http400, error, server.defRespHeader)
 
   if request.hasBody:
     let body = await request.getBody()
@@ -94,11 +94,11 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, r: RequestFence): Futur
       let res = ctx.parseLiteral(body)
       if res.isErr:
         let error = jsonErrorResp(res.error)
-        return await request.respond(Http200, error, server.defRespHeader)
+        return await request.respond(Http400, error, server.defRespHeader)
       requestNodeToObject(res.get(), ro)
 
-  let res = server.execRequest(ro)
-  return await request.respond(Http200, res, server.defRespHeader)
+  let (status, res) = server.execRequest(ro)
+  return await request.respond(status, res, server.defRespHeader)
 
 proc new*(t: typedesc[GraphqlHttpServerRef],
           graphql: GraphqlRef,

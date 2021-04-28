@@ -77,7 +77,10 @@ proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var T
     debugEcho res.error
     return
 
-  let resp = decodeResponse(res.get())
+  let clientResp = res.get()
+  check (clientResp.code == 200) == (unit.error.len == 0)
+
+  let resp = decodeResponse(clientResp.response)
   if not resp.errors.isNil:
     if unit.error.len == 0:
       debugEcho $resp.errors
