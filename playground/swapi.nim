@@ -277,7 +277,7 @@ proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.
   return ctx.findChar("2001")
 
 proc queryReviews(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  discard
+  err("not implemented")
 
 proc querySearch(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
@@ -335,7 +335,7 @@ proc charFriends(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   ctx.fillFriends(parent)
 
 proc charFriendsConnection(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  discard
+  err("not implemented")
 
 proc charAppearsIn(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(parent.map[3].val)
