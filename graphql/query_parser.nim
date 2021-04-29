@@ -16,6 +16,7 @@ export
   common_parser.ParserError,
   common_parser.ParserFlag,
   common_parser.init,
+  common_parser.defaultParserConf,
   ast
 
 # forward declaration

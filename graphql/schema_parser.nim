@@ -16,6 +16,7 @@ export
   common_parser.ParserError,
   common_parser.ParserFlag,
   common_parser.init,
+  common_parser.defaultParserConf,
   ast
 
 proc operationKind*(q: var Parser, opKind: var Node) =
@@ -66,6 +67,10 @@ proc description(q: var Parser, desc: var Node) =
     desc = newNode(nkString)
     desc.stringVal = q.lex.token
     nextToken
+  elif q.lex.comment.len > 0 and
+    pfCommentDescription in q.flags:
+    desc = newNode(nkString)
+    desc.stringVal = q.lex.comment
 
 proc inputValueDef(q: var Parser, arg: var Node) =
   desc := description

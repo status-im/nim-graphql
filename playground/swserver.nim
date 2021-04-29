@@ -19,12 +19,16 @@ type
 
 proc loadSchema(ctx: GraphqlRef, schema: Schema): GraphqlResult =
   notice "loading graphql api", name = schema
+
+  var conf = defaultParserConf()
+  conf.flags.incl pfCommentDescription
+
   if schema == ethereum:
     ctx.initEthApi()
-    ctx.parseSchemaFromFile("tests" / "schemas" / "ethereum_1.0.ql")
+    ctx.parseSchemaFromFile("tests" / "schemas" / "ethereum_1.0.ql", conf)
   else:
     ctx.initStarWarsApi()
-    ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql")
+    ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql", conf)
 
 const
   address = initTAddress("127.0.0.1:8547")

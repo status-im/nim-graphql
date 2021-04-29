@@ -29,8 +29,9 @@ type
   ParserFlag* = enum
     pfExperimentalFragmentVariables
     pfAcceptReservedWords # any name prefixed with "__"
-    pfJsonCompatibility # input object keys can be string
+    pfJsonCompatibility   # input object keys can be string
     pfJsonKeyToName
+    pfCommentDescription  # allow comments as description
 
   RecursionGuard* = enum
     rgTypeRef       = "TypeDef"
@@ -47,6 +48,7 @@ type
     maxEnumVals*      : int
     maxDefinitions*   : int
     maxChoices*       : int
+    flags*            : set[ParserFlag]
 
   ParserConfInternal* = object
     maxRecursionLimit*: int
@@ -115,13 +117,15 @@ proc init*(T: type Parser, stream: InputStream, conf = defaultParserConf()): T =
   let names = newNameCache()
   T(lex: Lexer.init(stream, names, conf.lexerConf),
     emptyNode: Node(kind: nkEmpty, pos: Pos()),
-    conf: toInternalConf(conf)
+    conf: toInternalConf(conf),
+    flags: conf.flags
    )
 
 proc init*(T: type Parser, stream: InputStream, names: NameCache, conf = defaultParserConf()): T =
   T(lex: Lexer.init(stream, names, conf.lexerConf),
     emptyNode: Node(kind: nkEmpty, pos: Pos()),
-    conf: toInternalConf(conf)
+    conf: toInternalConf(conf),
+    flags: conf.flags
    )
 
 template pos*(q: Parser): Pos =

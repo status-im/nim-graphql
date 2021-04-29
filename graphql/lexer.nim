@@ -67,6 +67,7 @@ type
     tokenStart*: int
     tok*       : TokKind
     token*     : string
+    comment*   : string
     name*      : Name
     error*     : LexerError
     err*       : ErrorDesc
@@ -163,6 +164,9 @@ proc skipWhitespace(lex: var Lexer) =
     lex.line += 1
     lex.lineStart = lex.stream.pos
 
+  # clear vomment every time we visit skipWhitespace
+  lex.comment.setLen(0)
+
   while lex.stream.readable:
     case lex.stream.peek
     of SkipableChars:
@@ -176,16 +180,23 @@ proc skipWhitespace(lex: var Lexer) =
         case lex.stream.peek
         of '\r':
           handleCR()
+          # TODO: should we preserve \r or replace it with \n?
+          lex.comment.add '\n'
           break
         of '\n':
           lex.handleLF()
+          lex.comment.add '\n'
           break
         else:
-          advance lex.stream
+          lex.comment.add lex.stream.read
     of '\r':
       handleCR()
+      # we are not interested in lone comment
+      lex.comment.setLen(0)
     of '\n':
       lex.handleLF()
+      # we are not interested in lone comment
+      lex.comment.setLen(0)
     else:
       break
 
