@@ -163,8 +163,9 @@ proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect]
 
 proc start*(rs: GraphqlHttpServerRef) =
   ## Starts GraphQL server.
-  rs.server.start()
-  notice "GraphQL service started", address = $rs.server.address
+  rs.server.start()  
+  notice "GraphQL service started", at = "http://" & $rs.server.address & "/graphql"
+  notice "GraphiQL UI ready", at = "http://" & $rs.server.address & "/graphql/ui"
 
 proc stop*(rs: GraphqlHttpServerRef) {.async.} =
   ## Stop GraphQL server from accepting new connections.

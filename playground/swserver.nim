@@ -53,9 +53,6 @@ proc main() =
   let server = sres.get()
   server.start()
 
-  echo ""
-  echo "server ready at http://" & $address & "/graphql"
-  echo "graphiql ui ready at http://" & $address & "/graphql/ui"
   runForever()
 
 main()
