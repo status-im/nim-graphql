@@ -10,7 +10,7 @@
 }
 """
   result = """
- {
+{
   "__schema":{
     "types":[
       {"name":"Episode"},
@@ -96,10 +96,8 @@ query ($eps: Episode = JEDI){
 """
   result = """
 {
-  "data": {
-    "hero": {
-      "name": "R2-D2"
-    }
+  "hero": {
+    "name": "R2-D2"
   }
 }
 """

@@ -108,7 +108,7 @@ proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
   ## TODO: validate max-int 64 bit
   if node.kind == nkInt:
     # convert it into nkString node
-    ok(Node(kind: nkString, stringVal: node.intVal, pos: node.pos))
+    ok(node)
   else:
     err("expect int, but got '$1'" % [$node.kind])
 
@@ -137,6 +137,13 @@ proc findMap(node: Node, key: string): RespResult =
   for n in node.map:
     if n.key == key:
       return ok(n.val)
+
+  err("cannot find key: " & key)
+
+proc findMap(node: Node, key, subkey: string): RespResult =
+  for n in node.map:
+    if n.key == key:
+      return findKey(n.val, subkey)
 
   err("cannot find key: " & key)
 
@@ -217,48 +224,63 @@ const logProcs = {
 
 proc txHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp("0x0102030405060708090a0b0c0d0e0f0102030405060708090a0b0c0d0e0f0000"))
 
 proc txNonce(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMap(parent, "tx", "nonce")
 
 proc txIndex(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  findMap(parent, "index")
 
 proc txFrom(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc txTo(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc txValue(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(1000))
 
 proc txGasPrice(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 proc txGas(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 proc txInputData(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp("0xDEADBEEF"))
 
 proc txBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc txStatus(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(1))
 
 proc txGasUsed(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 proc txCumulativeGasUsed(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 proc txCreatedContract(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc txLogs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 const txProcs = {
   "hash": txHash,
@@ -359,27 +381,27 @@ proc blockTimestamp(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "timestamp")
-  
+
 proc blockLogsBloom(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "bloom")
-  
+
 proc blockMixHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "mixHash")
-  
+
 proc blockDifficulty(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "difficulty")
-  
+
 proc blockTotalDifficulty(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "difficulty")
-  
+
 proc blockOmmerCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let ommers = parent.map[2].val
@@ -387,32 +409,50 @@ proc blockOmmerCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
 
 proc blockOmmers(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockOmmerAt(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockOmmerHash(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
   let blk = parent.map[0].val
   findKey(blk, "uncleHash")
-  
+
 proc blockTransactions(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let txs = parent.map[1].val
+  var list = respList()
+  var i = 0
+  for n in txs:
+    var map = respMap(ctx.names[ethTransaction])
+    map["index"] = resp(i)
+    map["tx"] = n
+    list.add map
+    inc i
+
+  ok(list)
 
 proc blockTransactionAt(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockLogs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockAccount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockCall(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc blockEstimateGas(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 const blockProcs = {
   "number": blockNumber,
@@ -461,18 +501,23 @@ const callResultProcs = {
 
 proc syncStateStartingBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(0))
 
 proc syncStateCurrentBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(3))
 
 proc syncStateHighestBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(3))
 
 proc syncStatePulledStates(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(respNull())
 
 proc syncStateKnownStates(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(respNull())
 
 const syncStateProcs = {
   "startingBlock": syncStateStartingBlock,
@@ -484,18 +529,24 @@ const syncStateProcs = {
 
 proc pendingTransactionCount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(1))
 
 proc pendingTransactions(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc pendingAccount(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  let n = ctx.accounts[0]
+  ok(toAccount(n[1], n[0], ctx.names[ethAccount]))
 
 proc pendingCall(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc pendingEstimateGas(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 const pendingProcs = {
   "transactionCount": pendingTransactionCount,
@@ -509,14 +560,14 @@ proc queryBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma
   var ctx = EthServer(ud)
   let number = params[0].val
   let hash = params[1].val
-  if number.kind == nkString:
+  if number.kind == nkInt:
     for n in ctx.blocks:
-      if n[1][1].stringVal == number.stringVal:
+      if n[1][1].stringVal == number.intVal:
         return ok(n.toBlock(ctx.names[ethBlock]))
     err("block not found: " & number.stringVal)
   elif hash.kind == nkString:
     for n in ctx.blocks:
-      if n[1][1].stringVal == number.stringVal:
+      if n[1][1].stringVal == number.intVal:
         return ok(n.toBlock(ctx.names[ethBlock]))
     err("block not found: " & number.stringVal)
   else:
@@ -524,24 +575,34 @@ proc queryBlock(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma
 
 proc queryBlocks(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  var list = respList()
+  let blk = toBlock(ctx.blocks[0], ctx.names[ethBlock])
+  list.add blk
+  ok(list)
 
 proc queryPending(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(respMap(ctx.names[ethPending]))
 
 proc queryTransaction(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc queryLogs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  err("not implemented")
 
 proc queryGasPrice(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(21000))
 
 proc queryProtocolVersion(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(resp(63))
 
 proc querySyncing(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)
+  ok(respMap(ctx.names[ethSyncState]))
 
 const queryProcs = {
   "block": queryBlock,
