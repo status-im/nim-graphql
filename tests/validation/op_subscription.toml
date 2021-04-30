@@ -683,3 +683,44 @@ subscription ($myarg: String = "123") {
 }
 """
 
+[[units]]
+  name = "only one non-introspection field allowed at root"
+  error = "[4, 14]: Error: only one 'root selection' allowed"
+  code = """
+type Subscription {
+  name: String
+}
+subscription {
+  __typename
+  __schema {
+    queryType {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "only one non-introspection field allowed at root ok"
+code = """
+type Message {
+  body: String
+  sender: String
+}
+type Subscription {
+  name: String
+  newMessage: Message
+}
+subscription sub {
+  newMessage {
+    __typename
+    body
+    sender
+  }
+  __typename
+  __type(name: "ID") {
+    kind
+    name
+  }
+}
+"""

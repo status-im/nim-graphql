@@ -13,6 +13,9 @@ import
   ./common/[ast, names, errors, ast_helper],
   ./graphql
 
+const
+  introsKeywords = {introsSchema, introsType, introsTypeName}
+
 proc `$$`(node: Node): string =
   case node.kind
   of nkNonNullType:
@@ -929,9 +932,6 @@ proc skipField(ctx: GraphqlRef, dirs: Dirs): bool =
       discard
 
 proc fieldSelection(ctx: GraphqlRef, scope, sels, parentType: Node, fieldSet: var FieldSet) =
-  const
-    introsKeywords = {introsSchema, introsType, introsTypeName}
-
   for field in sels:
     case field.kind
     of nkFragmentSpread:
@@ -1200,7 +1200,9 @@ proc countRootFields(sels: Node, root = true): int =
       if root: inc(count, countRootFields(frag.sels, false))
     of nkField:
       # alias, name, args, dirs, sels
-      inc count
+      let name = Field(field).name
+      if toKeyword(name.name) notin introsKeywords:
+        inc count
     else:
       unreachable()
   return count
@@ -1213,7 +1215,7 @@ proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node) =
   var fieldSet: FieldSet
   visit fieldSelection(symNode, node.sels, ctx.rootSubs, fieldSet)
   visit fieldInSetCanMerge(fieldSet)
-  invalid countRootFields(node.sels) > 1:
+  invalid countRootFields(node.sels) != 1:
     ctx.error(ErrOnlyOne, node.Node, "root selection")
   visit validateVarUsage(symNode)
   ctx.skipOrInclude(fieldSet, symNode, ctx.rootSubs)
