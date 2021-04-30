@@ -1184,7 +1184,7 @@ proc mutationMutation(ctx: GraphqlRef, symNode: Node) =
   visit validateVarUsage(symNode)
   ctx.skipOrInclude(fieldSet, symNode, ctx.rootMutation)
 
-proc countRootFields(sels: Node, root = true): int =
+proc countRootFields(ctx: GraphqlRef, sels: Node, root = true): int =
   var count = 0
   for field in sels:
     case field.kind
@@ -1193,13 +1193,20 @@ proc countRootFields(sels: Node, root = true): int =
       let spread = FragmentSpread(field)
       let name = spread.name
       let frag = Fragment(name.sym.ast)
-      if root: inc(count, countRootFields(frag.sels, false))
+      fieldsCount := countRootFields(frag.sels, false)
+      if root: inc(count, fieldsCount)
     of nkInlineFragment:
       # typeCond, dirs, sels
       let frag = InlineFragment(field)
-      if root: inc(count, countRootFields(frag.sels, false))
+      fieldsCount := countRootFields(frag.sels, false)
+      if root: inc(count, fieldsCount)
     of nkField:
       # alias, name, args, dirs, sels
+      let dirs = Field(field).dirs
+      for dir in dirs:
+        let name = dir.name
+        invalid toKeyword(name.sym.name) in {kwSkip, kwInclude}:
+          ctx.error(ErrDirNotAllowed, name)
       let name = Field(field).name
       if toKeyword(name.name) notin introsKeywords:
         inc count
@@ -1215,8 +1222,9 @@ proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node) =
   var fieldSet: FieldSet
   visit fieldSelection(symNode, node.sels, ctx.rootSubs, fieldSet)
   visit fieldInSetCanMerge(fieldSet)
-  invalid countRootFields(node.sels) != 1:
-    ctx.error(ErrOnlyOne, node.Node, "root selection")
+  rootFieldsCount := countRootFields(node.sels)
+  invalid rootFieldsCount != 1:
+    ctx.error(ErrOnlyOne, node.Node, "root subscription field")
   visit validateVarUsage(symNode)
   ctx.skipOrInclude(fieldSet, symNode, ctx.rootSubs)
 

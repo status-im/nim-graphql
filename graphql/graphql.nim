@@ -40,6 +40,7 @@ type
     ErrOperationNotFound
     ErrScalarError
     ErrEnumError
+    ErrDirNotAllowed
 
   FieldRef* = ref FieldObj
   FieldObj* = object
@@ -235,6 +236,8 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
         "'$1' got '$2': $3" % [$node, msg[0], msg[1]]
       of ErrEnumError:
         "'$1' got '$2'('$3'), expect '$4'" % [$node, msg[0], msg[1], msg[2]]
+      of ErrDirNotAllowed:
+        "directive '$1' is not allowed at subscription root field" % [$node]
       else:
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )

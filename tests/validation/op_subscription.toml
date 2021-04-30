@@ -400,7 +400,7 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection ok"
+  name = "only one root subscription field ok"
   code = """
 type Subscription {
   name: String
@@ -412,8 +412,8 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection"
-  error = "[6, 14]: Error: only one 'root selection' allowed"
+  name = "only one root subscription field"
+  error = "[6, 14]: Error: only one 'root subscription field' allowed"
   code = """
 type Subscription {
   name: String
@@ -427,8 +427,8 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection inline fragment"
-  error = "[8, 14]: Error: only one 'root selection' allowed"
+  name = "only one root subscription field inline fragment"
+  error = "[8, 14]: Error: only one 'root subscription field' allowed"
   code = """
 type Subscription {
   name: String
@@ -448,7 +448,7 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection inline fragment ok"
+  name = "only one root subscription field inline fragment ok"
   code = """
 type Subscription {
   name: String
@@ -467,7 +467,7 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection spread fragment ok"
+  name = "only one root subscription field spread fragment ok"
   code = """
 type Subscription {
   name: String
@@ -482,8 +482,8 @@ subscription {
 """
 
 [[units]]
-  name = "only one root selection spread fragment"
-  error = "[9, 14]: Error: only one 'root selection' allowed"
+  name = "only one root subscription field spread fragment"
+  error = "[9, 14]: Error: only one 'root subscription field' allowed"
   code = """
 type Subscription {
   name: String
@@ -685,7 +685,7 @@ subscription ($myarg: String = "123") {
 
 [[units]]
   name = "only one non-introspection field allowed at root"
-  error = "[4, 14]: Error: only one 'root selection' allowed"
+  error = "[4, 14]: Error: only one 'root subscription field' allowed"
   code = """
 type Subscription {
   name: String
@@ -721,6 +721,49 @@ subscription sub {
   __type(name: "ID") {
     kind
     name
+  }
+}
+"""
+
+
+[[units]]
+  name = "@skip not allowed in subscription root field"
+  error = "[10, 15]: Error: directive 'skip' is not allowed at subscription root field"
+code = """
+type Message {
+  body: String
+  sender: String
+}
+type Subscription {
+  name: String
+  newMessage: Message
+}
+subscription sub {
+  newMessage @skip(if: true) {
+    __typename
+    body
+    sender
+  }
+}
+"""
+
+[[units]]
+  name = "@include not allowed in subscription root field"
+  error = "[10, 15]: Error: directive 'include' is not allowed at subscription root field"
+code = """
+type Message {
+  body: String
+  sender: String
+}
+type Subscription {
+  name: String
+  newMessage: Message
+}
+subscription sub {
+  newMessage @include(if: true) {
+    __typename
+    body
+    sender
   }
 }
 """
