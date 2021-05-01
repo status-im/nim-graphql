@@ -10,4 +10,5 @@
 {. warning[UnusedImport]:off .}
 
 import
-  test_ethereum
+  test_ethereum,
+  test_starwars
