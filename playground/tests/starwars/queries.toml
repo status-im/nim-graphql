@@ -106,3 +106,23 @@ query ($eps: Episode = JEDI){
   }
 }
 """
+
+[[units]]
+  name = "unmatching object type with fragment in list should not appear in final result"
+  code = """
+{
+  search(text: "an") {
+    ... on Human {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "search":[
+    {"name":"HanSolo"},
+    {"name":"LeiaOrgana"}
+  ]
+}
+"""

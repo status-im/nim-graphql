@@ -254,7 +254,7 @@ proc search(ctx: Starwars, text: string): Node =
   var list = respList()
   for n in ctx.characters:
     if search(n, text):
-       list.add toResp(ctx, n)
+      list.add toResp(ctx, n)
 
   for n in ctx.ships:
     if search(n, text):

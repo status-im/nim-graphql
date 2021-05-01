@@ -120,6 +120,11 @@ proc completeValue(ctx: GraphqlRef, fieldType: Node,
     for i, resItem in resval:
       index.intVal = $i # replace path node with the current index
       let resultItem = ctx.completeValue(innerType, field, resItem)
+      if resultItem.kind == nkMap and resultItem.map.len == 0:
+        # if the resultItem have no fields, it means it is not
+        # matching the current fragment type, don't put it
+        # in the list
+        continue
       res.add resultItem
       if ctx.errKind != ErrNone:
         break
