@@ -345,7 +345,7 @@ interface Query {
 
 [[units]]
   name = "interface field arg defVal coercion invalid int <- string"
-  error = "[2, 9]: Error: 'name' got '123': expect int, but got 'String'"
+  error = "[2, 9]: Error: 'name' got '\"123\"': expect int, but got 'String'"
   code = """
 interface Query {
   human(name: Int = "123"): String

@@ -154,6 +154,10 @@ proc requestNodeToObject*(node: Node, ro: var RequestObject) =
 proc toString*(node: Node): string =
   if node.isNil:
     return ""
-  if node.kind == nkEmpty:
+  case node.kind
+  of nkEmpty:
     return ""
-  $node
+  of nkString:
+    return node.stringVal
+  else:
+    $node

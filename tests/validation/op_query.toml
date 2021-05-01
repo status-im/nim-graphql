@@ -466,7 +466,7 @@ query mymut($arg: [Boolean!!]) {
 
 [[units]]
   name = "query var defVal coercion invalid bool <- string"
-  error = "[1, 16]: Error: 'arg' got 'hello': expect boolean, but got 'String'"
+  error = "[1, 16]: Error: 'arg' got '\"hello\"': expect boolean, but got 'String'"
   code = """
 query myquery($arg: Boolean = "hello") {
   human

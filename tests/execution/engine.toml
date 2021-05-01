@@ -282,7 +282,7 @@ type Query {
 
 [[units]]
   name = "execution path"
-  errors = ["[11, 5]: Error: 'age' got '100': expect string, but got 'Int': @[tree, age]"]
+  errors = ["[11, 5]: Error: 'age' got '100': expect string, but got 'Int': @[\"tree\", \"age\"]"]
   code = """
 type Tree {
   name: String
@@ -309,7 +309,7 @@ type Query {
 
 [[units]]
   name = "execution path with list index"
-  errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[tree, number, 1]"]
+  errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[\"tree\", \"number\", 1]"]
   code = """
 type Tree {
   name: String
@@ -335,7 +335,7 @@ type Query {
 
 [[units]]
   name = "execution error should have better text position"
-  errors = ["[5, 3]: Fatal: Field '__type' cannot be resolved: \"'__Querys' not defined\": @[__type]"]
+  errors = ["[5, 3]: Fatal: Field '__type' cannot be resolved: \"'__Querys' not defined\": @[\"__type\"]"]
   opName = "intros"
   code = """
 type Query {
@@ -497,7 +497,7 @@ query ($myApple: Fruits) {
 
 [[units]]
   name = "introspection __typename on not defined type"
-  errors = ["[5, 3]: Fatal: Field 'int_t' cannot be resolved: \"'__Int' not defined\": @[int_t]"]
+  errors = ["[5, 3]: Fatal: Field 'int_t' cannot be resolved: \"'__Int' not defined\": @[\"int_t\"]"]
   code = """
 type Query {
   name: String

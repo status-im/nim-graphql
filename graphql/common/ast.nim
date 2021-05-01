@@ -309,7 +309,7 @@ proc `$`*(n: Node): string =
   of nkFloat:
     result = $n.floatVal
   of nkString:
-    result = $n.stringVal
+    result = '\"' & n.stringVal & '\"'
   of nkEnum, nkVariable, nkName, nkNamedType:
     result = $n.name
   of nkSym:

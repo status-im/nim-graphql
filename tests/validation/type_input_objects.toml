@@ -277,7 +277,7 @@ input Third {
 
 [[units]]
   name = "input object field defVal coercion invalid int <- string"
-  error = "[2, 3]: Error: 'value' got '123': expect int, but got 'String'"
+  error = "[2, 3]: Error: 'value' got '\"123\"': expect int, but got 'String'"
   code = """
 input myinput {
   value: Int = "123"
@@ -329,7 +329,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid float <- string"
-  error = "[2, 3]: Error: 'value' got '123.0': expect int or float, but got 'String'"
+  error = "[2, 3]: Error: 'value' got '\"123.0\"': expect int or float, but got 'String'"
   code = """
 input myinput {
   value: Float = "123.0"
@@ -362,7 +362,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion invalid boolean <- string"
-  error = "[2, 3]: Error: 'value' got 'true': expect boolean, but got 'String'"
+  error = "[2, 3]: Error: 'value' got '\"true\"': expect boolean, but got 'String'"
   code = """
 input myinput {
   value: Boolean = "true"
@@ -645,7 +645,7 @@ input myinput {
 
 [[units]]
   name = "input object field defVal coercion valid [int] <- [int, string]"
-  error = "[2, 3]: Error: 'value' got 'hello': expect int, but got 'String'"
+  error = "[2, 3]: Error: 'value' got '\"hello\"': expect int, but got 'String'"
   code = """
 input myinput {
   value: [Int] = [1, 2, "hello"]

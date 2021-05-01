@@ -86,7 +86,12 @@ query {
 {
   "__schema":{
     "types":[
-      {"name":"Query"}
+      {"name":"Int"},
+      {"name":"Float"},
+      {"name":"Query"},
+      {"name":"Boolean"},
+      {"name":"String"},
+      {"name":"ID"}
     ]
   }
 }
@@ -262,7 +267,7 @@ type Query {
 
 [[units]]
   name = "instrospection __type(\"__Typex\") not found"
-  errors = ["[5, 3]: Fatal: Field '__type' cannot be resolved: \"'__Typex' not defined\": @[__type]"]
+  errors = ["[5, 3]: Fatal: Field '__type' cannot be resolved: \"'__Typex' not defined\": @[\"__type\"]"]
   code = """
 type Query {
   name: String

@@ -97,14 +97,15 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
     for v in values(ctx.typeTable):
       # schema is not a queryable entity from introspection pov
       if v.kind in {skDirective, skSchema}:
-        continue    
+        continue
       list.add resp(v)
   else:
     for v in values(ctx.typeTable):
       # schema is not a queryable entity from introspection pov
       if v.kind in {skDirective, skSchema}:
-        continue    
-      if sfBuiltin in v.flags:
+        continue
+      # builtin scalar should queryable even though `includeBuiltin` is false
+      if sfBuiltin in v.flags and v.kind != skScalar:
         continue
       list.add resp(v)
   ok(list)

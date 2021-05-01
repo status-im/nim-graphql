@@ -63,7 +63,7 @@ type __Schema {
   queryType: __Type!
   mutationType: __Type
   subscriptionType: __Type
-  directives(includeBuiltin: Boolean = false): [__Directive!]!
+  directives(includeBuiltin: Boolean = true): [__Directive!]!
 }
 
 "Builtin __Type type"

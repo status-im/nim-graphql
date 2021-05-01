@@ -620,9 +620,9 @@ const queryProcs = {
 proc extractData(ud: EthServer, node: Node) =
   let data = node[0][1]
   for n in data:
-    if $n[0] == "blocks":
+    if n[0].stringVal == "blocks":
       ud.blocks = n[1]
-    elif $n[0] == "postState":
+    elif n[0].stringVal == "postState":
       ud.accounts = n[1]
 
 proc initEthApi*(ctx: GraphqlRef) =

@@ -508,7 +508,7 @@ fragment mymut($arg: [Boolean!!]) on User {
 
 [[units]]
   name = "fragment var defVal coercion invalid float <- string"
-  error = "[4, 17]: Error: 'arg' got 'hello': expect int or float, but got 'String'"
+  error = "[4, 17]: Error: 'arg' got '\"hello\"': expect int or float, but got 'String'"
   code = """
 type User {
   name: String

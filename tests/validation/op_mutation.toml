@@ -196,7 +196,7 @@ mutation mymut($arg: [Boolean!!]) {
 
 [[units]]
   name = "mutation var defVal coercion invalid bool <- string"
-  error = "[1, 17]: Error: 'arg' got 'hello': expect boolean, but got 'String'"
+  error = "[1, 17]: Error: 'arg' got '\"hello\"': expect boolean, but got 'String'"
   code = """
 mutation mymut($arg: Boolean = "hello") {
   human

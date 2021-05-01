@@ -13,22 +13,27 @@
 {
   "__schema":{
     "types":[
-      {"name":"Episode"},
-      {"name":"Mutation"},
-      {"name":"Droid"},
-      {"name":"ColorInput"},
-      {"name":"LengthUnit"},
-      {"name":"Query"},
-      {"name":"Character"},
-      {"name":"Subscription"},
-      {"name":"Starship"},
-      {"name":"FriendsConnection"},
-      {"name":"Review"},
-      {"name":"PageInfo"},
-      {"name":"Human"},
-      {"name":"SearchResult"},
-      {"name":"FriendsEdge"},
-      {"name":"ReviewInput"}
+    {"name":"Int"},
+    {"name":"Float"},
+    {"name":"Episode"},
+    {"name":"Mutation"},
+    {"name":"Droid"},
+    {"name":"ColorInput"},
+    {"name":"LengthUnit"},
+    {"name":"Query"},
+    {"name":"Boolean"},
+    {"name":"Character"},
+    {"name":"Subscription"},
+    {"name":"Starship"},
+    {"name":"FriendsConnection"},
+    {"name":"Review"},
+    {"name":"String"},
+    {"name":"PageInfo"},
+    {"name":"ID"},
+    {"name":"Human"},
+    {"name":"SearchResult"},
+    {"name":"FriendsEdge"},
+    {"name":"ReviewInput"}
     ]
   }
 }
