@@ -8,10 +8,10 @@
 # those terms.
 
 import
-  std/[strutils, json],
+  std/[strutils, json, tables],
   chronicles, chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream,
-  ./server_common, ./graphiql
+  ./server_common, ./graphiql, ./miniz/miniz_api
 
 type
   ContentType = enum
@@ -37,6 +37,7 @@ template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
     return (Http400, jsonErrorResp(res.error))
+
 proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
   let ctx = server.graphql
 
@@ -67,6 +68,30 @@ proc getContentTypes(request: HttpRequestRef): set[ContentType] =
     elif n == "application/json":
       result.incl ctJson
 
+proc sendResponse(res: string, status: HttpCode,
+                  acceptEncoding: set[TransferEncodingFlags],
+                  request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+
+  let response = request.getResponse()
+  response.status = status
+  response.addHeader("Content-Type", "application/json")
+  if TransferEncodingFlags.Gzip in acceptEncoding:
+    response.addHeader("Content-Encoding", "gzip")
+
+  await response.prepare()
+
+  const chunkSize = 1024 * 4
+  let maxLen = res.len
+  var len = res.len
+  while len > chunkSize:
+    await response.sendChunk(res[maxLen - len].unsafeAddr, chunkSize)
+    len -= chunkSize
+
+  if len > 0:
+    await response.sendChunk(res[maxLen - len].unsafeAddr, len)
+  await response.finish()
+  return response
+
 proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
   let ctx = server.graphql
   let contentTypes = request.getContentTypes()
@@ -90,7 +115,25 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
       requestNodeToObject(res.get(), ro)
 
   let (status, res) = server.execRequest(ro)
-  return await request.respond(status, res, server.defRespHeader)
+
+  if request.version == HttpVersion10:
+    return await request.respond(status, res, server.defRespHeader)
+
+  let acceptEncoding =
+    block:
+      let res = getTransferEncoding(
+                                   request.headers.getList("accept-encoding"))
+      if res.isErr():
+        let error = jsonErrorResp("Incorrect Accept-Encoding value")
+        return await request.respond(Http400, error, server.defRespHeader)
+      else:
+        res.get()
+
+  if TransferEncodingFlags.Gzip in acceptEncoding:
+    let gzipped = gzip(res)
+    return await sendResponse(gzipped, status, acceptEncoding, request)
+
+  return await sendResponse(res, status, acceptEncoding, request)
 
 proc processUIRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
   if request.meth != MethodGet:
@@ -163,7 +206,7 @@ proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect]
 
 proc start*(rs: GraphqlHttpServerRef) =
   ## Starts GraphQL server.
-  rs.server.start()  
+  rs.server.start()
   notice "GraphQL service started", at = "http://" & $rs.server.address & "/graphql"
   notice "GraphiQL UI ready", at = "http://" & $rs.server.address & "/graphql/ui"
 
