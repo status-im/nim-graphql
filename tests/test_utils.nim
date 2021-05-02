@@ -86,6 +86,13 @@ proc queryExampleImpl(ud: RootRef, params: Args, parent: Node): RespResult {.api
   let number = obj[0][1]
   ok(number)
 
+proc queryEchoString(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  let text = params[0].val
+  if text.kind == nkString:
+    ok(text)
+  else:
+    ok(respNull())
+  
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
@@ -95,7 +102,8 @@ const queryProtos = {
   "checkFruit": queryCheckFruit,
   "creatures": queryCreatures,
   "search": querySearchImpl,
-  "example": queryExampleImpl
+  "example": queryExampleImpl,
+  "echoString": queryEchoString
 }
 
 proc creatureNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
