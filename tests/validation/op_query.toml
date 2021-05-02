@@ -1099,3 +1099,51 @@ query ($myList: Fruits!) {
 }
 """
 
+[[units]]
+  name = "non nullable variable should have run time value"
+  error = "[12, 32]: Error: the value of 'haveFriend' can't be 'Empty'"
+  code = """
+enum Episode {
+  BANANA
+  APPLE
+}
+type Hero {
+  name: String
+  friends: Hero
+}
+type Query {
+  hero(episode: Episode): Hero
+}
+query Hero($episode: Episode, $haveFriend: Boolean!) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $haveFriend) {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "non nullable variable can have default value"
+  code = """
+enum Episode {
+  BANANA
+  APPLE
+}
+type Hero {
+  name: String
+  friends: Hero
+}
+type Query {
+  hero(episode: Episode): Hero
+}
+query Hero($episode: Episode, $haveFriend: Boolean! = false) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $haveFriend) {
+      name
+    }
+  }
+}
+"""

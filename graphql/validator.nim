@@ -281,6 +281,7 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
                    parent: Node; idx: int, scope = Node(nil), isVar = false) =
   var inVal = parent[idx]
   var isVar = isVar # shadowing to modify
+
   case inVal.kind
   of nkEmpty:
     return
@@ -799,6 +800,12 @@ proc fragmentInOp(ctx: GraphqlRef, sels: Node, visited: var HashSet[Name], scope
     else:
       unreachable()
 
+proc validVarDef(ctx: GraphqlRef, nameNode, locType, defVal: Node) =
+  let rtVal = ctx.varTable.getOrDefault(nameNode.name)
+  if rtVal.isNil and defVal.kind == nkEmpty:
+    invalid not nullableType(locType):
+      ctx.error(ErrValueError, nameNode, nkEmpty)
+
 proc validateVariables(ctx: GraphqlRef, vars: Variables, sym: Symbol) =
   var names = initHashSet[Name]()
   for varDef in vars:
@@ -806,6 +813,7 @@ proc validateVariables(ctx: GraphqlRef, vars: Variables, sym: Symbol) =
     let name = varDef.name
     noNameDup(name, names)
     visit isInputType(varDef.Node, 1)
+    visit validVarDef(name, varDef.typ, varDef.defVal)
     visit inputCoercion(name, varDef.typ, varDef.defVal, varDef.Node, 2)
     visit directivesUsage(varDef.dirs, dlVARIABLE_DEFINITION)
     sym.vars[name.name] = newSymNode(skVariable, name.name, varDef.Node, name.pos)
@@ -1453,15 +1461,15 @@ proc pickOpName(ctx: GraphqlRef, opName: string): Name =
   result = ctx.names.anonName
   var sym: Symbol
   var i = 0
-  for name, opSym in ctx.opTable:    
+  for name, opSym in ctx.opTable:
     if opSym.kind != skFragment:
       result = name
       sym = opSym
       inc i
-      
+
   invalid i > 1:
     ctx.fatal(ErrNoRoot, sym.ast)
-    
+
 proc validateOpWithVars(ctx: GraphqlRef, n: Node): ExecRef =
   case n.sym.kind
   of skQuery:

@@ -38,6 +38,14 @@ proc removeWhitespaces(x: string): string =
     if c notin whites:
       result.add c
 
+proc checkErrors(ctx: GraphqlRef, errors: openArray[ErrorDesc],
+                 unit: Unit, testStatusIMPL: var TestStatus) =
+  check errors.len == unit.errors.len
+  if errors.len > unit.errors.len:
+    debugEcho ctx.errors
+  for i in 0..<min(errors.len, unit.errors.len):
+    check $errors[i] == unit.errors[i]
+
 proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   var stream = unsafeMemoryInput(unit.code)
   var parser = Parser.init(stream, ctx.names)
@@ -59,9 +67,8 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
       return
 
   ctx.validate(doc.root)
-  check ctx.errKind == ErrNone
   if ctx.errKind != ErrNone:
-    debugEcho ctx.errors
+    checkErrors(ctx, ctx.errors, unit, testStatusIMPL)
     return
 
   let resp = JsonRespStream.new()
@@ -69,11 +76,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   if res.isErr:
     check res.isErr == (unit.errors.len > 0)
     let errors = res.error
-    check errors.len == unit.errors.len
-    if errors.len > unit.errors.len:
-      debugEcho ctx.errors
-    for i in 0..<min(errors.len, unit.errors.len):
-      check $errors[i] == unit.errors[i]
+    checkErrors(ctx, errors, unit, testStatusIMPL)
   else:
     check unit.errors.len == 0
 

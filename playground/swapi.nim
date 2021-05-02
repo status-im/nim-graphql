@@ -285,8 +285,11 @@ proc queryReviews(ud: RootRef, params: Args, parent: Node): RespResult {.apiPrag
 proc querySearch(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)
   let text = params[0].val
-  let list = ctx.search(text.stringVal)
-  ok(list)
+  if text.kind == nkString:
+    let list = ctx.search(text.stringVal)
+    ok(list)
+  else:
+    ok(respNull())
 
 proc queryCharacter(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = Starwars(ud)

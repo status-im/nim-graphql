@@ -126,3 +126,33 @@ query ($eps: Episode = JEDI){
   ]
 }
 """
+
+[[units]]
+  name = "non nullable variable should have run time value"
+  errors = ["[1, 9]: Error: the value of 'mm' can't be 'Empty'"]
+  code = """
+query ($mm: String!){
+  search(text: $mm) {
+    ... on Human {
+      name
+    }
+  }
+}
+"""
+
+[[units]]
+  name = "nullable variable should not crash resolvers"
+  code = """
+query ($mm: String){
+  search(text: $mm) {
+    ... on Human {
+      name
+    }
+  }
+}
+"""
+  result = """
+{
+  "search":null
+}
+"""
