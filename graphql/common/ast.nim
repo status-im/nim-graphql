@@ -136,6 +136,7 @@ type
     dlINPUT_FIELD_DEFINITION = "INPUT_FIELD_DEFINITION"
 
   NodeResult* = Result[Node, string]
+  # Should  be identical to CoercionProc in graphql.nim
   ScalarProc* = proc(ctx: RootRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
 
   Symbol* = ref SymObj
@@ -145,10 +146,10 @@ type
     of skDirective:
       dirLocs*: set[DirLoc] # Directive locations
     of skScalar:
-      coerce*: ScalarProc
-      scalar*: ScalarProc
+      coerce*: ScalarProc # this proc for variables
+      scalar*: ScalarProc # this one for args/input fields/response
     of skEnum:
-      coerceEnum*: ScalarProc
+      coerceEnum*: ScalarProc # this proc for variables
       enumVals*: Table[Name, Node]
     of skInputObject:
       inputFields*: Table[Name, Node]
