@@ -362,7 +362,8 @@ proc copyTree*(n: Node): Node =
     result.sym = n.sym
   of nkMap:
     result.typeName = n.typeName
-    result.map = n.map
+    for c in n.map:
+      result[c.key] = copyTree(c.val)
   else:
     for c in n.sons:
       result.sons.add copyTree(c)
