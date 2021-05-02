@@ -11,7 +11,7 @@ import
   std/[tables, strutils],
   stew/[results],
   ./common/[names, ast, ast_helper, response, respstream],
-  ./graphql
+  ./graphql, ./validator
 
 template `@=`(dest: untyped, validator: untyped) =
   let dest {.inject.} = callValidator(ctx, validator)
@@ -22,25 +22,6 @@ template invalidNull*(cond: untyped, body: untyped) =
   if cond:
     body
     return respNull()
-
-proc pickOpName(ctx: GraphqlRef, opName: string): Name =
-  if opName.len != 0:
-    return ctx.names.insert(opName)
-
-  result = ctx.names.anonName
-  var i = 1
-  for name, ec in ctx.execTable:
-    result = name
-    invalid i > 1:
-      ctx.fatal(ErrNoRoot, ec.opSym)
-    inc i
-
-proc getOperation(ctx: GraphqlRef, opName: string): ExecRef =
-  name := pickOpName(opName)
-  let op = ctx.execTable.getOrDefault(name)
-  invalid op.isNil:
-    ctx.fatal(ErrOperationNotFound, ctx.emptyNode, name)
-  op
 
 proc name(field: FieldRef): string =
   $field.respName.name

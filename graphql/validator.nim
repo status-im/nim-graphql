@@ -1142,7 +1142,7 @@ proc skipOrInclude(field: FieldRef) =
   # replace the old fieldSet with reduced fieldSet
   field.fieldSet = s
 
-proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node) =
+proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node): ExecRef =
   var exec = ExecRef(opSym: opSym, opType: opType)
   for n in fieldSet:
     if n.merged:
@@ -1150,7 +1150,7 @@ proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node) =
     skipOrInclude(n)
     n.fillArgs()
     exec.fieldSet.add n
-  ctx.execTable[opSym.sym.name] = exec
+  exec
 
 proc fragmentFragment(ctx: GraphqlRef, symNode: Node) =
   let node = Fragment(symNode.sym.ast)
@@ -1162,7 +1162,7 @@ proc fragmentFragment(ctx: GraphqlRef, symNode: Node) =
     ctx.error(ErrNotUsed, symNode)
   visit validateVarUsage(symNode)
 
-proc queryQuery(ctx: GraphqlRef, symNode: Node) =
+proc queryQuery(ctx: GraphqlRef, symNode: Node): ExecRef =
   invalid ctx.rootQuery.isNil:
     ctx.error(ErrNoRoot, symNode, "Query or schema:query")
 
@@ -1173,7 +1173,7 @@ proc queryQuery(ctx: GraphqlRef, symNode: Node) =
   visit validateVarUsage(symNode)
   ctx.skipOrInclude(fieldSet, symNode, ctx.rootQuery)
 
-proc mutationMutation(ctx: GraphqlRef, symNode: Node) =
+proc mutationMutation(ctx: GraphqlRef, symNode: Node): ExecRef =
   invalid ctx.rootMutation.isNil:
     ctx.error(ErrNoRoot, symNode, "Mutation or schema:mutation")
 
@@ -1214,7 +1214,7 @@ proc countRootFields(ctx: GraphqlRef, sels: Node, root = true): int =
       unreachable()
   return count
 
-proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node) =
+proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node): ExecRef =
   invalid ctx.rootSubs.isNil:
     ctx.error(ErrNoRoot, symNode, "Subscription or schema:suscription")
 
@@ -1366,12 +1366,24 @@ proc secondPass(ctx: GraphqlRef, root: Node) =
     of skDirective:   visit visitDirective(Directive(sym.ast))
     of skQuery:
       inc opCount
+      let vars = Query(sym.ast).vars
+      if Node(vars).kind != nkEmpty:
+        sym.astCopy = copyTree(sym.ast)
+        sym.flags.incl sfHasVariables
       visit visitQuery(n)
     of skMutation:
       inc opCount
+      let vars = Mutation(sym.ast).vars
+      if Node(vars).kind != nkEmpty:
+        sym.astCopy = copyTree(sym.ast)
+        sym.flags.incl sfHasVariables
       visit visitMutation(n)
     of skSubscription:
       inc opCount
+      let vars = Subscription(sym.ast).vars
+      if Node(vars).kind != nkEmpty:
+        sym.astCopy = copyTree(sym.ast)
+        sym.flags.incl sfHasVariables
       visit visitSubscription(n)
     of skFragment:    visit visitFragment(n)
     else:
@@ -1388,9 +1400,15 @@ proc secondPass(ctx: GraphqlRef, root: Node) =
     of skDirective:   visit directiveDirective(n)
     of skInterface:   visit interfaceInterface(n)
     of skObject:      visit objectObject(n)
-    of skQuery:       visit queryQuery(n)
-    of skMutation:    visit mutationMutation(n)
-    of skSubscription:visit subscriptionSubscription(n)
+    of skQuery:
+      if sfHasVariables notin n.sym.flags:
+        n.sym.exec ::= queryQuery(n)
+    of skMutation:
+      if sfHasVariables notin n.sym.flags:
+        n.sym.exec ::= mutationMutation(n)
+    of skSubscription:
+      if sfHasVariables notin n.sym.flags:
+        n.sym.exec ::= subscriptionSubscription(n)
     else:
       discard
 
@@ -1427,3 +1445,48 @@ proc validate*(ctx: GraphqlRef, root: Node) =
       unreachable()
 
   ctx.secondPass(root)
+
+proc pickOpName(ctx: GraphqlRef, opName: string): Name =
+  if opName.len != 0:
+    return ctx.names.insert(opName)
+
+  result = ctx.names.anonName
+  var sym: Symbol
+  var i = 0
+  for name, opSym in ctx.opTable:    
+    if opSym.kind != skFragment:
+      result = name
+      sym = opSym
+      inc i
+      
+  invalid i > 1:
+    ctx.fatal(ErrNoRoot, sym.ast)
+    
+proc validateOpWithVars(ctx: GraphqlRef, n: Node): ExecRef =
+  case n.sym.kind
+  of skQuery:
+    visit visitQuery(n)
+    result ::= queryQuery(n)
+  of skMutation:
+    visit visitMutation(n)
+    result ::= mutationMutation(n)
+  of skSubscription:
+    visit visitSubscription(n)
+    result ::= subscriptionSubscription(n)
+  else:
+    unreachable()
+
+proc toExec*(ctx: GraphqlRef, op: Symbol): ExecRef =
+  if sfHasVariables in op.flags:
+    op.ast = copyTree(op.astCopy)
+    result ::= validateOpWithVars(newSymNode(op, op.ast.pos))
+  else:
+    result = ExecRef(op.exec)
+
+proc getOperation*(ctx: GraphqlRef, opName: string): ExecRef =
+  name := pickOpName(opName)
+  let op = ctx.opTable.getOrDefault(name)
+  invalid op.isNil:
+    ctx.fatal(ErrOperationNotFound, ctx.emptyNode, name)
+
+  toExec(ctx, op)

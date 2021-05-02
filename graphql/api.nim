@@ -217,7 +217,6 @@ proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string,
 
 proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool = true) =
   ctx.opTable.clear()
-  ctx.execTable.clear()
   if includeVariables:
     ctx.varTable.clear()
 

@@ -54,7 +54,7 @@ type
   FieldSet* = seq[FieldRef]
 
   ExecRef* = ref ExecObj
-  ExecObj* = object
+  ExecObj* = object of RootObj
     opType*   : Node
     opSym*    : Node
     fieldSet* : FieldSet
@@ -83,7 +83,6 @@ type
     scalarTable*  : Table[Name, CoercionProc]
     coerceTable*  : Table[Name, CoercionProc]
     varTable*     : Table[Name, Node]
-    execTable*    : Table[Name, ExecRef]
     resolver*     : Table[Name, ResolverRef]
     names*        : NameCache
     emptyNode*    : Node

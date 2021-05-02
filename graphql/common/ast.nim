@@ -107,9 +107,10 @@ type
     skVariable      = "variable"
 
   SymFlag* = enum
-    sfBuiltin
-    sfRepeatable # directive
-    sfUsed
+    sfBuiltin      # for introspection types
+    sfRepeatable   # for directives
+    sfUsed         # for variables
+    sfHasVariables # for operations
 
   DirLoc* = enum
     # ExecutableDirectiveLocation
@@ -161,6 +162,8 @@ type
     of skQuery, skMutation,
       skSubscription, skFragment:
       vars*: Table[Name, Node]
+      exec*: RootRef # this is an ExecRef
+      astCopy*: Node
     else: nil
     name* : Name
     ast*  : Node
@@ -221,7 +224,7 @@ proc newSymNode*(kind: SymKind, name: Name, ast: Node, pos = Pos()): Node =
 
 proc newSymNode*(sym: Symbol, pos = Pos()): Node =
   Node(kind: nkSym, pos: pos, sym: sym)
-
+  
 template `<-`*(n, son: Node) =
   n.sons.add son
 

@@ -8,9 +8,11 @@
 # those terms.
 
 import
-  std/[os, strutils, unittest],
+  std/[os, strutils, unittest, tables],
   toml_serialization,
-  ../graphql, ../graphql/test_config
+  ../graphql, ../graphql/test_config,
+  ../graphql/graphql as context,
+  ../graphql/validator
 
 type
   Unit = object
@@ -81,13 +83,20 @@ proc writeUnit(f: File, unit: Unit) =
   f.write(unit.code)
   f.write("\"\"\"\n\n")
 
+proc validateAll(ctx: GraphqlRef, root: Node) =
+  visit validate(root)
+  for name, sym in ctx.opTable:
+    if sym.kind != skFragment:
+      exec := toExec(sym)
+      discard exec
+
 proc runConverter(ctx: GraphqlRef, unit: var Unit) =
   setupParser(ctx, unit)
   if parser.error != errNone:
     unit.error = $parser.err
     return
 
-  ctx.validate(doc.root)
+  ctx.validateAll(doc.root)
   if ctx.errKind != ErrNone:
     assert(ctx.errors.len == 1)
     unit.error = $ctx.errors[0]
@@ -120,7 +129,7 @@ proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     check $parser.err == unit.error
     return
 
-  ctx.validate(doc.root)
+  ctx.validateAll(doc.root)
   if ctx.errKind != ErrNone:
     check (ctx.errKind != ErrNone) == (unit.error.len > 0)
     check ctx.errors.len == 1
@@ -169,7 +178,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
     debugEcho $parser.err
     return
 
-  ctx.validate(doc.root)
+  ctx.validateAll(doc.root)
   check ctx.errKind == ErrNone
   if ctx.errKind != ErrNone:
     debugEcho $ctx.errors
