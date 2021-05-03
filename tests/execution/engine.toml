@@ -816,3 +816,19 @@ query D($inputObject: ExampleInputObject! = {}) {
   "example":3
 }
 """
+
+[[units]]
+  name = "empty list as variable value"
+  errors = ["[5, 8]: Error: 'arg' got 'List': expect string, but got 'List': @[]"]
+  variables = """{mm: []}"""
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query($mm: String) {
+  echo(arg: $mm)
+}
+"""
+  result = """
+null
+"""

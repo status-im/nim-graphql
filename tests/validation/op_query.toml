@@ -1147,3 +1147,64 @@ query Hero($episode: Episode, $haveFriend: Boolean! = false) {
   }
 }
 """
+
+[[units]]
+  name = "empty list as argument value"
+  code = """
+type Query {
+  echo(arg: [Int]): [Int]
+}
+{
+  echo(arg: [])
+}
+"""
+
+[[units]]
+  name = "empty list as argument default value"
+  code = """
+type Query {
+  echo(arg: [Int] = []): [Int]
+}
+{
+  echo
+}
+"""
+
+[[units]]
+  name = "empty list as input field value"
+  code = """
+input Fruit {
+  name: [String]
+}
+type Query {
+  echo(arg: Fruit): [String]
+}
+{
+  echo(arg: {name: []})
+}
+"""
+
+[[units]]
+  name = "empty list as input field value"
+  code = """
+input Fruit {
+  name: [String] = []
+}
+type Query {
+  echo(arg: Fruit): [String]
+}
+{
+  echo(arg: {name: []})
+}
+"""
+
+[[units]]
+  name = "empty list as variable default value"
+  code = """
+type Query {
+  echo(arg: [String]): [String]
+}
+query ($arg: [String] = []){
+  echo(arg: $arg)
+}
+"""

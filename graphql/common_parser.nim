@@ -364,7 +364,7 @@ proc resName*(q: var Parser, name: var Node) =
 proc listVal(q: var Parser, isConst: bool, val: var Node) =
   expect tokLBracket
   val = newNode(nkList)
-  if pfJsonCompatibility in q.flags and currToken == tokRBracket:
+  if currToken == tokRBracket:
     nextToken()
     return
   repeatUntil(q.conf.maxListElems, tokRBracket):
