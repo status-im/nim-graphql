@@ -191,6 +191,39 @@ proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string,
     var doc: SchemaDocument
     ctx.validation(parser, stream, doc)
 
+proc parseSchema(ctx: GraphqlRef, stream: InputStream, 
+                 root: var Node, conf: ParserConf): GraphqlResult =
+  var parser = Parser.init(stream, ctx.names, conf)
+  var doc: SchemaDocument
+  parser.parseDocument(doc)
+  close stream
+  if parser.error != errNone:
+    return err(@[parser.err])
+  if root.isNil: root = doc.root
+  else: root.sons.add doc.root.sons
+  ok()
+
+proc parseSchemas*[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string], 
+                  schemas: openArray[T], conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+  {.gcsafe.}:
+    var root: Node
+    for fileName in files:
+      let stream = memFileInput(fileName)
+      let res = ctx.parseSchema(stream, root, conf)
+      if res.isErr:
+        return res
+    
+    for schema in schemas:
+      let stream = unsafeMemoryInput(schema)
+      let res = ctx.parseSchema(stream, root, conf)
+      if res.isErr:
+        return res
+        
+    ctx.validate(root)
+    if ctx.errKind != ErrNone:
+      return err(ctx.errors)
+    ok()
+
 template parseQueryImpl(schema, conf: untyped): untyped =
   var stream = unsafeMemoryInput(query)
   var parser = Parser.init(stream, ctx.names, conf)

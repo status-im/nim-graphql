@@ -58,6 +58,7 @@ export
   api.validate,
   api.parseSchema,
   api.parseSchemaFromFile,
+  api.parseSchemas,
   api.parseQuery,
   api.parseQueryFromFile,
   api.purgeQueries,

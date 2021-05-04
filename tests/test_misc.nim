@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  unittest,
+  std/[unittest, os],
   ../graphql, ./test_utils
 
 const
@@ -24,10 +24,17 @@ query banana($mm: String) {
 }
 """
 
+  extend = """
+extend type SmallChild {
+  name: Int
+}
+"""
+
 proc suite1() =
   suite "misc test suite":
     let ctx = GraphqlRef.new()
     ctx.initMockApi()
+    let savePoint = ctx.getNameCounter()
     let r1 = ctx.parseSchema(schema)
     if r1.isErr:
       debugEcho r1.error
@@ -61,5 +68,15 @@ proc suite1() =
       check res.isOk
       let resp2 = resp.getString()
       check resp2 == """{"name":"sweet banana"}"""
+      
+    test "parseSchemas":
+      const
+        schemaFile = "tests" / "schemas" / "example_schema.ql"
+      ctx.purgeQueries()
+      ctx.purgeSchema()
+      ctx.purgeNames(savePoint)
+      let res = ctx.parseSchemas([schemaFile], [extend])
+      check res.isErr
+      check $res.error == "@[[2, 3]: Error: duplicate name 'name']"
       
 suite1()
