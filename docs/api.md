@@ -28,7 +28,7 @@ If you find anything not listed or not exported in this list, please submit an i
     - `addVar(ctx: GraphqlRef, name: string)`. Add a `null` variable.
 
   - `parseVar(ctx: GraphqlRef, name: string, value: string | openArray[byte]): ParseResult`. Add new variable to the system by parsing a text string.
-  - `parseVars(ctx: GraphqlRef, value: string | openArray[byte]): ParseResult`. 
+  - `parseVars(ctx: GraphqlRef, value: string | openArray[byte]): ParseResult`.
      Add new variables to the system by parsing map. Top level keys will become variables name.
   - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: Name, resolvers: openArray[(string, ResolverProc)])`. Add a list of resolvers to the system.
     - `addResolvers(ctx: GraphqlRef, ud: RootRef, typeName: string, resolvers: openArray[(string, ResolverProc)])`
@@ -37,6 +37,8 @@ If you find anything not listed or not exported in this list, please submit an i
   - `validate(ctx: GraphqlRef, root: Node)`. Usually you don't need to call this directly.
   - `parseSchema(ctx: GraphqlRef, schema: string | openArray[byte]): ParseResult`. Parse a scheme from text string.
   - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
+  - `parseSchemas[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string], schemas: openArray[T], conf = defaultParserConf()): GraphqlResult`.
+    Parses multiple files and multiple string/seq[byte] schema definitions at once.
   - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
   - `parseQueryFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
   - `purgeQueries(ctx: GraphqlRef, includeVariables: bool)`. A server will often call this to remove unused queries.
