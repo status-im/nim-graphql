@@ -83,11 +83,11 @@ const
 
 proc mz_crc32*(crc: culong, buf: ptr cuchar, buf_len: csize_t): culong {.cdecl, importc: "mz_crc32", header: "miniz.h".}
 
-func mz_crc32*[T: byte|char](input: openArray[T]): uint32 =
+func mz_crc32*[T: byte|char](input: openArray[T]): culong =
   mz_crc32(MZ_CRC32_INIT,
-    cast[ptr cuchar](input[10].unsafeAddr),
+    cast[ptr cuchar](input[0].unsafeAddr),
     input.len.csize_t
-  ).uint32
+  ).culong
 
 proc gzip*(source: string): string =
   # all these cast[ptr cuchar] is need because
@@ -124,16 +124,19 @@ proc gzip*(source: string): string =
   mz.avail_out = (result.len - 10).cuint
   assert(mz.deflate(MZ_FINISH) == MZ_STREAM_END)
 
-  let size = mz.total_out.int
-  let crc = mz_crc32(source)
+  let
+    size  = mz.total_out.int
+    crc   = mz_crc32(source)
+    ssize = source.len
+
   result[size + 10] = char(         crc and 0xFF)
   result[size + 11] = char((crc shr 8)  and 0xFF)
   result[size + 12] = char((crc shr 16) and 0xFF)
   result[size + 13] = char((crc shr 24) and 0xFF)
-  result[size + 14] = char(         size and 0xFF)
-  result[size + 15] = char((size shr 8)  and 0xFF)
-  result[size + 16] = char((size shr 16) and 0xFF)
-  result[size + 17] = char((size shr 24) and 0xFF)
+  result[size + 14] = char(         ssize and 0xFF)
+  result[size + 15] = char((ssize shr 8)  and 0xFF)
+  result[size + 16] = char((ssize shr 16) and 0xFF)
+  result[size + 17] = char((ssize shr 24) and 0xFF)
 
   result.setLen(mz.total_out.int + 18)
   assert(mz.deflateEnd() == MZ_OK)
