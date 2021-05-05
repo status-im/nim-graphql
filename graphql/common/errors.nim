@@ -32,3 +32,10 @@ proc `$`*(x: ErrorDesc): string =
   else:
     "[$1, $2]: $3: $4: $5" % [$x.pos.line,
       $x.pos.col, $x.level, x.message, $x.path.sons]
+
+proc fatalError*(msg: string): ErrorDesc =
+  ErrorDesc(
+    level: elFatal,
+    pos: Pos(),
+    message: msg
+  )

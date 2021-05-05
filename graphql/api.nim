@@ -186,12 +186,15 @@ proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte],
 proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string,
                           conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
   {.gcsafe.}:
-    var stream = memFileInput(fileName)
-    var parser = Parser.init(stream, ctx.names, conf)
-    var doc: SchemaDocument
-    ctx.validation(parser, stream, doc)
+    try:
+      var stream = memFileInput(fileName)
+      var parser = Parser.init(stream, ctx.names, conf)
+      var doc: SchemaDocument
+      ctx.validation(parser, stream, doc)
+    except CatchableError as e:
+      err(@[fatalError("parseSchemaFromFile: " & e.msg)])
 
-proc parseSchema(ctx: GraphqlRef, stream: InputStream, 
+proc parseSchema(ctx: GraphqlRef, stream: InputStream,
                  root: var Node, conf: ParserConf): GraphqlResult =
   var parser = Parser.init(stream, ctx.names, conf)
   var doc: SchemaDocument
@@ -203,22 +206,25 @@ proc parseSchema(ctx: GraphqlRef, stream: InputStream,
   else: root.sons.add doc.root.sons
   ok()
 
-proc parseSchemas*[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string], 
+proc parseSchemas*[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string],
                   schemas: openArray[T], conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
   {.gcsafe.}:
     var root: Node
-    for fileName in files:
-      let stream = memFileInput(fileName)
-      let res = ctx.parseSchema(stream, root, conf)
-      if res.isErr:
-        return res
-    
+    try:
+      for fileName in files:
+        let stream = memFileInput(fileName)
+        let res = ctx.parseSchema(stream, root, conf)
+        if res.isErr:
+          return res
+    except CatchableError as e:
+      return err(@[fatalError("parseSchemas: " & e.msg)])
+
     for schema in schemas:
       let stream = unsafeMemoryInput(schema)
       let res = ctx.parseSchema(stream, root, conf)
       if res.isErr:
         return res
-        
+
     ctx.validate(root)
     if ctx.errKind != ErrNone:
       return err(ctx.errors)
@@ -243,10 +249,13 @@ proc parseQuery*(ctx: GraphqlRef, query: openArray[byte],
 proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string,
                          conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
   {.gcsafe.}:
-    var stream = memFileInput(fileName)
-    var parser = Parser.init(stream, ctx.names, conf)
-    var doc: QueryDocument
-    ctx.validation(parser, stream, doc)
+    try:
+      var stream = memFileInput(fileName)
+      var parser = Parser.init(stream, ctx.names, conf)
+      var doc: QueryDocument
+      ctx.validation(parser, stream, doc)
+    except CatchableError as e:
+      err(@[fatalError("parseQueryFromFile: " & e.msg)])
 
 proc purgeQueries*(ctx: GraphqlRef, includeVariables: bool = true) =
   ctx.opTable.clear()
