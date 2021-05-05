@@ -83,6 +83,12 @@ const
 
 proc mz_crc32*(crc: culong, buf: ptr cuchar, buf_len: csize_t): culong {.cdecl, importc: "mz_crc32", header: "miniz.h".}
 
+func mz_crc32*[T: byte|char](input: openArray[T]): uint32 =
+  mz_crc32(MZ_CRC32_INIT,
+    cast[ptr cuchar](input[10].unsafeAddr),
+    input.len.csize_t
+  ).uint32
+
 proc gzip*(source: string): string =
   # all these cast[ptr cuchar] is need because
   # clang++ will complaints about incompatible
@@ -119,8 +125,7 @@ proc gzip*(source: string): string =
   assert(mz.deflate(MZ_FINISH) == MZ_STREAM_END)
 
   let size = mz.total_out.int
-  let crc = mz_crc32(MZ_CRC32_INIT, cast[ptr cuchar](result[10].addr), size.csize_t)
-
+  let crc = mz_crc32(source)
   result[size + 10] = char(         crc and 0xFF)
   result[size + 11] = char((crc shr 8)  and 0xFF)
   result[size + 12] = char((crc shr 16) and 0xFF)
