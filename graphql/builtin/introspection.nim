@@ -171,7 +171,6 @@ proc typeKind(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.}
     of skEnum:        result = ok(resp("ENUM"))
     of skInputObject: result = ok(resp("INPUT_OBJECT"))
     else:
-      debugEcho "KIND: ", parent.sym.kind
       unreachable()
   else:
     unreachable()
