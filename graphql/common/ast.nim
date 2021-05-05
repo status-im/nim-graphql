@@ -73,7 +73,7 @@ type
 
   Node* = ref NodeObj
 
-  NodeObj* {.acyclic.} = object
+  NodeObj* {.acyclic.} = object of RootObj
     pos* {.requiresInit.}: Pos
     case kind*: NodeKind
     of nkInt: intVal*: string
@@ -224,7 +224,7 @@ proc newSymNode*(kind: SymKind, name: Name, ast: Node, pos = Pos()): Node =
 
 proc newSymNode*(sym: Symbol, pos = Pos()): Node =
   Node(kind: nkSym, pos: pos, sym: sym)
-  
+
 template `<-`*(n, son: Node) =
   n.sons.add son
 
