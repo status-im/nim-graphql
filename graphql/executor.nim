@@ -172,6 +172,7 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
   let currName = resp($fieldSet[0].respName)
   ctx.path.add currName
   result = respMap(objectName)
+  var errKind = ErrNone
   for n in fieldSet:
     if skip(parentFieldType, n.parentType, objectName, rootIntros):
       continue
@@ -179,8 +180,13 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
     let field = ctx.executeField(n, parent)
     result[n.name] = field
     if ctx.errKind != ErrNone:
-      break
+      # we don't want to stop when there is error
+      errKind = ctx.errKind
+      ctx.errKind = ErrNone
 
+  # if there is error, keep it
+  ctx.errKind = errKind
+  
 proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   let parent = respMap(exec.opType.sym.name)
   resp = ctx.executeSelectionSet(exec.fieldSet,

@@ -328,7 +328,8 @@ type Query {
   result = """
 {
   "tree":{
-    "number":[345,null]
+    "number":[345,null],
+    "name":"hardwood"
   }
 }
 """
@@ -514,7 +515,8 @@ query {
 """
   result = """
 {
-  "int_t":null
+  "int_t":null,
+  "float_t":{"__typename":"Float"}
 }
 """
 

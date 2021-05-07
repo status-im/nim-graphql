@@ -74,7 +74,8 @@ query {
   result = """
 {
   "tree":{
-    "number":[345,null]
+    "number":[345,null],
+    "name":"hardwood"
   }
 }
 """
