@@ -156,12 +156,16 @@ proc addResolvers*(ctx: GraphqlRef, ud: RootRef, typeName: string,
 proc createName*(ctx: GraphqlRef, name: string): Name =
   ctx.names.insert(name)
 
-proc markAsStored(root: Node) =
+proc markAsStored(ctx: GraphqlRef, root: Node) =
   for n in root:
     if n.kind != nkSym:
       continue
 
     n.sym.flags.incl sfBuiltin
+
+    # piggy back the rootIntros here :)
+    if toKeyword(n.sym.name) == introsRoot:
+      ctx.rootIntros = n
 
 template validation(ctx: GraphqlRef, parser: Parser,
                     stream: InputStream, doc, store: untyped): untyped =
@@ -171,7 +175,7 @@ template validation(ctx: GraphqlRef, parser: Parser,
     return err(@[parser.err])
   ctx.validate(doc.root)
   if store:
-    markAsStored(doc.root)
+    ctx.markAsStored(doc.root)
   if ctx.errKind != ErrNone:
     return err(ctx.errors)
   ok()
@@ -238,7 +242,7 @@ proc parseSchemas*[T: string | seq[byte]](ctx: GraphqlRef,
 
     ctx.validate(root)
     if store:
-      markAsStored(root)
+      ctx.markAsStored(root)
     if ctx.errKind != ErrNone:
       return err(ctx.errors)
     ok()
@@ -277,10 +281,10 @@ proc purgeQueries*(ctx: GraphqlRef, includeVariables = true, includeStored = fal
     var names = newSeqOfCap[Name](ctx.opTable.len)
     for n, v in ctx.opTable:
       if sfBuiltin notin v.flags:
-        names.add n    
+        names.add n
     for n in names:
       ctx.opTable.del(n)
-    
+
   if includeVariables:
     ctx.varTable.clear()
 
@@ -320,30 +324,15 @@ proc registerBuiltinScalars(ctx: GraphqlRef) =
   ctx.customScalar(builtinScalars)
 
 proc loadBuiltinSchema(ctx: GraphqlRef) =
-  var stream = unsafeMemoryInput(builtinSchema)
-  var parser = Parser.init(stream, ctx.names)
+  var conf = defaultParserConf()
 
   # include this flags when validating
   # builtin schema
-  parser.flags.incl pfAcceptReservedWords
-
-  var doc: SchemaDocument
-  parser.parseDocument(doc)
-
-  if parser.error != errNone:
-    debugEcho parser.err
-    doAssert(parser.error == errNone)
-
-  ctx.validate(doc.root)
-  if ctx.errKind != ErrNone:
-    debugEcho ctx.errors
-    doAssert(ctx.errKind == ErrNone)
-
-  # instrospection root
-  for n in doc.root:
-    if toKeyword(n.sym.name) == introsRoot:
-      ctx.rootIntros = n
-    n.sym.flags.incl sfBuiltin
+  conf.flags.incl pfAcceptReservedWords
+  let res = ctx.parseSchema(builtinSchema, store = true, conf)
+  if res.isErr:
+    debugEcho res.error
+  assert(res.isOk)
 
 proc registerInstrospection(ctx: GraphqlRef) =
   ctx.addResolvers(ctx, "__Query", queryProtos)
