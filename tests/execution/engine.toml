@@ -308,6 +308,32 @@ type Query {
 """
 
 [[units]]
+  name = "null in a list with nullable item"
+  code = """
+type Tree {
+  name: String
+  number: [Int]
+}
+type Query {
+  tree: Tree
+}
+{
+  tree {
+    number
+    name
+  }
+}
+"""
+  result = """
+{
+  "tree":{
+    "number":[345,null,789],
+    "name":"hardwood"
+  }
+}
+"""
+
+[[units]]
   name = "execution path with list index"
   errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[\"tree\", \"number\", 1]"]
   code = """
@@ -328,10 +354,32 @@ type Query {
   result = """
 {
   "tree":{
-    "number":[345,null],
+    "number":null,
     "name":"hardwood"
   }
 }
+"""
+
+[[units]]
+  name = "error in [Int!]! propagate upward to parent"
+  errors = ["[10, 5]: Fatal: Field 'number' should not return null: @[\"tree\", \"number\", 1]"]
+  code = """
+type Tree {
+  name: String
+  number: [Int!]!
+}
+type Query {
+  tree: Tree
+}
+{
+  tree {
+    number
+    name
+  }
+}
+"""
+  result = """
+null
 """
 
 [[units]]

@@ -175,6 +175,8 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
   var errKind = ErrNone
   for n in fieldSet:
     if skip(parentFieldType, n.parentType, objectName, rootIntros):
+      # set merged, for later use in errorFree
+      n.merged = true
       continue
     currName.stringVal = $n.respName # replace the path name
     let field = ctx.executeField(n, parent)
@@ -186,16 +188,59 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
 
   # if there is error, keep it
   ctx.errKind = errKind
-  
+
+proc errorFree(fieldSet: FieldSet, node: var Node): bool
+
+proc errorFree(fieldType: Node, field: FieldRef, node: var Node): bool =
+  if fieldType.kind == nkNonNullType:
+    let innerType = fieldType[0]
+    discard errorFree(innerType, field, node)
+    return node.kind != nkNull
+
+  if node.kind == nkNull:
+    return true
+
+  if fieldType.kind == nkListType:
+    let innerType = fieldType[0]
+    for i in 0..<node.len:
+      if not errorFree(innerType, field, node.sons[i]):
+        node = respNull()
+        break
+    return true
+
+  if fieldType.sym.kind in {skObject, skInterface, skUnion}:
+    result = errorFree(field.fieldSet, node)
+    if not result:
+      node = respNull()
+  else:
+    return true
+
+proc errorFree(fieldSet: FieldSet, node: var Node): bool =
+  # check if a field or an elem in list is error free
+  # if contains error, propagate the error upward to parent
+  assert node.kind == nkMap
+  var i = 0
+  for field in fieldSet:
+    if field.merged:
+      continue
+    if not errorFree(field.typ, field, node.map[i].val):
+      return false
+    inc i
+  return true
+
 proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   let parent = respMap(exec.opType.sym.name)
   resp = ctx.executeSelectionSet(exec.fieldSet,
                        exec.opType, exec.opType, parent)
+  if not errorFree(exec.fieldSet, resp):
+    resp = respNull()
 
 proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   let parent = respMap(exec.opType.sym.name)
   resp = ctx.executeSelectionSet(exec.fieldSet,
                        exec.opType, exec.opType, parent)
+  if not errorFree(exec.fieldSet, resp):
+    resp = respNull()
 
 proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   discard
