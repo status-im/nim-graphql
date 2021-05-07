@@ -33,7 +33,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
 
   const queryName = "IntrospectionQuery"
   var resp = JsonRespStream.new()
-  res = ctx.executeRequest(resp, queryName)
+  res = ctx.executeRequest(respStream(resp), queryName)
   check res.isOk
   if res.isErr:
     debugEcho "error when executing: ", queryName

@@ -9,7 +9,7 @@
 
 import
   faststreams/[outputs, textio],
-  ../common/respstream
+  ../common/[respstream, ast]
 
 export respstream
 
@@ -26,7 +26,7 @@ type
   TomlRespStream* = ref object of RootRef
     stream: OutputStream
     stack: seq[State]
-    fieldName: string
+    fldName: string
 
 template top(x: seq[State]): State =
   x[^1]
@@ -40,24 +40,24 @@ template append(s: untyped) =
 proc beginList*(x: TomlRespStream) =
   case x.stack.top
   of StateTop:
-    append x.fieldName
+    append x.fldName
     append " = ["
   of StateBeginInlineMap:
-    append x.fieldName
+    append x.fldName
     append " = ["
     x.stack.top(StateInlineMap)
   of StateInlineMap:
     append ", "
-    append x.fieldName
+    append x.fldName
     append " = ["
   of StateBeginMap:
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = ["
     x.stack.top(StateMap)
   of StateMap:
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = ["
   of StateList:
     append ", ["
@@ -77,22 +77,22 @@ proc beginMap*(x: TomlRespStream) =
   case top
   of StateTop:
     append '['
-    append x.fieldName
+    append x.fldName
     append "]\n"
   of StateBeginMap:
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = {"
     x.stack.top(StateMap)
   of StateMap:
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = {"
   of StateList:
     append ", {"
   of StateInlineMap:
     append ", "
-    append x.fieldName
+    append x.fldName
     append " = {"
   of StateBeginList:
     append '{'
@@ -126,31 +126,31 @@ proc writeSeparator(x: TomlRespStream) =
   of StateInlineMap:
     append ','
     append ' '
-    append x.fieldName
+    append x.fldName
     append " = "
   of StateMap:
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = "
   of StateTop:
-    append x.fieldName
+    append x.fldName
     append " = "
   of StateBeginMap:
     x.stack.top(StateMap)
     append "  "
-    append x.fieldName
+    append x.fldName
     append " = "
   of StateBeginInlineMap:
     x.stack.top(StateInlineMap)
-    append x.fieldName
+    append x.fldName
     append " = "
-  x.fieldName.setLen(0)
+  x.fldName.setLen(0)
 
 proc writeEOL(x: TomlRespStream) =
   if x.stack.top in {StateMap, StateTop}:
     append '\n'
 
-proc writeString*(x: TomlRespStream, v: string) =
+proc write*(x: TomlRespStream, v: string) =
   writeSeparator(x)
   append '\"'
 
@@ -183,7 +183,7 @@ proc writeRaw*(x: TomlRespStream, v: string) =
   x.stream.write(v)
   writeEOL(x)
 
-proc writeBool*(x: TomlRespStream, v: bool) =
+proc write*(x: TomlRespStream, v: bool) =
   writeSeparator(x)
   if v:
     append "true"
@@ -191,12 +191,12 @@ proc writeBool*(x: TomlRespStream, v: bool) =
     append "false"
   writeEOL(x)
 
-proc writeInt*(x: TomlRespStream, v: int) =
+proc write*(x: TomlRespStream, v: int) =
   writeSeparator(x)
   x.stream.writeText int64(v)
   writeEOL(x)
 
-proc writeFloat*(x: TomlRespStream, v: float64) =
+proc write*(x: TomlRespStream, v: float64) =
   writeSeparator(x)
   # TODO: implement write float
   append $v
@@ -206,10 +206,38 @@ proc writeNull*(x: TomlRespStream) =
   # really, just do nothing
   discard
 
-proc fieldName*(x: TomlRespStream, v: string) =
-  x.fieldName = v
+proc field*(x: TomlRespStream, v: string) =
+  x.fldName = v
 
-proc writeBytes*(x: TomlRespStream, v: openArray[byte]) =
+proc serialize*(resp: TomlRespStream, n: Node) =
+  case n.kind
+  of nkNull:
+    resp.writeNull
+  of nkBoolean:
+    resp.write(n.boolVal)
+  of nkInt:
+    # no preprocessing
+    resp.writeRaw(n.intVal)
+  of nkFloat:
+    # no preprocessing
+    resp.writeRaw(n.floatVal)
+  of nkString:
+    resp.write(n.stringVal)
+  of nkList:
+    resp.beginList()
+    for x in n:
+      serialize(resp, x)
+    resp.endList()
+  of nkMap:
+    resp.beginMap()
+    for k, v in n.mapPair:
+      resp.field(k)
+      serialize(resp, v)
+    resp.endMap()
+  else:
+    doAssert(false, $n.kind & " should not appear in resp stream")
+
+proc write*(x: TomlRespStream, v: openArray[byte]) =
   x.stream.write(v)
 
 proc getString*(x: TomlRespStream): string =
@@ -218,14 +246,14 @@ proc getString*(x: TomlRespStream): string =
 proc getBytes*(x: TomlRespStream): seq[byte] =
   x.stream.getOutput(seq[byte])
 
-proc getLen*(x: TomlRespStream): int =
+proc len*(x: TomlRespStream): int =
   x.stream.pos()
 
 proc init*(v: TomlRespStream) =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]
 
-proc new*(_: type TomlRespStream): RespStream =
+proc new*(_: type TomlRespStream): TomlRespStream =
   let v = TomlRespStream()
   v.init()
-  respStream(v)
+  v

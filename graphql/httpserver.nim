@@ -54,7 +54,7 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, st
                  ""
                else:
                  toString(ro.operationName)
-  let res = ctx.executeRequest(resp, opName)
+  let res = ctx.executeRequest(respStream(resp), opName)
   if res.isErr:
     (Http400, jsonErrorResp(res.error, resp.getBytes()))
   else:

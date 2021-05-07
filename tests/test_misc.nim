@@ -56,7 +56,7 @@ proc suite1() =
     test "reusable queries with variables":
       ctx.addVar("mm", "hello")
       var resp = JsonRespStream.new()
-      var res = ctx.executeRequest(resp, "banana")
+      var res = ctx.executeRequest(respStream(resp), "banana")
       check res.isOk
       let resp1 = resp.getString()
       check resp1 == """{"name":"hello"}"""
@@ -64,7 +64,7 @@ proc suite1() =
     
       ctx.addVar("mm", "sweet banana")
       resp = JsonRespStream.new()
-      res = ctx.executeRequest(resp, "banana")
+      res = ctx.executeRequest(respStream(resp), "banana")
       check res.isOk
       let resp2 = resp.getString()
       check resp2 == """{"name":"sweet banana"}"""

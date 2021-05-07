@@ -142,15 +142,15 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string): Future[ClientResult
 
   var r = JsonRespStream.new()
   respMap(r):
-    r.fieldName("query")
+    r.field("query")
     r.write(query)
-    r.fieldName("operationName")
+    r.field("operationName")
     r.write(ctx.opName)
-    r.fieldName("variables")
+    r.field("variables")
     respMap(r):
       for n in ctx.varTable:
-        r.fieldName(n.name)
-        serialize(n.value, r)
+        r.field(n.name)
+        r.serialize(n.value)
 
   let body = r.getString()
   var request = $ctx.meth & " " & $ctx.uri & " HTTP/1.0\r\n"

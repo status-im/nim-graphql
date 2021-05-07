@@ -71,8 +71,8 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
     checkErrors(ctx, ctx.errors, unit, testStatusIMPL)
     return
 
-  let resp = JsonRespStream.new()
-  let res = ctx.executeRequest(resp, unit.opName)
+  let js = JsonRespStream.new()
+  let res = ctx.executeRequest(respStream(js), unit.opName)
   if res.isErr:
     check res.isErr == (unit.errors.len > 0)
     let errors = res.error
@@ -82,7 +82,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
 
   # don't skip result comparison even though there are errors
   let unitRes = removeWhitespaces(unit.result)
-  let execRes = removeWhitespaces(resp.getString)
+  let execRes = removeWhitespaces(js.getString)
   check unitRes == execRes
 
 proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter, purgeSchema: bool) =

@@ -8,8 +8,7 @@
 # those terms.
 
 import
-  ./ast, ./respstream, ./types,
-  ./names
+  ./ast, ./types, ./names
 
 proc respMap*(name: Name): Node =
   Node(kind: nkMap, pos: Pos(), typeName: name)
@@ -37,29 +36,3 @@ proc resp*(x: bool): Node =
 
 proc resp*(x: float64): Node =
   Node(kind: nkFloat, floatVal: $x, pos: Pos())
-
-proc serialize*(n: Node, resp: RespStream) =
-  case n.kind
-  of nkNull:
-    resp.writeNull
-  of nkBoolean:
-    resp.write(n.boolVal)
-  of nkInt:
-    # no preprocessing
-    resp.writeRaw(n.intVal)
-  of nkFloat:
-    # no preprocessing
-    resp.writeRaw(n.floatVal)
-  of nkString:
-    resp.write(n.stringVal)
-  of nkList:
-    respList(resp):
-      for x in n:
-        serialize(x, resp)
-  of nkMap:
-    respMap(resp):
-      for k, v in n.mapPair:
-        resp.fieldName(k)
-        serialize(v, resp)
-  else:
-    doAssert(false, $n.kind & " should not appear in resp stream")

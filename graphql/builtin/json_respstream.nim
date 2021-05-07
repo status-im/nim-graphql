@@ -9,7 +9,7 @@
 
 import
   faststreams/[outputs, textio],
-  ../common/respstream
+  ../common/[respstream, ast]
 
 export respstream
 
@@ -62,7 +62,7 @@ proc endMap*(x: JsonRespStream) =
   discard x.stack.pop
   append '}'
 
-proc writeString*(x: JsonRespStream, v: string) =
+proc write*(x: JsonRespStream, v: string) =
   writeSeparator(x)
   if x.doubleEscape:
     append "\\\""
@@ -105,18 +105,18 @@ proc writeRaw*(x: JsonRespStream, v: string) =
   writeSeparator(x)
   x.stream.write(v)
 
-proc writeBool*(x: JsonRespStream, v: bool) =
+proc write*(x: JsonRespStream, v: bool) =
   writeSeparator(x)
   if v:
     append "true"
   else:
     append "false"
 
-proc writeInt*(x: JsonRespStream, v: int) =
+proc write*(x: JsonRespStream, v: int) =
   writeSeparator(x)
   x.stream.writeText int64(v)
 
-proc writeFloat*(x: JsonRespStream, v: float64) =
+proc write*(x: JsonRespStream, v: float64) =
   writeSeparator(x)
   # TODO: implement write float
   append $v
@@ -125,7 +125,7 @@ proc writeNull*(x: JsonRespStream) =
   writeSeparator(x)
   append "null"
 
-proc fieldName*(x: JsonRespStream, v: string) =
+proc field*(x: JsonRespStream, v: string) =
   let top = x.stack.top
   if x.doubleEscape:
     case top
@@ -158,7 +158,35 @@ proc fieldName*(x: JsonRespStream, v: string) =
   else:
     doAssert(false)
 
-proc writeBytes*(x: JsonRespStream, v: openArray[byte]) =
+proc serialize*(resp: JsonRespStream, n: Node) =
+  case n.kind
+  of nkNull:
+    resp.writeNull
+  of nkBoolean:
+    resp.write(n.boolVal)
+  of nkInt:
+    # no preprocessing
+    resp.writeRaw(n.intVal)
+  of nkFloat:
+    # no preprocessing
+    resp.writeRaw(n.floatVal)
+  of nkString:
+    resp.write(n.stringVal)
+  of nkList:
+    resp.beginList()
+    for x in n:
+      serialize(resp, x)
+    resp.endList()
+  of nkMap:
+    resp.beginMap()
+    for k, v in n.mapPair:
+      resp.field(k)
+      serialize(resp, v)
+    resp.endMap()
+  else:
+    doAssert(false, $n.kind & " should not appear in resp stream")
+
+proc write*(x: JsonRespStream, v: openArray[byte]) =
   x.stream.write(v)
 
 proc getString*(x: JsonRespStream): string =
@@ -167,7 +195,7 @@ proc getString*(x: JsonRespStream): string =
 proc getBytes*(x: JsonRespStream): seq[byte] =
   x.stream.getOutput(seq[byte])
 
-proc getLen*(x: JsonRespStream): int =
+proc len*(x: JsonRespStream): int =
   x.stream.pos()
 
 proc init*(v: JsonRespStream, doubleEscape: bool = false) =
@@ -175,7 +203,7 @@ proc init*(v: JsonRespStream, doubleEscape: bool = false) =
   v.stack  = @[StateTop]
   v.doubleEscape = doubleEscape
 
-proc new*(_: type JsonRespStream, doubleEscape: bool = false): RespStream =
+proc new*(_: type JsonRespStream, doubleEscape: bool = false): JsonRespStream =
   let v = JsonRespStream()
   v.init(doubleEscape)
-  respStream(v)
+  v

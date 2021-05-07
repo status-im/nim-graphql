@@ -21,48 +21,48 @@ type
     operationName*: Node
     variables*: Node
 
-proc errorResp*(r: RespStream, msg: string) =
+proc errorResp*(r: JsonRespStream, msg: string) =
   respMap(r):
-    r.fieldName("errors")
+    r.field("errors")
     respList(r):
       respMap(r):
-        r.fieldName("message")
+        r.field("message")
         r.write(msg)
 
-proc serialize(r: RespStream, err: ErrorDesc) =
+proc serialize(r: JsonRespStream, err: ErrorDesc) =
   respMap(r):
-    r.fieldName("message")
+    r.field("message")
     r.write(err.message)
-    r.fieldName("locations")
+    r.field("locations")
     respList(r):
       respMap(r):
-        r.fieldName("line")
+        r.field("line")
         r.write(err.pos.line.int)
-        r.fieldName("column")
+        r.field("column")
         r.write(err.pos.col.int)
     if not err.path.isNil and err.path.len > 0:
-      r.fieldName("path")
-      response.serialize(err.path, r)
+      r.field("path")
+      r.serialize(err.path)
 
-proc errorResp*(r: RespStream, err: seq[ErrorDesc]) =
+proc errorResp*(r: JsonRespStream, err: seq[ErrorDesc]) =
   respMap(r):
-    r.fieldName("errors")
+    r.field("errors")
     respList(r):
       for c in err:
         serialize(r, c)
 
-proc errorResp*(r: RespStream, err: seq[ErrorDesc], data: openArray[byte]) =
+proc errorResp*(r: JsonRespStream, err: seq[ErrorDesc], data: openArray[byte]) =
   respMap(r):
-    r.fieldName("errors")
+    r.field("errors")
     respList(r):
       for i, c in err:
         serialize(r, c)
-    r.fieldName("data")
+    r.field("data")
     r.write(data)
 
-proc okResp*(r: RespStream, data: openArray[byte]) =
+proc okResp*(r: JsonRespStream, data: openArray[byte]) =
   respMap(r):
-    r.fieldName("data")
+    r.field("data")
     r.write(data)
 
 proc jsonErrorResp*(msg: string): string =

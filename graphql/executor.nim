@@ -181,22 +181,20 @@ proc executeSelectionSet(ctx: GraphqlRef, fieldSet: FieldSet,
     if ctx.errKind != ErrNone:
       break
 
-proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
+proc executeQuery(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   let parent = respMap(exec.opType.sym.name)
-  let res = ctx.executeSelectionSet(exec.fieldSet,
+  resp = ctx.executeSelectionSet(exec.fieldSet,
                        exec.opType, exec.opType, parent)
-  serialize(res, resp)
 
-proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
+proc executeMutation(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   let parent = respMap(exec.opType.sym.name)
-  let res = ctx.executeSelectionSet(exec.fieldSet,
+  resp = ctx.executeSelectionSet(exec.fieldSet,
                        exec.opType, exec.opType, parent)
-  serialize(res, resp)
 
-proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: RespStream) =
+proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
   discard
 
-proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
+proc executeRequestImpl(ctx: GraphqlRef, resp: var Node, opName = "") =
   ctx.path = respList()
   exec := getOperation(opName)
   case exec.opSym.sym.kind
@@ -209,10 +207,10 @@ proc executeRequestImpl(ctx: GraphqlRef, resp: RespStream, opName = "") =
 proc executeRequest*(ctx: GraphqlRef, resp: RespStream,
                      opName = ""): GraphqlResult {.gcsafe.} =
   {.gcsafe.}:
-    ctx.executeRequestImpl(resp, opName)
-  if resp.len == 0:
-    # no output, write a null literal
-    resp.writeNull()
+    var res = respNull()
+    ctx.executeRequestImpl(res, opName)
+    resp.serialize(res)
+
   if ctx.errKind == ErrNone:
     ok()
   else:
