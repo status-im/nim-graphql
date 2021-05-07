@@ -43,7 +43,7 @@ proc suite1() =
     if r2.isErr:
       debugEcho r2.error
       return
-      
+
     test "parseVariable":
       var res = ctx.parseVar("boolVar", "true")
       check res.isOk
@@ -60,15 +60,15 @@ proc suite1() =
       check res.isOk
       let resp1 = resp.getString()
       check resp1 == """{"name":"hello"}"""
-    
-    
+
+
       ctx.addVar("mm", "sweet banana")
       resp = JsonRespStream.new()
       res = ctx.executeRequest(respStream(resp), "banana")
       check res.isOk
       let resp2 = resp.getString()
       check resp2 == """{"name":"sweet banana"}"""
-      
+
     test "parseSchemas":
       const
         schemaFile = "tests" / "schemas" / "example_schema.ql"
@@ -78,5 +78,10 @@ proc suite1() =
       let res = ctx.parseSchemas([schemaFile], [extend])
       check res.isErr
       check $res.error == "@[[2, 3]: Error: duplicate name 'name']"
-      
+
+    test "parse stored query":
+      let res = ctx.parseQuery(query, store = true)
+      check res.isOk
+      ctx.purgeQueries(includeStored = true)
+
 suite1()

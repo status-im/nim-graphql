@@ -35,13 +35,13 @@ If you find anything not listed or not exported in this list, please submit an i
   - `createName(ctx: GraphqlRef, name: string): Name`. `respMap` will need a name from the system using this proc.
   - `executeRequest(ctx: GraphqlRef, resp: RespStream, opName = ""): ParseResult`. This is your main entrance to the execution engine.
   - `validate(ctx: GraphqlRef, root: Node)`. Usually you don't need to call this directly.
-  - `parseSchema(ctx: GraphqlRef, schema: string | openArray[byte]): ParseResult`. Parse a scheme from text string.
-  - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
-  - `parseSchemas[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string], schemas: openArray[T], conf = defaultParserConf()): GraphqlResult`.
+  - `parseSchema(ctx: GraphqlRef, schema: string | openArray[byte], store = false, conf = defaultParserConf()): ParseResult`. Parse a scheme from text string.
+  - `parseSchemaFromFile(ctx: GraphqlRef, fileName: string, store = false, conf = defaultParserConf()): ParseResult`.
+  - `parseSchemas[T: string | seq[byte]](ctx: GraphqlRef, files: openArray[string], schemas: openArray[T], store = false, conf = defaultParserConf()): GraphqlResult`.
     Parses multiple files and multiple string/seq[byte] schema definitions at once.
-  - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte]): ParseResult `. Parse queries from text string.
-  - `parseQueryFromFile(ctx: GraphqlRef, fileName: string): ParseResult`.
-  - `purgeQueries(ctx: GraphqlRef, includeVariables: bool)`. A server will often call this to remove unused queries.
+  - `parseQuery(ctx: GraphqlRef, query: string | openArray[byte], store = false): ParseResult `. Parse queries from text string.
+  - `parseQueryFromFile(ctx: GraphqlRef, fileName: string, store = false): ParseResult`.
+  - `purgeQueries(ctx: GraphqlRef, includeVariables: bool, includeStored = true)`. A server will often call this to remove unused queries.
   - `purgeSchema(ctx: GraphqlRef, includeScalars, includeResolvers: bool)`. Probably not need to call this often.
   - `getNameCounter(ctx: GraphqlRef): NameCounter`. Use this proc to create a savepoint for `purgeNames`.
   - `purgeNames(ctx: GraphqlRef, savePoint: NameCounter)`. You need to call this after you call `purgeQueries` or `purgeSchema`.
