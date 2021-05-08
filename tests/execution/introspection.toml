@@ -199,8 +199,8 @@ type Query {
     "directives":[
       {
         "name":"specifiedBy",
-        "description":"Builtin @specifiedBy directive","
-        locations":["SCALAR"],
+        "description":"Builtin @specifiedBy directive",
+        "locations":["SCALAR"],
         "args":[{"name":"url"}],
         "isRepeatable":false
       },
@@ -536,7 +536,7 @@ type Query {
   "search":[
     {
       "__typename":"Human",
-      "name":"Dr.Jones"
+      "name":"Dr. Jones"
     },
     {
       "__typename":"Droid",
@@ -544,7 +544,7 @@ type Query {
     },
     {
       "__typename":"Starship",
-      "name":"MilleniumFalcon"
+      "name":"Millenium Falcon"
     }
   ]
 }
@@ -589,7 +589,7 @@ type Query {
   "search":[
     {
       "__typename":"Human",
-      "name":"Dr.Jones"
+      "name":"Dr. Jones"
     },
     {
       "__typename":"Droid",
@@ -597,7 +597,7 @@ type Query {
     },
     {
       "__typename":"Starship",
-      "name":"MilleniumFalcon"
+      "name":"Millenium Falcon"
     }
   ]
 }
@@ -631,9 +631,9 @@ type Query {
   result = """
 {
   "search":[
-    {"__typename":"Human","name":"Dr.Jones"},
+    {"__typename":"Human","name":"Dr. Jones"},
     {"__typename":"Droid","name":"3CPO"},
-    {"__typename":"Starship","name":"MilleniumFalcon"}
+    {"__typename":"Starship","name":"Millenium Falcon"}
   ]
 }
 """
@@ -784,7 +784,7 @@ type Query {
   "__type":{
     "fields":[
       {
-        "description":"field'name'",
+        "description":"field 'name'",
         "name":"name",
         "isDeprecated":false,
         "deprecationReason":null,

@@ -32,11 +32,36 @@ type
     ok: int
 
 proc removeWhitespaces(x: string): string =
-  # TODO: do not remove white spaces in string/multiline string
   const whites = {' ', '\t', '\r', '\n'}
-  for c in x:
-    if c notin whites:
+  type
+    State = enum
+      inRoot
+      inString
+
+  if x.len == 0:
+    return
+
+  var state = inRoot
+  var i = 0
+  while i < x.len:
+    var c = x[i]
+    case state
+    of inRoot:
+      if c == '\"':
+        state = inString
+        result.add c
+      elif c notin whites:
+        result.add c
+      inc i
+    of inString:
+      if c == '\\':
+        result.add c
+        inc i
+        c = x[i]
+      elif c == '\"':
+        state = inRoot
       result.add c
+      inc i
 
 proc checkErrors(ctx: GraphqlRef, errors: openArray[ErrorDesc],
                  unit: Unit, testStatusIMPL: var TestStatus) =

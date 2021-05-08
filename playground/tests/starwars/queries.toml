@@ -121,8 +121,8 @@ query ($eps: Episode = JEDI){
   result = """
 {
   "search":[
-    {"name":"HanSolo"},
-    {"name":"LeiaOrgana"}
+    {"name":"Han Solo"},
+    {"name":"Leia Organa"}
   ]
 }
 """
