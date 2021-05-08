@@ -1073,8 +1073,7 @@ proc fieldInSetCanMerge(ctx: GraphqlRef, fieldSet: FieldSet) =
         mergedSet.add fieldB.fieldSet
         visit fieldInSetCanMerge(mergedSet)
         fieldB.merged = true
-        # TODO: shallow copy?
-        fieldA.fieldSet = mergedSet
+        fieldA.fieldSet = system.move(mergedSet)
 
 proc validateVarUsage(ctx: GraphqlRef, symNode: Node) =
   for v in values(symNode.sym.vars):
@@ -1140,15 +1139,15 @@ proc fillArgs(field: FieldRef) =
 
 proc skipOrInclude(field: FieldRef) =
   # recursively remove merged field in fieldset
-  var s = newSeq[FieldRef]()
+  var fieldSet = newSeq[FieldRef]()
   for n in field.fieldSet:
     if n.merged:
       continue
     skipOrInclude(n)
     n.fillArgs()
-    s.add n
+    fieldSet.add n
   # replace the old fieldSet with reduced fieldSet
-  field.fieldSet = s
+  field.fieldSet = system.move(fieldSet)
 
 proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node): ExecRef =
   var exec = ExecRef(opSym: opSym, opType: opType)
