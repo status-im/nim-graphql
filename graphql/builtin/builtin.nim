@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/strutils,
+  std/[strutils, parseutils],
   stew/results,
   ../common/[ast],
   ../graphql
@@ -46,12 +46,15 @@ proc scalarInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsaf
     err("expect int, but got '$1'" % [$node.kind])
 
 proc scalarFloat(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
-  # TODO: validate 64 bit float
   case node.kind
   of nkInt:
     let n = Node(pos: node.pos, kind: nkFloat, floatVal: node.intVal)
     ok(n)
   of nkFloat:
+    var number: float
+    let L = parseFloat(node.floatVal, number)
+    if L != node.floatVal.len or L == 0:
+      return err("'$1' is not a valid float" % [node.floatVal])
     ok(node)
   else:
     err("expect int or float, but got '$1'" % [$node.kind])

@@ -79,3 +79,10 @@ input myinput {
 }
 """
 
+[[units]]
+  name = "float64 parser"
+  code = """
+input myinput {
+  value: Float = -21474.83649
+}
+"""
