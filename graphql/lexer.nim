@@ -157,10 +157,14 @@ proc handleLF(lex: var Lexer) {.inline.} =
 proc skipWhitespace(lex: var Lexer) =
   const SkipableChars = {'\t', ' ', ','}
 
-  template handleCR =
+  template handleCR(writeToComment: static[bool] = false) =
     advance lex.stream
     if not lex.stream.readable: return
-    if lex.stream.peek == '\n': advance lex.stream
+    if lex.stream.peek == '\n':
+      when writeToComment:
+        lex.comment.add '\n'
+      else:
+        advance lex.stream
     lex.line += 1
     lex.lineStart = lex.stream.pos
 
@@ -179,9 +183,8 @@ proc skipWhitespace(lex: var Lexer) =
         if not lex.stream.readable: return
         case lex.stream.peek
         of '\r':
-          handleCR()
-          # TODO: should we preserve \r or replace it with \n?
-          lex.comment.add '\n'
+          lex.comment.add '\r'
+          handleCR(writeToComment = true)
           break
         of '\n':
           lex.handleLF()
