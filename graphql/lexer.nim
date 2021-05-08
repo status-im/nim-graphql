@@ -168,7 +168,7 @@ proc skipWhitespace(lex: var Lexer) =
     lex.line += 1
     lex.lineStart = lex.stream.pos
 
-  # clear vomment every time we visit skipWhitespace
+  # clear comment every time we visit skipWhitespace
   lex.comment.setLen(0)
 
   while lex.stream.readable:
