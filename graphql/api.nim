@@ -280,7 +280,7 @@ proc purgeQueries*(ctx: GraphqlRef, includeVariables = true, includeStored = fal
   else:
     var names = newSeqOfCap[Name](ctx.opTable.len)
     for n, v in ctx.opTable:
-      if sfBuiltin notin v.flags:
+      if sfBuiltin notin v.sym.flags:
         names.add n
     for n in names:
       ctx.opTable.del(n)
@@ -292,7 +292,7 @@ proc purgeSchema*(ctx: GraphqlRef, includeScalars = true,
                   includeResolvers = true, includeCoercion = true) =
   var names = newSeqOfCap[Name](ctx.typeTable.len)
   for n, v in ctx.typeTable:
-    if sfBuiltin notin v.flags:
+    if sfBuiltin notin v.sym.flags:
       names.add n
 
   ctx.rootQuery = nil

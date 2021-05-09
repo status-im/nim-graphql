@@ -86,7 +86,7 @@ proc writeUnit(f: File, unit: Unit) =
 proc validateAll(ctx: GraphqlRef, root: Node) =
   visit validate(root)
   for name, sym in ctx.opTable:
-    if sym.kind != skFragment:
+    if sym.sym.kind != skFragment:
       exec := toExec(sym)
       discard exec
 

@@ -63,28 +63,28 @@ template noCyclicSetup(visited: untyped, n: Node) =
   var visited {.inject.} = initHashSet[Name]()
   visited.incl getName(n)
 
-proc findType(ctx: GraphqlRef, name: Node, types: set[SymKind]): Symbol =
+proc findType(ctx: GraphqlRef, name: Node, types: set[SymKind]): Node =
   let sym = findType(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
-  invalid sym.kind notin types:
-    ctx.error(ErrTypeMismatch, name, sym.kind, $$types)
+  invalid sym.sym.kind notin types:
+    ctx.error(ErrTypeMismatch, name, sym.sym.kind, $$types)
   sym
 
-proc findType(ctx: GraphqlRef, name: Node, typ: SymKind): Symbol =
+proc findType(ctx: GraphqlRef, name: Node, typ: SymKind): Node =
   let sym = findType(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
-  invalid sym.kind != typ:
-    ctx.error(ErrTypeMismatch, name, sym.kind, typ)
+  invalid sym.sym.kind != typ:
+    ctx.error(ErrTypeMismatch, name, sym.sym.kind, typ)
   sym
 
-proc findOp(ctx: GraphqlRef, name: Node, typ: SymKind): Symbol =
+proc findOp(ctx: GraphqlRef, name: Node, typ: SymKind): Node =
   let sym = findOp(name.name)
   invalid sym.isNil:
     ctx.error(ErrTypeUndefined, name)
-  invalid sym.kind != typ:
-    ctx.error(ErrTypeMismatch, name, sym.kind, typ)
+  invalid sym.sym.kind != typ:
+    ctx.error(ErrTypeMismatch, name, sym.sym.kind, typ)
   sym
 
 proc isWhatType(ctx: GraphqlRef, parent: Node, idx: int, whatTypes: set[SymKind]) =
@@ -96,7 +96,8 @@ proc isWhatType(ctx: GraphqlRef, parent: Node, idx: int, whatTypes: set[SymKind]
     visit isWhatType(node, 0, whatTypes)
   of nkNamedType:
     sym := findType(node, whatTypes)
-    parent[idx] = newSymNode(sym, node.pos)
+    # dup sym, for better error message
+    parent[idx] = newSymNode(sym.sym, node.pos)
   else:
     unreachable()
 
@@ -348,9 +349,9 @@ proc visitOp(ctx: GraphqlRef, parent: Node, idx: int, sk: SymKind) =
   invalid findOp(name.name) != nil:
     ctx.error(ErrDuplicateName, name)
 
-  let sym = newSymNode(sk, name.name, node, name.pos)
-  ctx.opTable[name.name] = sym.sym
-  parent[idx] = sym
+  let symNode = newSymNode(sk, name.name, node, name.pos)
+  ctx.opTable[name.name] = symNode
+  parent[idx] = symNode
 
 proc visitType(ctx: GraphqlRef, parent: Node, idx: int, sk: SymKind) =
   # desc, name, ...
@@ -362,7 +363,7 @@ proc visitType(ctx: GraphqlRef, parent: Node, idx: int, sk: SymKind) =
     ctx.error(ErrDuplicateName, name)
 
   let symNode = newSymNode(sk, name.name, node, name.pos)
-  ctx.typeTable[name.name] = symNode.sym
+  ctx.typeTable[name.name] = symNode
   parent[idx] = symNode
 
   let sym = symNode.sym
@@ -397,12 +398,14 @@ proc directivesUsage(ctx: GraphqlRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(n
     let name = dir.name
     case name.kind
     of nkName:
-      sym := findType(name, skDirective)
+      symNode := findType(name, skDirective)
+      let sym  = symNode.sym
       invalid name.name in names and sfRepeatable notin sym.flags:
         ctx.error(ErrDuplicateName, name)
       names.incl name.name
       invalid dirLoc notin sym.dirLocs:
         ctx.error(ErrDirectiveMisLoc, name, dirLoc)
+      # dup sym, for better error message
       Node(dir)[0] = newSymNode(sym, name.pos)
       let tDir = Directive(sym.ast)
       visit dirArgs(scope, name, dir.args, tDir.args)
@@ -435,9 +438,8 @@ proc visitSchema(ctx: GraphqlRef, node: Schema) =
     let opName = n[1]
     noNameDup(opKind, names)
     sym := findType(opName, skObject)
-    let name = sym.ast[1]
-    let symNode = newSymNode(sym, name.pos)
-    ctx.assignRootOp(opKind.name, symNode)
+    let name = sym.sym.ast[1]
+    ctx.assignRootOp(opKind.name, sym)
 
   visit directivesUsage(node.dirs, dlSCHEMA)
 
@@ -451,8 +453,7 @@ proc visitImplements(ctx: GraphqlRef, imp: Node) =
   for i, name in imp:
     doAssert(name.kind == nkNamedType)
     noNameDup(name, names)
-    sym := findType(name, skInterface)
-    imp[i] = newSymNode(sym, name.pos)
+    imp[i] ::= findType(name, skInterface)
 
 proc visitFields(ctx: GraphqlRef, fields: ObjectFields, sym: Symbol) =
   var names = initHashSet[Name]()
@@ -598,10 +599,10 @@ proc fillPossibleTypes(ctx: GraphqlRef, symNode: Node) =
 
   let name = symNode.sym.name
   for sym in values(ctx.typeTable):
-    if sym.kind notin {skObject, skInterface}:
+    if sym.sym.kind notin {skObject, skInterface}:
       continue
-    if hasImplements(sym.ast, name):
-      symNode.sym.types.add newSymNode(sym, sym.ast.pos)
+    if hasImplements(sym.sym.ast, name):
+      symNode.sym.types.add sym
 
 proc interfaceInterface(ctx: GraphqlRef, symNode: Node) =
   # desc, name, ifaces, dirs, fields
@@ -625,8 +626,7 @@ proc visitUnion(ctx: GraphqlRef, node: Union) =
   let members = node.members
   for i, name in members:
     noNameDup(name, names)
-    sym := findType(name, skObject)
-    members[i] = newSymNode(sym, name.pos)
+    members[i] ::= findType(name, skObject)
 
   # validate directives
   visit directivesUsage(node.dirs, dlUNION)
@@ -744,7 +744,8 @@ proc visitTypeCond(ctx: GraphqlRef, parent: Node, idx: int) =
   case node.kind
   of nkNamedType:
     sym := findType(node, TypeConds)
-    parent[idx] = newSymNode(sym, node.pos)
+    # dup sym, for better error message
+    parent[idx] = newSymNode(sym.sym, node.pos)
   of nkSym:
     discard
   else:
@@ -758,9 +759,11 @@ proc validateSpreadUsage(ctx: GraphqlRef, parent: Node, idx: int, visited: var H
   of nkName:
     noCyclic(name, visited)
     sym := findOp(name, skFragment)
-    sym.flags.incl sfUsed
-    parent[idx] = newSymNode(sym, name.pos)
-    let frag = Fragment(sym.ast)
+    sym.sym.flags.incl sfUsed
+    # dup sym, but replace pos
+    # for better
+    parent[idx] = newSymNode(sym.sym, name.pos)
+    let frag = Fragment(sym.sym.ast)
     visit fragmentInOp(frag.sels, visited, scope)
   of nkSym:
     let frag = Fragment(name.sym.ast)
@@ -1344,13 +1347,13 @@ proc visitExtension(ctx: GraphqlRef, root: Node, idx: int) =
   sym := findType(name, toSymKind(node.kind))
 
   case node.kind
-  of nkSchemaDef:     visit extendSchema(sym, node)
-  of nkScalarDef:     visit extendScalar(sym, node)
-  of nkObjectDef:     visit extendObjectDef(sym, node)
-  of nkInterfaceDef:  visit extendInterfaceDef(sym, node)
-  of nkUnionDef:      visit extendUnionDef(sym, node)
-  of nkEnumDef:       visit extendEnumDef(sym, node)
-  of nkInputObjectDef:visit extendInputObjectDef(sym, node)
+  of nkSchemaDef:     visit extendSchema(sym.sym, node)
+  of nkScalarDef:     visit extendScalar(sym.sym, node)
+  of nkObjectDef:     visit extendObjectDef(sym.sym, node)
+  of nkInterfaceDef:  visit extendInterfaceDef(sym.sym, node)
+  of nkUnionDef:      visit extendUnionDef(sym.sym, node)
+  of nkEnumDef:       visit extendEnumDef(sym.sym, node)
+  of nkInputObjectDef:visit extendInputObjectDef(sym.sym, node)
   else:
     unreachable()
 
@@ -1422,7 +1425,7 @@ proc secondPass(ctx: GraphqlRef, root: Node) =
   # validate anon op
   let anonSym = findOp(ctx.names.anonName)
   invalid anonSym.isNil.not and opCount > 1:
-    ctx.error(ErrOnlyOne, anonSym.ast[0], "anonymous operation")
+    ctx.error(ErrOnlyOne, anonSym.sym.ast[0], "anonymous operation")
 
 proc validate*(ctx: GraphqlRef, root: Node) =
   # reset errors before new validation
@@ -1461,9 +1464,9 @@ proc pickOpName(ctx: GraphqlRef, opName: string): Name =
   var sym: Symbol
   var i = 0
   for name, opSym in ctx.opTable:
-    if opSym.kind != skFragment:
+    if opSym.sym.kind != skFragment:
       result = name
-      sym = opSym
+      sym = opSym.sym
       inc i
 
   invalid i > 1:
@@ -1483,12 +1486,12 @@ proc validateOpWithVars(ctx: GraphqlRef, n: Node): ExecRef =
   else:
     unreachable()
 
-proc toExec*(ctx: GraphqlRef, op: Symbol): ExecRef =
-  if sfHasVariables in op.flags:
-    op.ast = copyTree(op.astCopy)
-    result ::= validateOpWithVars(newSymNode(op, op.ast.pos))
+proc toExec*(ctx: GraphqlRef, op: Node): ExecRef =
+  if sfHasVariables in op.sym.flags:
+    op.sym.ast = copyTree(op.sym.astCopy)
+    result ::= validateOpWithVars(op)
   else:
-    result = ExecRef(op.exec)
+    result = ExecRef(op.sym.exec)
 
 proc getOperation*(ctx: GraphqlRef, opName: string): ExecRef =
   name := pickOpName(opName)

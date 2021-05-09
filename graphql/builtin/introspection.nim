@@ -16,7 +16,7 @@ import
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 {.push hint[XDeclaredButNotUsed]: off.}
 
-proc findType(ctx: GraphqlRef, nameStr: string): Symbol =
+proc findType(ctx: GraphqlRef, nameStr: string): Node =
   let name = ctx.names.insert(nameStr)
   findType(name)
 
@@ -55,7 +55,7 @@ proc querySchema(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   let resp = if sym.isNil:
                resp()
              else:
-               resp(sym)
+               sym
   ok(resp)
 
 proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -64,10 +64,10 @@ proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.
   let sym = ctx.findType(name.stringVal)
   if sym.isNil:
     err("'$1' not defined" % [name.stringVal])
-  elif sym.kind == skDirective:
+  elif sym.sym.kind == skDirective:
     err("'$1' is a directive, not a type" % [name.stringVal])
   else:
-    ok(resp(sym))
+    ok(sym)
 
 proc queryTypename(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind notin resObjValidKind:
@@ -94,20 +94,22 @@ proc schemaTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
   if includeBuiltin:
-    for v in values(ctx.typeTable):
+    for sym in values(ctx.typeTable):
+      let v = sym.sym
       # schema is not a queryable entity from introspection pov
       if v.kind in {skDirective, skSchema}:
         continue
-      list.add resp(v)
+      list.add sym
   else:
-    for v in values(ctx.typeTable):
+    for sym in values(ctx.typeTable):
+      let v = sym.sym
       # schema is not a queryable entity from introspection pov
       if v.kind in {skDirective, skSchema}:
         continue
       # builtin scalar should queryable even though `includeBuiltin` is false
       if sfBuiltin in v.flags and v.kind != skScalar:
         continue
-      list.add resp(v)
+      list.add sym
   ok(list)
 
 proc schemaQueryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -134,17 +136,19 @@ proc schemaDirectives(ud: RootRef, params: Args, parent: Node): RespResult {.api
   let includeBuiltin = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
   if includeBuiltin:
-    for v in values(ctx.typeTable):
+    for sym in values(ctx.typeTable):
+      let v = sym.sym
       if v.kind != skDirective:
         continue
-      list.add resp(v)
+      list.add sym
   else:
-    for v in values(ctx.typeTable):
+    for sym in values(ctx.typeTable):
+      let v = sym.sym
       if v.kind != skDirective:
         continue
       if sfBuiltin in v.flags:
         continue
-      list.add resp(v)
+      list.add sym
   ok(list)
 
 const schemaProtos* = {

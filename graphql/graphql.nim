@@ -78,8 +78,8 @@ type
   Graphql* = object of RootObj
     errKind*      : GraphqlError
     errors*       : seq[ErrorDesc]
-    opTable*      : Table[Name, Symbol]
-    typeTable*    : Table[Name, Symbol]
+    opTable*      : Table[Name, Node]
+    typeTable*    : Table[Name, Node]
     scalarTable*  : Table[Name, CoercionProc]
     coerceTable*  : Table[Name, CoercionProc]
     varTable*     : Table[Name, Node]
@@ -94,10 +94,10 @@ type
 
 const resObjValidKind* = {nkString, nkSym, nkName, nkNamedType, nkMap}
 
-template findType*(name: Name): Symbol =
+template findType*(name: Name): Node =
   ctx.typeTable.getOrDefault(name)
 
-template findOp*(name: Name): Symbol =
+template findOp*(name: Name): Node =
   ctx.opTable.getOrDefault(name)
 
 template findScalar*(name: Name): CoercionProc =
