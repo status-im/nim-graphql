@@ -24,7 +24,7 @@ proc setupContext(): GraphqlRef =
     quit(QuitFailure)
   ctx
 
-proc calcQC(field: FieldRef): int {.cdecl, gcsafe, raises: [Defect, CatchableError].} =
+proc calcQC(qc: QueryComplexity, field: FieldRef): int {.cdecl, gcsafe, raises: [Defect, CatchableError].} =
   if $field.parentType == "__Type" and $field.field.name == "fields":
     return 100
   elif $field.parentType == "Transaction" and $field.field.name == "block":
@@ -84,3 +84,4 @@ when isMainModule:
 else:
   let ctx = setupContext()
   ctx.executeCases(caseFolder, false)
+  ctx.executeQC()

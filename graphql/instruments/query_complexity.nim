@@ -12,7 +12,7 @@ import
   ../../graphql
 
 type
-  ComplexityCalculator* = proc(field: FieldRef): int {.cdecl,
+  ComplexityCalculator* = proc(qc: QueryComplexity, field: FieldRef): int {.cdecl,
                   gcsafe, raises: [Defect, CatchableError].}
   QueryComplexity* = ref object of InstrumentRef
     maxComplexity: int
@@ -20,7 +20,7 @@ type
 
 proc traverse(qc: QueryComplexity, fieldSet: FieldSet): int =
   for field in fieldSet:
-    inc(result, qc.calculator(field))
+    inc(result, qc.calculator(qc, field))
     inc(result, qc.traverse(field.fieldSet))
 
 proc queryComplexity(ud: InstrumentRef, flag: InstrumentFlag,
