@@ -83,5 +83,7 @@ proc suite1() =
       let res = ctx.parseQuery(query, store = true)
       check res.isOk
       ctx.purgeQueries(includeStored = true)
+      ctx.purgeSchema()
+      ctx.purgeNames(savePoint)
 
 suite1()
