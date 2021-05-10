@@ -249,7 +249,7 @@ proc executeRequestImpl(ctx: GraphqlRef, resp: var Node, opName = "") =
   ctx.path = respList()
   execNode := getOperation(opName)
   let exec = ExecRef(execNode.sym.exec)
-  case exec.opSym.sym.kind
+  case execNode.sym.kind
   of skQuery:        visit executeQuery(exec, resp)
   of skMutation:     visit executeMutation(exec, resp)
   of skSubscription: visit executeSubscription(exec, resp)

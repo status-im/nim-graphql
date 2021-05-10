@@ -1151,8 +1151,8 @@ proc skipOrInclude(field: FieldRef) =
   # replace the old fieldSet with reduced fieldSet
   field.fieldSet = system.move(fieldSet)
 
-proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opSym, opType: Node): ExecRef =
-  var exec = ExecRef(opSym: opSym, opType: opType)
+proc skipOrInclude(ctx: GraphqlRef, fieldSet: FieldSet, opType: Node): ExecRef =
+  var exec = ExecRef(opType: opType)
   for n in fieldSet:
     if n.merged:
       continue
@@ -1180,7 +1180,7 @@ proc queryQuery(ctx: GraphqlRef, symNode: Node): ExecRef =
   visit fieldSelection(symNode, node.sels, ctx.rootQuery, fieldSet)
   visit fieldInSetCanMerge(fieldSet)
   visit validateVarUsage(symNode)
-  ctx.skipOrInclude(fieldSet, symNode, ctx.rootQuery)
+  ctx.skipOrInclude(fieldSet, ctx.rootQuery)
 
 proc mutationMutation(ctx: GraphqlRef, symNode: Node): ExecRef =
   invalid ctx.rootMutation.isNil:
@@ -1191,7 +1191,7 @@ proc mutationMutation(ctx: GraphqlRef, symNode: Node): ExecRef =
   visit fieldSelection(symNode, node.sels, ctx.rootMutation, fieldSet)
   visit fieldInSetCanMerge(fieldSet)
   visit validateVarUsage(symNode)
-  ctx.skipOrInclude(fieldSet, symNode, ctx.rootMutation)
+  ctx.skipOrInclude(fieldSet, ctx.rootMutation)
 
 proc countRootFields(ctx: GraphqlRef, sels: Node, root = true): int =
   var count = 0
@@ -1235,7 +1235,7 @@ proc subscriptionSubscription(ctx: GraphqlRef, symNode: Node): ExecRef =
   invalid rootFieldsCount != 1:
     ctx.error(ErrOnlyOne, node.Node, "root subscription field")
   visit validateVarUsage(symNode)
-  ctx.skipOrInclude(fieldSet, symNode, ctx.rootSubs)
+  ctx.skipOrInclude(fieldSet, ctx.rootSubs)
 
 proc extendDirs(sym: Symbol, idx: int, tDirs: Node, dirs: Dirs) =
   if tDirs.kind == nkEmpty:

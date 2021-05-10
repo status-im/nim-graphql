@@ -70,9 +70,8 @@ type
 
   ExecRef* = ref ExecObj
   ExecObj* = object of RootObj
-    opType*   : Node
-    opSym*    : Node
-    fieldSet* : FieldSet
+    opType*  : Node
+    fieldSet*: FieldSet
 
   GraphqlResult* = Result[void, seq[ErrorDesc]]
   RespResult* = Result[Node, string]
