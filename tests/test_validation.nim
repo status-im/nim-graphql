@@ -87,7 +87,7 @@ proc validateAll(ctx: GraphqlRef, root: Node) =
   visit validate(root)
   for name, sym in ctx.opTable:
     if sym.sym.kind != skFragment:
-      exec := toExec(sym)
+      exec := getOperation($name)
       discard exec
 
 proc runConverter(ctx: GraphqlRef, unit: var Unit) =

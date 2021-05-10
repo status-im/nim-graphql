@@ -35,6 +35,14 @@ export
   api.GraphqlResult,
   api.GraphqlError,
   api.NameCounter,
+  api.InstrumentFlag,
+  api.InstrumentResult,
+  api.InstrumentObj,
+  api.InstrumentRef,
+  api.InstrumentProc,
+  api.ExecRef,
+  api.FieldSet,
+  api.FieldRef,
 
   # exported stew/results
   api.isErr,
@@ -66,6 +74,7 @@ export
   api.getNameCounter,
   api.purgeNames,
   api.treeRepr,
+  api.addInstrument,
 
   # graphql response
   api.respMap,

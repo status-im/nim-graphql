@@ -320,6 +320,9 @@ proc getNameCounter*(ctx: GraphqlRef): NameCounter =
 proc purgeNames*(ctx: GraphqlRef, savePoint: NameCounter) =
   ctx.names.purge(savePoint)
 
+proc addInstrument*(ctx: GraphqlRef, instr: InstrumentRef) =
+  ctx.instruments.add instr
+
 proc registerBuiltinScalars(ctx: GraphqlRef) =
   ctx.customScalar(builtinScalars)
 

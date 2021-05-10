@@ -247,13 +247,15 @@ proc executeSubscription(ctx: GraphqlRef, exec: ExecRef, resp: var Node) =
 
 proc executeRequestImpl(ctx: GraphqlRef, resp: var Node, opName = "") =
   ctx.path = respList()
-  exec := getOperation(opName)
+  execNode := getOperation(opName)
+  let exec = ExecRef(execNode.sym.exec)
   case exec.opSym.sym.kind
   of skQuery:        visit executeQuery(exec, resp)
   of skMutation:     visit executeMutation(exec, resp)
   of skSubscription: visit executeSubscription(exec, resp)
   else:
     unreachable()
+  execInstrument(iResult, execNode, resp)
 
 proc executeRequest*(ctx: GraphqlRef, resp: RespStream,
                      opName = ""): GraphqlResult {.gcsafe.} =

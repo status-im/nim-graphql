@@ -438,7 +438,6 @@ proc visitSchema(ctx: GraphqlRef, node: Schema) =
     let opName = n[1]
     noNameDup(opKind, names)
     sym := findType(opName, skObject)
-    let name = sym.sym.ast[1]
     ctx.assignRootOp(opKind.name, sym)
 
   visit directivesUsage(node.dirs, dlSCHEMA)
@@ -1434,6 +1433,7 @@ proc validate*(ctx: GraphqlRef, root: Node) =
   ctx.errors.setLen(0)
 
   assert(root.kind == nkMembers, "expect nkMembers")
+  execInstrument(iValidationBegin, ctx.emptyNode, root)
   for i, n in root:
     case n.kind
     of nkQuery:          visit visitOp(root, i, skQuery)
@@ -1486,17 +1486,15 @@ proc validateOpWithVars(ctx: GraphqlRef, n: Node): ExecRef =
   else:
     unreachable()
 
-proc toExec*(ctx: GraphqlRef, op: Node): ExecRef =
-  if sfHasVariables in op.sym.flags:
-    op.sym.ast = copyTree(op.sym.astCopy)
-    result ::= validateOpWithVars(op)
-  else:
-    result = ExecRef(op.sym.exec)
-
-proc getOperation*(ctx: GraphqlRef, opName: string): ExecRef =
+proc getOperation*(ctx: GraphqlRef, opName: string): Node =
   name := pickOpName(opName)
   let op = ctx.opTable.getOrDefault(name)
   invalid op.isNil:
     ctx.fatal(ErrOperationNotFound, ctx.emptyNode, name)
 
-  toExec(ctx, op)
+  if sfHasVariables in op.sym.flags:
+    op.sym.ast = copyTree(op.sym.astCopy)
+    op.sym.exec ::= validateOpWithVars(op)
+
+  execInstrument(iExecBegin, ctx.emptyNode, op)
+  op

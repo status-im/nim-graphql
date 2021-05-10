@@ -41,6 +41,21 @@ type
     ErrScalarError
     ErrEnumError
     ErrDirNotAllowed
+    ErrInstrument
+
+  InstrumentFlag* = enum
+    iValidationBegin
+    iExecBegin
+    iResult
+
+  InstrumentResult* = Result[void, string]
+  InstrumentProc* = proc(ud: InstrumentRef, flag: InstrumentFlag,
+    params, node: Node): InstrumentResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
+
+  InstrumentRef* = ref InstrumentObj
+  InstrumentObj* = object of RootObj
+    flags*: set[InstrumentFlag]
+    iProc*: InstrumentProc
 
   FieldRef* = ref FieldObj
   FieldObj* = object
@@ -84,6 +99,7 @@ type
     coerceTable*  : Table[Name, CoercionProc]
     varTable*     : Table[Name, Node]
     resolver*     : Table[Name, ResolverRef]
+    instruments*  : seq[InstrumentRef]
     names*        : NameCache
     emptyNode*    : Node
     rootQuery*    : Node
@@ -144,7 +160,6 @@ proc nonEmptyPos(node: Node): Pos =
     if n.kind != nkEmpty:
       return n.pos
 
-
 proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
   ctx.errors.add ErrorDesc(
@@ -167,6 +182,8 @@ proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
         "Field '$1' should not return null" % [msg[0]]
       of ErrIncompatType:
         "Field '$1' expect '$2' but got '$3'" % [msg[0], msg[1], msg[2]]
+      of ErrInstrument:
+        "Instrument Error: " & msg[0]
       else:
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )
@@ -273,3 +290,19 @@ proc getCoercion*(ctx: GraphqlRef, locType: Node): CoercionProc =
     coerce
   else:
     coerce
+
+proc executeInstrument*(ctx: GraphqlRef,
+    flag: InstrumentFlag, params, node: Node): InstrumentResult =
+  for c in ctx.instruments:
+    if flag notin c.flags:
+      continue
+    let res = c.iProc(c, flag, params, node)
+    if res.isErr:
+      return res
+  ok()
+
+template execInstrument*(flag: InstrumentFlag, params, node: Node) =
+  let res = ctx.executeInstrument(flag, params, node)
+  if res.isErr:
+    ctx.fatal(ErrInstrument, node, res.error)
+    return
