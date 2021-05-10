@@ -8,8 +8,9 @@
 # those terms.
 
 import
-  std/os,
-  ../../graphql, ../ethapi, ../../graphql/test_common
+  std/[os, unittest],
+  ../../graphql, ../ethapi, ../../graphql/test_common,
+  ../../graphql/instruments/query_complexity
 
 const
   caseFolder = "playground" / "tests" / "ethereum"
@@ -23,10 +24,63 @@ proc setupContext(): GraphqlRef =
     quit(QuitFailure)
   ctx
 
+proc calcQC(field: FieldRef): int {.cdecl, gcsafe, raises: [Defect, CatchableError].} =
+  if $field.parentType == "__Type" and $field.field.name == "fields":
+    return 100
+  elif $field.parentType == "Transaction" and $field.field.name == "block":
+    return 100
+  else:
+    return 1
+
+const
+  query1 = """
+{ __schema { types { fields { type { fields { name }}}}}}
+"""
+  query2 = """
+{ block { transactions { block { transactions { block { number }}}}}}
+"""
+  query3 = """
+query eth_protocolVersion {
+  protocolVersion
+}
+"""
+
+proc executeQC(ctx: GraphqlRef, query: string): Result[string, string] =
+  var res = ctx.parseQuery(query, store = true)
+  if res.isErr:
+    return err($res.error)
+
+  let resp = JsonRespStream.new()
+  res = ctx.executeRequest(respStream(resp))
+  ctx.purgeQueries(includeStored = true)
+  if res.isErr:
+    return err($res.error)
+
+  ok(resp.getString())
+
+proc executeQC(ctx: GraphqlRef) =
+  suite "instrument test suite":
+    let savePoint = ctx.getNameCounter()
+    var qc = QueryComplexity.new(calcQC, 200)
+    ctx.addInstrument(qc)
+
+    test "too complex introspection query":
+      var res = executeQC(ctx, query1)
+      check res.isErr
+      check res.error == "@[[2, 1]: Fatal: Instrument Error: query complexity exceed max(200), got 204: @[]]"
+
+    test "too complex eth api query":
+      var res = executeQC(ctx, query2)
+      check res.isErr
+      check res.error == "@[[2, 1]: Fatal: Instrument Error: query complexity exceed max(200), got 204: @[]]"
+
+    ctx.purgeNames(savePoint)
+
 when isMainModule:
   let ctx = setupContext()
   processArguments()
   ctx.main(caseFolder, false)
+  ctx.executeQC()
 else:
   let ctx = setupContext()
   ctx.executeCases(caseFolder, false)
