@@ -13,7 +13,8 @@ from os import quoteShell, DirSep, AltSep
 const
   minizPath = currentSourcePath.rsplit({DirSep, AltSep}, 1)[0]
 
-{.passC: "-I" & quoteShell(minizPath)}
+{.passC: "-I" & quoteShell(minizPath).}
+{.passC: "-D_LARGEFILE64_SOURCE=1".}
 {.compile: minizPath & "/" & "miniz.c".}
 
 type
