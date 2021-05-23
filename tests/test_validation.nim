@@ -12,7 +12,7 @@ import
   toml_serialization,
   ../graphql, ../graphql/test_config,
   ../graphql/graphql as context,
-  ../graphql/validator
+  ../graphql/validator, ./mocha
 
 type
   Unit = object
@@ -122,48 +122,62 @@ proc convertCases(output: string) =
   for fileName in walkDirRec(caseFolder):
     ctx.runConverter(savePoint, fileName, output)
 
-proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
+proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus, mtest: TestRef) =
   setupParser(ctx, unit)
   if parser.error != errNone:
     check (parser.error != errNone) == (unit.error.len > 0)
-    check $parser.err == unit.error
+    let parserErr = $parser.err
+    check parserErr == unit.error
+    mtest.setExpectErr("unexpected parser error", unit.error, parserErr)
     return
 
   ctx.validateAll(doc.root)
   if ctx.errKind != ErrNone:
     check (ctx.errKind != ErrNone) == (unit.error.len > 0)
     check ctx.errors.len == 1
-    check $ctx.errors[0] == unit.error
+    let ctxErr = $ctx.errors[0]
+    check ctxErr == unit.error
+    mtest.setExpectErr("unexpected validation error", unit.error, ctxErr)
     return
 
   check (unit.error.len == 0)
+  mtest.setExpect("unexpected num error", unit.error.len, 0)
 
-proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter, mocha: var Mocha) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
+    var msuite = newSuite(parts.name, fileName)
     for unit in cases.units:
       test unit.name:
+        var mtest = newTest(unit.name, parts.name)
+        mtest.setCode(unit.code)
         if unit.skip:
           skip()
           inc counter.skip
+          mtest.setSkip()
         else:
-          ctx.runValidator(unit, testStatusIMPL)
+          ctx.runValidator(unit, testStatusIMPL, mtest)
           ctx.purgeQueries(false)
           ctx.purgeSchema(false, false, false)
           ctx.purgeNames(savePoint)
           if testStatusIMPL == OK:
             inc counter.ok
+            mtest.setPass()
           else:
             inc counter.fail
+        msuite.add mtest
+    mocha.add msuite
 
 proc validateCases() =
   var counter: Counter
   var ctx = setupContext()
   let savePoint = ctx.getNameCounter()
+  var mocha = Mocha.init()
   for fileName in walkDirRec(caseFolder):
-    ctx.runSuite(savePoint, fileName, counter)
+    ctx.runSuite(savePoint, fileName, counter, mocha)
   debugEcho counter
+  mocha.finalize("report" / "validation.json")
 
 proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
   var stream = memFileInput(fileName)
@@ -214,20 +228,30 @@ when isMainModule:
     var ctx = setupContext()
     var savePoint = ctx.getNameCounter()
     let fileName = caseFolder / conf.testFile
+    var mocha = Mocha.init()
+
     if conf.unit.len == 0:
-      ctx.runSuite(savePoint, fileName, counter)
+      ctx.runSuite(savePoint, fileName, counter, mocha)
       echo counter
+      mocha.finalize("report" / "validation.json")
       return
 
     let cases = Toml.loadFile(fileName, TestCase)
+    var msuite = newSuite(fileName.splitFile().name, fileName)
     for unit in cases.units:
       if unit.name != conf.unit:
         continue
       test unit.name:
-        ctx.runValidator(unit, testStatusIMPL)
+        var mtest = newTest(unit.name, fileName)
+        ctx.runValidator(unit, testStatusIMPL, mtest)
+        if testStatusIMPL == OK:
+          mtest.setPass()
         ctx.purgeQueries(true)
         ctx.purgeSchema(true, true, true)
         ctx.purgeNames(savePoint)
+        msuite.add mtest
+    mocha.add msuite
+    mocha.finalize("report" / "validation.json")
 
   var message: string
   ## Processing command line arguments
