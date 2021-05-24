@@ -17,6 +17,7 @@ type
     ErrNone
     ErrInternal
     ErrDuplicateName
+    ErrDirNoRepeat
     ErrOnlyOne
     ErrTypeUndefined
     ErrTypeMismatch
@@ -205,6 +206,8 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
       case err
       of ErrDuplicateName:
         "duplicate name '$1'" % [$node]
+      of ErrDirNoRepeat:
+        "directive is non repeatable '$1'" % [$node]
       of ErrOnlyOne:
         "only one '$1' allowed" % [msg[0]]
       of ErrTypeUndefined:

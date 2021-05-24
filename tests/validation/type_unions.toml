@@ -62,7 +62,7 @@ union MyUni = Named | Named
 
 [[units]]
   name = "unique directives"
-  error = "[5, 21]: Error: duplicate name 'mydir'"
+  error = "[5, 21]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on UNION
 type Named {

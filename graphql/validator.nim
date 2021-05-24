@@ -401,7 +401,7 @@ proc directivesUsage(ctx: GraphqlRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(n
       symNode := findType(name, skDirective)
       let sym  = symNode.sym
       invalid name.name in names and sfRepeatable notin sym.flags:
-        ctx.error(ErrDuplicateName, name)
+        ctx.error(ErrDirNoRepeat, name)
       names.incl name.name
       invalid dirLoc notin sym.dirLocs:
         ctx.error(ErrDirectiveMisLoc, name, dirLoc)
@@ -411,7 +411,7 @@ proc directivesUsage(ctx: GraphqlRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(n
       visit dirArgs(scope, name, dir.args, tDir.args)
     of nkSym:
       invalid name.sym.name in names and sfRepeatable notin name.sym.flags:
-        ctx.error(ErrDuplicateName, name)
+        ctx.error(ErrDirNoRepeat, name)
       names.incl name.sym.name
       let tDir = Directive(name.sym.ast)
       visit dirArgs(scope, tDir.name, dir.args, tDir.args)

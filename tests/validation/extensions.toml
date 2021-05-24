@@ -47,7 +47,7 @@ extend scalar myScalar @mydir
 
 [[units]]
   name = "extend scalar directive non repeatable"
-  error = "[3, 25]: Error: duplicate name 'mydir'"
+  error = "[3, 25]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on SCALAR
 scalar myScalar @mydir
@@ -77,7 +77,7 @@ extend schema @mydir
 
 [[units]]
   name = "extend schema directive non repeatable"
-  error = "[8, 16]: Error: duplicate name 'mydir'"
+  error = "[8, 16]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on SCHEMA
 schema @mydir {
@@ -136,7 +136,7 @@ extend schema {
 
 [[units]]
   name = "extend object dir non repeatable"
-  error = "[5, 20]: Error: duplicate name 'mydir'"
+  error = "[5, 20]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on OBJECT
 type Query @mydir {
@@ -159,7 +159,7 @@ extend type Query {
 
 [[units]]
   name = "extend interface dir non repeatable"
-  error = "[5, 25]: Error: duplicate name 'mydir'"
+  error = "[5, 25]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on INTERFACE
 interface Query @mydir {
@@ -182,7 +182,7 @@ extend interface Query {
 
 [[units]]
   name = "extend union dir non repeatable"
-  error = "[3, 21]: Error: duplicate name 'mydir'"
+  error = "[3, 21]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on UNION
 union myUni @mydir
@@ -202,7 +202,7 @@ extend union myUni = Dog
 
 [[units]]
   name = "extend enum dir non repeatable"
-  error = "[5, 21]: Error: duplicate name 'mydir'"
+  error = "[5, 21]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on ENUM
 enum myenum @mydir {
@@ -225,7 +225,7 @@ extend enum myenum {
 
 [[units]]
   name = "extend input object dir non repeatable"
-  error = "[5, 23]: Error: duplicate name 'mydir'"
+  error = "[5, 23]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on INPUT_OBJECT
 input myinput @mydir {

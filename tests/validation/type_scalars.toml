@@ -39,7 +39,7 @@ input myinput {
 
 [[units]]
   name = "unique directives"
-  error = "[2, 25]: Error: duplicate name 'mydir'"
+  error = "[2, 25]: Error: directive is non repeatable 'mydir'"
   code = """
 directive @mydir on SCALAR
 scalar MyScalar @mydir @mydir
