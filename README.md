@@ -7,6 +7,8 @@ nim-graphql
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Github action](https://github.com/status-im/nim-graphql/workflows/nim-graphql%20CI/badge.svg)
 
+View test summary [here](https://status-im.github.io/nim-graphql/).
+
 ## Introduction
 
 Enjoy writing graphql service in plain Nim!.

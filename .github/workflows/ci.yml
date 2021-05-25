@@ -173,3 +173,19 @@ jobs:
           # toml_serialization is a test suite dependency
           nimble install -y toml_serialization
           env TEST_LANG="${{ matrix.target.TEST_LANG }}" nimble test
+
+      - name: Run mochawesome-report-generator
+        if: runner.os == 'linux' && matrix.target.cpu == 'amd64' && matrix.target.TEST_LANG == 'c' && github.event_name == 'push'
+        run: |
+          cd nim-graphql
+          TITLE="nim-graphql"
+          SHA="${GITHUB_SHA::7}"
+          npm install --save-dev mochawesome-report-generator
+          ./node_modules/.bin/marge -o report -t "$TITLE-$SHA" -p "$TITLE test report" -f index.html report/validation.json
+
+      - name: Deploy mochawesome report
+        if: runner.os == 'linux' && matrix.target.cpu == 'amd64' && matrix.target.TEST_LANG == 'c' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./nim-graphql/report

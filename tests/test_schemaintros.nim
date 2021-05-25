@@ -9,18 +9,19 @@
 
 import
   std/[os, strutils, unittest, json],
-  ../graphql
+  ../graphql, ./mocha
 
 const
   schemaFolder = "tests" / "schemas"
   introsFolder = "tests" / "execution"
 
-proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
+proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus, mtest: TestRef) =
   var res = ctx.parseSchemaFromFile(fileName)
   check res.isOk
   if res.isErr:
     debugEcho "error when parsing: ", fileName
     debugEcho res.error
+    mtest.setFail($res.error)
     return
 
   const queryFile = introsFolder / "introspectionQuery.ql"
@@ -29,6 +30,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
   if res.isErr:
     debugEcho "error when parsing: ", queryFile
     debugEcho res.error
+    mtest.setFail($res.error)
     return
 
   const queryName = "IntrospectionQuery"
@@ -38,16 +40,23 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
   if res.isErr:
     debugEcho "error when executing: ", queryName
     debugEcho res.error
+    mtest.setFail($res.error)
     return
 
   try:
     let jsonRes = parseJson(resp.getString())
     check ($jsonRes).len != 0
-  except:
+  except Exception as e:
     check false
+    mtest.setFail(e.msg)
+    return
+
+  mtest.setPass()
 
 proc main() =
+  var mocha = Mocha.init()
   suite "schema introspection validation":
+    var msuite = newSuite("schema introspection validation", currentSourcePath())
     var ctx = new(GraphqlRef)
     let savePoint = ctx.getNameCounter()
     for fileName in walkDirRec(schemaFolder):
@@ -56,9 +65,14 @@ proc main() =
 
       let parts = splitFile(fileName)
       test parts.name:
-        ctx.runValidator(fileName, testStatusIMPL)
+        var mtest = newTest(parts.name, fileName)
+        ctx.runValidator(fileName, testStatusIMPL, mtest)
         ctx.purgeSchema(true, true, true)
         ctx.purgeQueries(true)
         ctx.purgeNames(savePoint)
+        msuite.add mtest
 
+    mocha.add msuite
+
+  mocha.finalize("report" / "schemaintros.json")
 main()
