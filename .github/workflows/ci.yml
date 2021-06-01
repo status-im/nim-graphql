@@ -1,4 +1,4 @@
-name: nim-graphql CI
+name: CI
 on: [push, pull_request]
 
 jobs:
@@ -7,38 +7,18 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        branch: [master]
+        test_lang: [c, cpp]
         target:
           - os: linux
             cpu: amd64
-            TEST_LANG: c
-          - os: linux
-            cpu: amd64
-            TEST_LANG: cpp
           - os: linux
             cpu: i386
-            TEST_LANG: c
-          - os: linux
-            cpu: i386
-            TEST_LANG: cpp
           - os: macos
             cpu: amd64
-            TEST_LANG: c
-          - os: macos
-            cpu: amd64
-            TEST_LANG: cpp
           - os: windows
             cpu: amd64
-            TEST_LANG: c
-          - os: windows
-            cpu: amd64
-            TEST_LANG: cpp
           - os: windows
             cpu: i386
-            TEST_LANG: c
-          - os: windows
-            cpu: i386
-            TEST_LANG: cpp
         include:
           - target:
               os: linux
@@ -50,7 +30,7 @@ jobs:
               os: windows
             builder: windows-2019
 
-    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ matrix.target.TEST_LANG }} (${{ matrix.branch }})'
+    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ matrix.test_lang }}'
     runs-on: ${{ matrix.builder }}
     steps:
       - name: Checkout nim-graphql
@@ -172,4 +152,4 @@ jobs:
           nimble install -y --depsOnly
           # toml_serialization is a test suite dependency
           nimble install -y toml_serialization
-          env TEST_LANG="${{ matrix.target.TEST_LANG }}" nimble test
+          env TEST_LANG="${{ matrix.test_lang }}" nimble test
