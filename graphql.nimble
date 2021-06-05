@@ -20,7 +20,8 @@ requires "nim >= 1.2.0",
          "faststreams",
          "stew",
          "json_serialization",
-         "chronicles"
+         "chronicles",
+         "https://github.com/status-im/nim-miniz"
 
 proc test(env, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG

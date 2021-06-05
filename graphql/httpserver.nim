@@ -11,7 +11,7 @@ import
   std/[strutils, json, tables],
   chronicles, chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream,
-  ./server_common, ./graphiql, ./miniz/miniz_api
+  ./server_common, ./graphiql, miniz/gzip
 
 type
   ContentType = enum
@@ -130,7 +130,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
         res.get()
 
   if TransferEncodingFlags.Gzip in acceptEncoding:
-    let gzipped = gzip(res)
+    let gzipped = string.gzip(res)
     return await sendResponse(gzipped, status, acceptEncoding, request)
 
   return await sendResponse(res, status, acceptEncoding, request)
