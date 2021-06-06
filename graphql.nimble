@@ -10,7 +10,7 @@
 mode = ScriptMode.Verbose
 
 packageName   = "graphql"
-version       = "0.2.14"
+version       = "0.2.16"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
