@@ -130,8 +130,12 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
         res.get()
 
   if TransferEncodingFlags.Gzip in acceptEncoding:
-    let gzipped = string.gzip(res)
-    return await sendResponse(gzipped, status, acceptEncoding, request)
+    let res = string.gzip(res)
+    if res.isErr:
+      let error = jsonErrorResp("compression error")
+      return await request.respond(Http400, error, server.defRespHeader)
+    else:
+      return await sendResponse(res.get(), status, acceptEncoding, request)
 
   return await sendResponse(res, status, acceptEncoding, request)
 
