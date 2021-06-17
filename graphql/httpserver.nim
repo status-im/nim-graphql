@@ -196,7 +196,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
     server.server = sres.get()
     ok(server)
   else:
-    err("Could not create HTTP server instance")
+    err("Could not create HTTP server instance: " & sres.error())
 
 proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect].} =
   ## Returns current GraphQL server's state.
