@@ -11,7 +11,7 @@ import
   std/[strutils, json, tables],
   chronicles, chronos, chronos/apps/http/httpserver,
   ./graphql, ./api, ./builtin/json_respstream,
-  ./server_common, ./graphiql, miniz/gzip
+  ./server_common, ./graphiql, zlib/gzip
 
 type
   ContentType = enum

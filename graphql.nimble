@@ -21,7 +21,7 @@ requires "nim >= 1.2.0",
          "stew",
          "json_serialization",
          "chronicles",
-         "https://github.com/status-im/nim-miniz"
+         "https://github.com/status-im/nim-zlib"
 
 proc test(env, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG
