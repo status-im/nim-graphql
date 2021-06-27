@@ -8,8 +8,8 @@
 # those terms.
 
 import
-  std/[os, strutils, unittest, tables],
-  toml_serialization,
+  std/[os, strutils, tables],
+  pkg/[toml_serialization, unittest2],
   ../graphql, ../graphql/test_config,
   ../graphql/graphql as context,
   ../graphql/validator
@@ -24,7 +24,9 @@ type
   TestCase = object
     units: seq[Unit]
 
-  Counter = object
+  # unittest2 complaint about
+  # `var Counter` in parameter
+  Counter = ref object
     skip: int
     fail: int
     ok: int
@@ -138,7 +140,7 @@ proc runValidator(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
 
   check (unit.error.len == 0)
 
-proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -158,12 +160,12 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
             inc counter.fail
 
 proc validateCases() =
-  var counter: Counter
+  var counter = Counter()
   var ctx = setupContext()
   let savePoint = ctx.getNameCounter()
   for fileName in walkDirRec(caseFolder):
     ctx.runSuite(savePoint, fileName, counter)
-  debugEcho counter
+  debugEcho counter[]
 
 proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestStatus) =
   var stream = memFileInput(fileName)
@@ -188,7 +190,13 @@ proc validateSchemas() =
   suite "validate schemas":
     var ctx = new(GraphqlRef)
     var savePoint = ctx.getNameCounter()
+
+    # if walkDirRec combined directly with `test` will sigsev
+    var fileNames: seq[string]
     for fileName in walkDirRec("tests" / "schemas"):
+      fileNames.add fileName
+
+    for fileName in fileNames:
       test fileName:
         ctx.runValidator(fileName, testStatusIMPL)
         ctx.purgeQueries(true)
@@ -210,13 +218,13 @@ when isMainModule:
 
     # disable unittest param handler
     disableParamFiltering()
-    var counter: Counter
+    var counter = Counter()
     var ctx = setupContext()
     var savePoint = ctx.getNameCounter()
     let fileName = caseFolder / conf.testFile
     if conf.unit.len == 0:
       ctx.runSuite(savePoint, fileName, counter)
-      echo counter
+      echo counter[]
       return
 
     let cases = Toml.loadFile(fileName, TestCase)

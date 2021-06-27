@@ -8,7 +8,8 @@
 # those terms.
 
 import
-  std/[os, unittest],
+  std/[os],
+  pkg/[unittest2],
   ../../graphql, ../ethapi, ../../graphql/test_common,
   ../../graphql/instruments/query_complexity
 

@@ -8,7 +8,8 @@
 # those terms.
 
 import
-  std/[unittest, os],
+  std/[os],
+  pkg/[unittest2],
   ../graphql, ./test_utils
 
 const

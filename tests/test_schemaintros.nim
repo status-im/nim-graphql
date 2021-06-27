@@ -8,7 +8,8 @@
 # those terms.
 
 import
-  std/[os, strutils, unittest, json],
+  std/[os, strutils, json],
+  pkg/[unittest2],
   ../graphql
 
 const
@@ -50,10 +51,13 @@ proc main() =
   suite "schema introspection validation":
     var ctx = new(GraphqlRef)
     let savePoint = ctx.getNameCounter()
+    var fileNames: seq[string]
     for fileName in walkDirRec(schemaFolder):
       if not fileName.endsWith(".ql"):
         continue
+      fileNames.add fileName
 
+    for fileName in fileNames:
       let parts = splitFile(fileName)
       test parts.name:
         ctx.runValidator(fileName, testStatusIMPL)

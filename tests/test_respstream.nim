@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  unittest,
+  pkg/[unittest2],
   ../graphql/common/[respstream, response, ast],
   ../graphql/builtin/[json_respstream, toml_respstream]
 

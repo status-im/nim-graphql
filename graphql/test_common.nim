@@ -8,8 +8,8 @@
 # those terms.
 
 import
-  std/[os, strutils, unittest],
-  toml_serialization,
+  std/[os, strutils],
+  pkg/[toml_serialization, unittest2],
   ./common/response,
   ../graphql, ./test_config
 
@@ -26,7 +26,7 @@ type
   TestCase = object
     units: seq[Unit]
 
-  Counter = object
+  Counter = ref object
     skip: int
     fail: int
     ok: int
@@ -110,7 +110,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   let execRes = removeWhitespaces(js.getString)
   check unitRes == execRes
 
-proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: var Counter, purgeSchema: bool) =
+proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: Counter, purgeSchema: bool) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -136,12 +136,17 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
 
 proc executeCases*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
   let savePoint = ctx.getNameCounter()
-  var counter: Counter
+  var counter = Counter()
+  var fileNames: seq[string]
   for fileName in walkDirRec(caseFolder):
     if not fileName.endsWith(".toml"):
       continue
+    fileNames.add fileName
+
+  for fileName in fileNames:
     ctx.runSuite(savePoint, fileName, counter, purgeSchema)
-  debugEcho counter
+
+  debugEcho counter[]
 
 proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
   let conf = getConfiguration()
@@ -151,12 +156,12 @@ proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
 
   # disable unittest param handler
   disableParamFiltering()
-  var counter: Counter
+  var counter = Counter()
   let fileName = caseFolder / conf.testFile
   let savePoint = ctx.getNameCounter()
   if conf.unit.len == 0:
     ctx.runSuite(savePoint, fileName, counter, purgeSchema)
-    echo counter
+    echo counter[]
     return
 
   let cases = Toml.loadFile(fileName, TestCase)

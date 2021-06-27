@@ -10,8 +10,8 @@
 # curl -X POST -H Content-Type:application/graphql http://localhost:8547/graphql -d @data.json
 
 import
-  std/[unittest, os, json],
-  chronos, toml_serialization,
+  std/[os, json],
+  pkg/[chronos, toml_serialization, unittest2],
   ../graphql, ../graphql/[httpserver, httpclient],
   ../graphql/test_config, ./test_utils
 
@@ -27,7 +27,7 @@ type
   TestCase = object
     units: seq[Unit]
 
-  Counter = object
+  Counter = ref object
     skip: int
     fail: int
     ok: int
@@ -93,7 +93,7 @@ proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var T
     let node = parseJson(unit.result)
     check $node == $resp.data
 
-proc runSuite(client: GraphqlHttpClientRef, fileName: string, counter: var Counter) =
+proc runSuite(client: GraphqlHttpClientRef, fileName: string, counter: Counter) =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -110,7 +110,7 @@ proc runSuite(client: GraphqlHttpClientRef, fileName: string, counter: var Count
             inc counter.fail
 
 proc executeCases() =
-  var counter: Counter
+  var counter = Counter()
   let server = createServer(serverAddress)
   server.start()
   var client = setupClient(serverAddress)
@@ -119,7 +119,7 @@ proc executeCases() =
     client.runSuite(fileName, counter)
 
   waitFor server.closeWait()
-  debugEcho counter
+  debugEcho counter[]
 
 when isMainModule:
   proc main() =
@@ -130,7 +130,7 @@ when isMainModule:
 
     # disable unittest param handler
     disableParamFiltering()
-    var counter: Counter
+    var counter = Counter()
     let fileName = caseFolder / conf.testFile
     var client = setupClient(serverAddress)
     if conf.unit.len == 0:
@@ -138,7 +138,7 @@ when isMainModule:
       server.start()
       client.runSuite(fileName, counter)
       waitFor server.closeWait()
-      echo counter
+      echo counter[]
       return
 
     let cases = Toml.loadFile(fileName, TestCase)

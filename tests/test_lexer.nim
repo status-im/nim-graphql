@@ -8,8 +8,8 @@
 # those terms.
 
 import
-  unittest, os,
-  faststreams,
+  std/[os],
+  pkg/[faststreams, unittest2],
   ../graphql/lexer,
   ../graphql/common/names
 
@@ -145,7 +145,11 @@ proc suite2() =
 
 proc suite3() =
   suite "lexing documents":
+    var fileNames: seq[string]
     for fileName in walkDirRec("tests" / "schemas"):
+      fileNames.add fileName
+
+    for fileName in fileNames:
       test fileName:
         var stream = memFileInput(fileName)
         var names = newNameCache()

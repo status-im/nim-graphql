@@ -8,9 +8,11 @@
 # those terms.
 
 import
-  os,
-  faststreams/inputs,
-  unittest,
+  std/[os],
+  pkg/[
+    faststreams/inputs,
+    unittest2
+  ],
   ../graphql/[query_parser, schema_parser, parser],
   ../graphql/common/errors
 
@@ -79,7 +81,11 @@ proc runGoodDoc(fileName: string): bool =
 
 proc suite3() =
   suite "full parser test: good documents":
+    var fileNames: seq[string]
     for fileName in walkDirRec("tests" / "schemas"):
+      fileNames.add fileName
+
+    for fileName in fileNames:
       test fileName:
         check runGoodDoc(fileName) == true
 
