@@ -69,13 +69,13 @@ proc getContentTypes(request: HttpRequestRef): set[ContentType] =
       result.incl ctJson
 
 proc sendResponse(res: string, status: HttpCode,
-                  acceptEncoding: set[TransferEncodingFlags],
+                  acceptEncoding: set[ContentEncodingFlags],
                   request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
 
   let response = request.getResponse()
   response.status = status
   response.addHeader("Content-Type", "application/json")
-  if TransferEncodingFlags.Gzip in acceptEncoding:
+  if ContentEncodingFlags.Gzip in acceptEncoding:
     response.addHeader("Content-Encoding", "gzip")
 
   await response.prepare()
@@ -121,7 +121,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
 
   let acceptEncoding =
     block:
-      let res = getTransferEncoding(
+      let res = getContentEncoding(
                                    request.headers.getList("accept-encoding"))
       if res.isErr():
         let error = jsonErrorResp("Incorrect Accept-Encoding value")
@@ -129,7 +129,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
       else:
         res.get()
 
-  if TransferEncodingFlags.Gzip in acceptEncoding:
+  if ContentEncodingFlags.Gzip in acceptEncoding:
     let res = string.gzip(res)
     if res.isErr:
       let error = jsonErrorResp("compression error")
