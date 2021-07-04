@@ -53,6 +53,12 @@ or
 $ nim c -r playground/swserver ethereum
 ```
 
+To run the playground server with docker, you can execute this commands:
+```bash
+$ docker build -t graphql .
+$ docker run -p 8547:8547 -t graphql
+```
+
 The server is accessible at this address `http://127.0.0.1:8547/graphql`
 and the web user interface at `http://127.0.0.1:8547/graphql/ui`.
 

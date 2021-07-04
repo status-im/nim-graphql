@@ -10,14 +10,9 @@
 import
   std/[os, strutils], chronos, chronicles,
   ../graphql, ../graphql/httpserver,
-  ./swapi, ./ethapi
+  ./swapi, ./ethapi, ./config
 
-type
-  Schema = enum
-    starwars
-    ethereum
-
-proc loadSchema(ctx: GraphqlRef, schema: Schema): GraphqlResult =
+proc loadSchema(ctx: GraphqlRef, schema: config.Schema): GraphqlResult =
   notice "loading graphql api", name = schema
 
   var conf = defaultParserConf()
@@ -30,22 +25,26 @@ proc loadSchema(ctx: GraphqlRef, schema: Schema): GraphqlResult =
     ctx.initStarWarsApi()
     ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql", conf = conf)
 
-const
-  address = initTAddress("127.0.0.1:8547")
-
 proc main() =
+  var message: string
+  ## Processing command line arguments
+  let r = processArguments()
+
+  if r.isErr:
+    debugEcho r.error
+    quit(QuitFailure)
+
+  let conf = r.get
+
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
   var ctx = GraphqlRef.new()
 
-  let schema = if paramCount() == 0: starwars
-               else: parseEnum[Schema](paramStr(1))
-
-  let res = ctx.loadSchema(schema)
+  let res = ctx.loadSchema(conf.schema)
   if res.isErr:
     debugEcho res.error
     return
 
-  let sres = GraphqlHttpServerRef.new(ctx, address, socketFlags = socketFlags)
+  let sres = GraphqlHttpServerRef.new(ctx, conf.bindAddress, socketFlags = socketFlags)
   if sres.isErr():
     debugEcho sres.error
     return
