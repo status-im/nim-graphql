@@ -10,7 +10,7 @@
 import
   std/[os, strutils], chronos, chronicles,
   ../graphql, ../graphql/httpserver,
-  ./swapi, ./ethapi, ./config
+  ./swapi, ./ethapi, ./config, ../tests/keys/keys
 
 proc loadSchema(ctx: GraphqlRef, schema: config.Schema): GraphqlResult =
   notice "loading graphql api", name = schema
@@ -44,7 +44,17 @@ proc main() =
     debugEcho res.error
     return
 
-  let sres = GraphqlHttpServerRef.new(ctx, conf.bindAddress, socketFlags = socketFlags)
+  let sres = if conf.secure:
+               GraphqlHttpServerRef.new(ctx,
+                 address = conf.bindAddress,
+                 tlsPrivateKey = TLSPrivateKey.init(SecureKey),
+                 tlsCertificate = TLSCertificate.init(SecureCrt),
+                 socketFlags = socketFlags)
+             else:
+               GraphqlHttpServerRef.new(ctx,
+                 address = conf.bindAddress,
+                 socketFlags = socketFlags)
+
   if sres.isErr():
     debugEcho sres.error
     return

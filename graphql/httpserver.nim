@@ -9,9 +9,11 @@
 
 import
   std/[strutils, json, tables],
-  chronicles, chronos, chronos/apps/http/httpserver,
+  chronicles, chronos, chronos/apps/http/[httpserver, shttpserver],
   ./graphql, ./api, ./builtin/json_respstream,
   ./server_common, ./graphiql, zlib/gzip
+
+export shttpserver
 
 type
   ContentType = enum
@@ -198,6 +200,43 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
   else:
     err("Could not create HTTP server instance: " & sres.error())
 
+proc new*(t: typedesc[GraphqlHttpServerRef],
+          graphql: GraphqlRef,
+          address: TransportAddress,
+          tlsPrivateKey: TLSPrivateKey,
+          tlsCertificate: TLSCertificate,
+          secureFlags: set[TLSFlags] = {},
+          serverIdent: string = "",
+          serverFlags = {HttpServerFlags.NotifyDisconnect},
+          socketFlags: set[ServerFlags] = {ReuseAddr},
+          serverUri = Uri(),
+          maxConnections: int = -1,
+          backlogSize: int = 100,
+          bufferSize: int = 4096,
+          httpHeadersTimeout = 10.seconds,
+          maxHeadersSize: int = 8192,
+          maxRequestBodySize: int = 1_048_576): GraphqlHttpResult[GraphqlHttpServerRef] =
+  var server = GraphqlHttpServerRef(
+    graphql: graphql,
+    savePoint: graphql.getNameCounter,
+    defRespHeader: HttpTable.init([("Content-Type", "application/json")])
+  )
+
+  proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
+    routingRequest(server, rf)
+
+  let sres = SecureHttpServerRef.new(address, processCallback, 
+                               tlsPrivateKey, tlsCertificate, serverFlags,
+                               socketFlags, serverUri, serverIdent, secureFlags,
+                               maxConnections, bufferSize, backlogSize,
+                               httpHeadersTimeout, maxHeadersSize,
+                               maxRequestBodySize)
+  if sres.isOk():
+    server.server = sres.get()
+    ok(server)
+  else:
+    err("Could not create HTTP server instance: " & sres.error())
+    
 proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect].} =
   ## Returns current GraphQL server's state.
   case rs.server.state
@@ -211,8 +250,9 @@ proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect]
 proc start*(rs: GraphqlHttpServerRef) =
   ## Starts GraphQL server.
   rs.server.start()
-  notice "GraphQL service started", at = "http://" & $rs.server.address & "/graphql"
-  notice "GraphiQL UI ready", at = "http://" & $rs.server.address & "/graphql/ui"
+  let scheme = rs.server.baseUri.scheme
+  notice "GraphQL service started", at = scheme & "://" & $rs.server.address & "/graphql"
+  notice "GraphiQL UI ready", at = scheme & "://" & $rs.server.address & "/graphql/ui"
 
 proc stop*(rs: GraphqlHttpServerRef) {.async.} =
   ## Stop GraphQL server from accepting new connections.

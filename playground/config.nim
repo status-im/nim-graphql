@@ -19,6 +19,7 @@ type
   Configuration* = ref object
     bindAddress*: TransportAddress
     schema*: Schema
+    secure*: bool
 
 var testConfig {.threadvar.}: Configuration
 
@@ -54,6 +55,8 @@ proc processArguments*(): Result[Configuration, string] =
           config.bindAddress = initTAddress(value)
         except Exception as e:
           return err(e.msg)
+      of "secure", "s":
+        config.secure = true
       else:
         var msg = "Unknown option " & key
         if value.len > 0: msg = msg & " : " & value
