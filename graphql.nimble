@@ -40,6 +40,8 @@ task test, "Run all tests":
   test "--threads:on", "tests/test_all"
   test "--threads:off -d:release", "tests/test_all"
   test "--threads:on -d:release", "tests/test_all"
+  test "--threads:off -d:release -d:tls", "tests/test_httpserver"
+  test "--threads:on -d:release -d:tls", "tests/test_httpserver"  
   test "-d:release", "playground/swserver", false
   test "-d:release", "playground/tests/test_all"
   test "--threads:on -d:release", "playground/tests/test_all"

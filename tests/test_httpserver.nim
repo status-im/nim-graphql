@@ -11,9 +11,9 @@
 
 import
   std/[os, json],
-  pkg/[chronos, toml_serialization, unittest2],
+  pkg/[toml_serialization, unittest2, chronos],
   ../graphql, ../graphql/[httpserver, httpclient],
-  ../graphql/test_config, ./test_utils
+  ../graphql/test_config, ./test_utils, keys/keys
 
 type
   Unit = object
@@ -59,7 +59,16 @@ proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
     debugEcho r.error
     return
 
-  let res = GraphqlHttpServerRef.new(ctx, serverAddress, socketFlags = socketFlags)
+  when defined(tls):
+    let res = GraphqlHttpServerRef.new(
+      graphql = ctx,
+      address = serverAddress,
+      tlsPrivateKey = TLSPrivateKey.init(SecureKey),
+      tlsCertificate = TLSCertificate.init(SecureCrt),
+      socketFlags = socketFlags)
+  else:
+    let res = GraphqlHttpServerRef.new(ctx, serverAddress, socketFlags = socketFlags)
+
   if res.isErr():
     debugEcho res.error
     return
@@ -67,7 +76,11 @@ proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
   res.get()
 
 proc setupClient(address: TransportAddress): GraphqlHttpClientRef =
-  GraphqlHttpClientRef.new(address)
+  when defined(tls):
+    let flags = {TLSFlags.NoVerifyHost, TLSFlags.NoVerifyServerName}
+    GraphqlSHttpClientRef.new(address = address, tlsFlags = flags).get()
+  else:
+    GraphqlHttpClientRef.new(address).get()
 
 proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var TestStatus) =
   client.operationName(unit.opName)
@@ -153,7 +166,7 @@ when isMainModule:
 
   var message: string
   ## Processing command line arguments
-  if processArguments(message) != Success:
+  if processArguments(message) != ConfigStatus.Success:
     echo message
     quit(QuitFailure)
   else:
