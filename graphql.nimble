@@ -10,7 +10,7 @@
 mode = ScriptMode.Verbose
 
 packageName   = "graphql"
-version       = "0.2.18"
+version       = "0.2.20"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
@@ -41,7 +41,7 @@ task test, "Run all tests":
   test "--threads:off -d:release", "tests/test_all"
   test "--threads:on -d:release", "tests/test_all"
   test "--threads:off -d:release -d:tls", "tests/test_httpserver"
-  test "--threads:on -d:release -d:tls", "tests/test_httpserver"  
+  test "--threads:on -d:release -d:tls", "tests/test_httpserver"
   test "-d:release", "playground/swserver", false
   test "-d:release", "playground/tests/test_all"
   test "--threads:on -d:release", "playground/tests/test_all"
