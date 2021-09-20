@@ -76,11 +76,10 @@ proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
   res.get()
 
 proc setupClient(address: TransportAddress): GraphqlHttpClientRef =
-  when defined(tls):
-    let flags = {TLSFlags.NoVerifyHost, TLSFlags.NoVerifyServerName}
-    GraphqlSHttpClientRef.new(address = address, tlsFlags = flags).get()
-  else:
-    GraphqlHttpClientRef.new(address).get()
+  const
+    secure = defined(tls)
+
+  GraphqlHttpClientRef.new(address, secure = secure).get()
 
 proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var TestStatus) =
   client.operationName(unit.opName)
@@ -91,7 +90,7 @@ proc runExecutor(client: GraphqlHttpClientRef, unit: Unit, testStatusIMPL: var T
     return
 
   let clientResp = res.get()
-  check (clientResp.code == 200) == (unit.error.len == 0)
+  check (clientResp.status == 200) == (unit.error.len == 0)
 
   let resp = decodeResponse(clientResp.response)
   if not resp.errors.isNil:

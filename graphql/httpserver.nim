@@ -74,6 +74,16 @@ proc sendResponse(res: string, status: HttpCode,
                   acceptEncoding: set[ContentEncodingFlags],
                   request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
 
+  const chunkSize = 1024 * 4
+
+  if res.len <= chunkSize:
+    # don't split it into chunks if it's a small content
+    var header = HttpTable.init([("Content-Type", "application/json")])
+    if ContentEncodingFlags.Gzip in acceptEncoding:
+      header.add("Content-Encoding", "gzip")
+    return await request.respond(status, res, header)
+
+  # chunked transfer
   let response = request.getResponse()
   response.status = status
   response.addHeader("Content-Type", "application/json")
@@ -82,7 +92,6 @@ proc sendResponse(res: string, status: HttpCode,
 
   await response.prepare()
 
-  const chunkSize = 1024 * 4
   let maxLen = res.len
   var len = res.len
   while len > chunkSize:
@@ -225,7 +234,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
     routingRequest(server, rf)
 
-  let sres = SecureHttpServerRef.new(address, processCallback, 
+  let sres = SecureHttpServerRef.new(address, processCallback,
                                tlsPrivateKey, tlsCertificate, serverFlags,
                                socketFlags, serverUri, serverIdent, secureFlags,
                                maxConnections, bufferSize, backlogSize,
@@ -236,7 +245,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
     ok(server)
   else:
     err("Could not create HTTP server instance: " & sres.error())
-    
+
 proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect].} =
   ## Returns current GraphQL server's state.
   case rs.server.state
