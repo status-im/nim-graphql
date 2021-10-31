@@ -10,7 +10,8 @@
 import
   std/[unicode, strutils],
   faststreams/inputs,
-  ./common/[names, errors, types]
+  ./common/[names, errors, types],
+  ./private/utf
 
 type
   TokKind* = enum
@@ -48,11 +49,17 @@ type
     errInvalidUnicode      = "Invalid unicode sequence '$1'"
     errInvalidChar         = "Invalid char '$1'"
     errLoopLimit           = "loop limit $1 reached for $2"
+    errInvalidUTF8         = "Invalid UTF-8 sequence detected in string"
+    errOrphanSurrogate     = "Orphaned surrogate codepoint detected '$1'"
+
+  LexerFlag* = enum
+    lfJsonCompatibility # parse json unicode escape chars but not graphql escape chars
 
   LexConf* = object
     maxIdentChars* : int
     maxDigits*     : int
     maxStringChars*: int
+    flags*         : set[LexerFlag]
 
   LexConfInternal = object
     maxIdentChars : LoopGuard
@@ -72,6 +79,7 @@ type
     error*     : LexerError
     err*       : ErrorDesc
     conf       : LexConfInternal
+    flags*     : set[LexerFlag]
 
 proc defaultLexConf*(): LexConf =
   result.maxIdentChars  = 128
@@ -88,7 +96,8 @@ proc init*(T: type Lexer, stream: InputStream, names: NameCache, conf = defaultL
     stream: stream,
     names: names,
     line: 1,
-    conf: toInternalConf(conf)
+    conf: toInternalConf(conf),
+    flags: conf.flags
   )
 
 template peek(s: InputStream): char =
@@ -121,7 +130,7 @@ proc lexerError(lex: var Lexer, errKind: LexerError, args: varargs[string, `$`])
   lex.err.message = $errKind
 
   case errKind
-  of errInvalidEscape, errInvalidUnicode, errInvalidChar:
+  of errInvalidEscape, errInvalidUnicode, errInvalidChar, errOrphanSurrogate:
     lex.err.message = $errKind % [args[0]]
   of errLoopLimit:
     lex.err.message = $errKind % [args[0], args[1]]
@@ -276,19 +285,81 @@ func charTo(T: type, c: char): T {.inline.} =
   of {'A'..'F'}: result = T(c) - T('A') + T(10)
   else: doAssert(false, "should never executed")
 
-proc scanHexDigits(lex: var Lexer, value: var int): int =
+proc scanHexDigits(lex: var Lexer, value: var int, token: var string): int =
   safeLoop(lex.conf.maxDigits, lex.safePeek HexDigits):
     inc result
-    value = value * 16 + charTo(int, lex.stream.read)
+    let c = lex.stream.read
+    value = value * 16 + charTo(int, c)
+    token.add c
+
+proc invalidEscapeChar(lex: var Lexer) =
+  if not lex.stream.readable:
+    lex.lexerError(errInvalidEscape, tokEof)
+  else:
+    lex.lexerError(errInvalidEscape, lex.stream.peek)
 
 proc scanUnicode(lex: var Lexer): bool =
-  var code: int
-  if lex.scanHexDigits(code) != 4:
-    lex.lexerError(errInvalidUnicode, code)
-    return false
+  if lex.safePeek HexDigits:
+    var codePoint: int
+    var token: string
+    if lex.scanHexDigits(codePoint, token) != 4:
+      lex.lexerError(errInvalidUnicode, token)
+      return false
 
-  lex.token.add unicode.toUTF8(Rune(code))
-  return true
+    if Utf16.highSurrogate(codePoint):
+      if not lex.safePeek '\\':
+        lex.lexerError(errOrphanSurrogate, token)
+        return false
+      advance lex.stream
+
+      if not lex.safePeek 'u':
+        lex.lexerError(errOrphanSurrogate, token)
+        return false
+      advance lex.stream
+
+      var surrogate: int
+      var hexSurrogate: string
+      if lex.scanHexDigits(surrogate, hexSurrogate) != 4:
+        lex.lexerError(errInvalidUnicode, hexSurrogate)
+        return false
+
+      codePoint = Utf16.utf(codePoint, surrogate)
+      token.add "\\u"
+      token.add hexSurrogate
+
+    if not Utf8.append(lex.token, codePoint):
+      lex.lexerError(errInvalidUnicode, token)
+      return false
+
+    return true
+
+  elif lex.safePeek '{':
+    if lfJsonCompatibility in lex.flags:
+      lex.lexerError(errInvalidEscape, '{')
+      return false
+
+    advance lex.stream # eat '{'
+
+    var codePoint: int
+    var token: string
+    if lex.scanHexDigits(codePoint, token) > 6:
+      lex.lexerError(errInvalidUnicode, token)
+      return false
+
+    if not Utf8.append(lex.token, codePoint):
+      lex.lexerError(errInvalidUnicode, token)
+      return false
+
+    if not lex.safePeek '}':
+      lex.invalidEscapeChar
+      return false
+
+    advance lex.stream # eat '}'
+    return true
+
+  else:
+    lex.invalidEscapeChar
+    return false
 
 proc scanEscapeChar(lex: var Lexer): bool =
   if not lex.stream.readable:
@@ -349,6 +420,8 @@ proc scanMultiLineString(lex: var Lexer) =
             lex.token.setLen(lex.token.len-1)
             lex.token.add "\"\"\"" # Escape Triple-Quote (\""")
           else:
+            if Utf8.validate(lex.token) == false:
+              lex.lexerError(errInvalidUTF8)
             return
         else:
           lex.token.add '"'
@@ -368,7 +441,6 @@ proc scanMultiLineString(lex: var Lexer) =
     of '\\':
       lex.token.add lex.stream.read
     else:
-      # FIXME: this is not a valid UTF-16 lexer
       lex.token.add lex.stream.read
 
   lex.lexerError(errUnterminatedBlockString)
@@ -382,6 +454,8 @@ proc scanSingleLineString(lex: var Lexer) =
       return
     of '"':
       advance lex.stream
+      if Utf8.validate(lex.token) == false:
+        lex.lexerError(errInvalidUTF8)
       return
     of '\\':
       advance lex.stream
@@ -389,7 +463,6 @@ proc scanSingleLineString(lex: var Lexer) =
         return
       continue
     else:
-      # FIXME: this is not a valid UTF-16 lexer
       lex.token.add lex.stream.read
 
   lex.lexerError(errUnterminatedString)

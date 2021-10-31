@@ -3,6 +3,7 @@
 - [Overview](#overview)
   - [Graphql core](#graphql-core)
   - [Security features](#security-features)
+  - [Unicode support](#unicode-support)
 
 - [Tutorial](tutorial.md)
   - [Important notes](tutorial.md#important-notes)
@@ -83,3 +84,18 @@ can bring down the service, both lexer and parser are configurable to mitigate t
     - `maxDefinitions`. Queries, mutations, subscriptions, and fragments total number should be reasonable. (default = 512)
     - `maxChoices`. Unions and directive's locations are limited by this number. (default = 64)
 
+### Unicode support
+
+  - Input string:
+    - Accepted encoding for input string are UTF-8.
+    - Escaped unicode in quoted string take the form of UTF-16 BE:
+      - Fixed 4 digit hex: e.g. `\u000A`
+      - variable length: `\u{1F4A9}` with range (>= 0x0000 and <= 0xD7FF or >= 0xE000 and <= 0x10FFFF)
+      - Escape sequences are only meaningful within a single-quoted string.
+        In multiline string, unicode char must be encoded using UTF-8.
+      - SurrogatePair: "\uD83D\uDCA9" is equal to "\u{1F4A9}"
+
+  - Output string:
+    - Output string subject to output serialization format specification.
+    - For example, output using json as serialization format will result in UTF-8 encoded string.
+    - Or if the escape flag is set, it will use UTF-16 BE 4 digit hex fixed length similar to GraphQL escape sequence.

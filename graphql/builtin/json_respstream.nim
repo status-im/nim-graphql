@@ -9,7 +9,8 @@
 
 import
   faststreams/[outputs, textio],
-  ../common/[respstream, ast]
+  ../common/[respstream, ast],
+  ../private/utf
 
 export respstream
 
@@ -25,6 +26,7 @@ type
     stream: OutputStream
     stack: seq[State]
     doubleEscape: bool
+    escapeUnicode: bool
 
 template top(x: seq[State]): State =
   x[^1]
@@ -75,7 +77,7 @@ proc write*(x: JsonRespStream, v: string) =
     append '\\'
     append c
 
-  for c in v:
+  template writeChar(c: char) =
     case c
     of '\L': addPrefixSlash 'n'
     of '\b': addPrefixSlash 'b'
@@ -95,6 +97,25 @@ proc write*(x: JsonRespStream, v: string) =
       x.stream.writeHex([c])
     of '\\': addPrefixSlash '\\'
     else: append c
+
+  if x.escapeUnicode:
+    for c in Utf8.codePoints(v):
+      if c >= 0x80:
+        let p = Utf16.toPair(c)
+        if p.state == Utf16One:
+          append "\\u"
+          x.stream.writeHex([char(p.cp shr 8), char(p.cp and 0xFF)])
+        elif p.state == Utf16Two:
+          append "\\u"
+          x.stream.writeHex([char(p.hi shr 8), char(p.hi and 0xFF)])
+          append "\\u"
+          x.stream.writeHex([char(p.lo shr 8), char(p.lo and 0xFF)])
+      else:
+        let cc = c.char
+        writeChar(cc)
+  else:
+    for c in v:
+      writeChar(c)
 
   if x.doubleEscape:
     append "\\\""
@@ -198,12 +219,17 @@ proc getBytes*(x: JsonRespStream): seq[byte] =
 proc len*(x: JsonRespStream): int =
   x.stream.pos()
 
-proc init*(v: JsonRespStream, doubleEscape: bool = false) =
+proc init*(v: JsonRespStream,
+           doubleEscape: bool = false,
+           escapeUnicode: bool = false) =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]
   v.doubleEscape = doubleEscape
+  v.escapeUnicode = escapeUnicode
 
-proc new*(_: type JsonRespStream, doubleEscape: bool = false): JsonRespStream =
+proc new*(_: type JsonRespStream,
+          doubleEscape: bool = false,
+          escapeUnicode: bool = false): JsonRespStream =
   let v = JsonRespStream()
-  v.init(doubleEscape)
+  v.init(doubleEscape, escapeUnicode)
   v
