@@ -882,3 +882,73 @@ query($mm: String) {
   result = """
 null
 """
+
+[[units]]
+  name = "unicode chars as UTF-8"
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query {
+  echo(arg: "hello 你好 世界 world")
+}
+"""
+  result = """
+{"echo":"hello 你好 世界 world"}
+"""
+
+[[units]]
+  name = "unicode chars as variable length escaped hex"
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query {
+  echo(arg: "hello \\u{4f60}\\u{597d} \\u{4e16}\\u{754c} world")
+}
+"""
+  result = """
+{"echo":"hello 你好 世界 world"}
+"""
+
+[[units]]
+  name = "unicode chars as fixed length escaped hex"
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query {
+  echo(arg: "hello \\u4f60\\u597d \\u4e16\\u754c world")
+}
+"""
+  result = """
+{"echo":"hello 你好 世界 world"}
+"""
+
+[[units]]
+  name = "unicode chars as fixed length escaped hex with surrogate pair"
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query {
+  echo(arg: "brahmi \\ud804\\udc0a\\ud804\\udc0b\\ud804\\udc0c abc")
+}
+"""
+  result = """
+{"echo":"brahmi 𑀊𑀋𑀌 abc"}
+"""
+
+[[units]]
+  name = "unicode chars as variable length escaped hex for SMP chars"
+  code = """
+type Query {
+  echo(arg: String): String
+}
+query {
+  echo(arg: "brahmi \\u{1100a}\\u{1100b}\\u{1100c} abc")
+}
+"""
+  result = """
+{"echo":"brahmi 𑀊𑀋𑀌 abc"}
+"""

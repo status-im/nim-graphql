@@ -190,11 +190,13 @@ suite "full range Unicode(UTF-8) support":
     scanEsc("\\u{E000}", "\u{E000}")
     scanEsc("\\uD83D\\uDCA9", "\u{1F4A9}")
     scanEsc("\\u{10FFFF}", "\u{10FFFF}")
+    scanEsc("\\u{0A}", "\u{0A}")
+    scanEsc("\\u{A}", "\u{A}")
 
   test "orphaned surrogate":
     scanEscError("\\uD800", "Orphaned surrogate codepoint detected \'D800\'")
     scanEscError("\\uD801\\", "Orphaned surrogate codepoint detected \'D801\'")
-    
+
   test "invalid sequence":
     scanEscError("\\uD802\\u", "Invalid unicode sequence ''")
     scanEscError("\\uDBFF\\uFFFF", "Invalid unicode sequence 'DBFF\\uFFFF'")
