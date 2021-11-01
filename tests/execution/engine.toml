@@ -952,3 +952,71 @@ query {
   result = """
 {"echo":"brahmi 𑀊𑀋𑀌 abc"}
 """
+
+[[units]]
+  name = "introspection of defaultValue of input object's fields"
+  code = """
+type Query {
+  name: String
+}
+enum Sex {
+  Male
+  Female
+}
+input Person {
+  name: String = "anonymous"
+  id: ID = 567
+  age: Int = 60
+  sex: Sex = Male
+  smoking: Boolean = false
+  height: Float = 5.5
+}
+query intros {
+  __type(name: "Person") {
+    inputFields {
+      name
+      type {
+        name
+      }
+      defaultValue
+    }
+  }
+}
+"""
+  result = """
+{ "__type":{
+    "inputFields":[
+      {
+        "name":"name",
+        "type":{"name":"String"},
+        "defaultValue":"\\\"anonymous\\\""
+      },
+      {
+        "name":"id",
+        "type":{"name":"ID"},
+        "defaultValue":"\\\"567\\\""
+      },
+      {
+        "name":"age",
+        "type":{"name":"Int"},
+        "defaultValue":"60"
+      },
+      {
+        "name":"sex",
+        "type":{"name":"Sex"},
+        "defaultValue":"Male"
+      },
+      {
+        "name":"smoking",
+        "type":{"name":"Boolean"},
+        "defaultValue":"false"
+      },
+      {
+        "name":"height",
+        "type":{"name":"Float"},
+        "defaultValue":"5.5"
+      }
+    ]
+  }
+}
+"""
