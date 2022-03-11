@@ -214,7 +214,7 @@ type Query {
       {
         "name":"deprecated",
         "description":"Builtin @deprecated directive",
-        "locations":["FIELD_DEFINITION","ENUM_VALUE"],
+        "locations":["FIELD_DEFINITION","ENUM_VALUE","ARGUMENT_DEFINITION","INPUT_FIELD_DEFINITION"],
         "args":[{"name":"reason"}],
         "isRepeatable":false
       },

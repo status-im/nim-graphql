@@ -749,3 +749,21 @@ type SomeType {
 }
 """
 
+[[units]]
+  name = "valid directive arg deprecation: nullable arg"
+  code = """
+directive @example(abc: Boolean @deprecated) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+"""
+
+[[units]]
+  name = "invalid directive arg deprecation: non null without def val"
+  error = "[1, 12]: Error: argument 'abc' of 'example' can't be deprecated: non null or no default value"
+  code = """
+directive @example(abc: Boolean! @deprecated) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+"""
+
+[[units]]
+  name = "valid directive arg deprecation: non nullable with def val"  
+  code = """
+directive @example(abc: Boolean! = true @deprecated) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+"""

@@ -418,7 +418,13 @@ proc directivesUsage(ctx: GraphqlRef, dirs: Dirs, dirLoc: DirLoc, scope = Node(n
     else:
       unreachable()
 
-proc validateArgs(ctx: GraphqlRef, args: Arguments) =
+proc hasDeprecated(ctx: GraphqlRef, dirs: Dirs): bool =
+  let deprecated = ctx.names.keywords[kwDeprecated]
+  for dir in dirs:
+    if dir.name.sym.name == deprecated:
+      return true
+
+proc validateArgs(ctx: GraphqlRef, args: Arguments, parentName: Node) =
   # desc, argName, argType, defVal, dirs
   var names = initHashSet[Name]()
   for arg in args:
@@ -427,6 +433,9 @@ proc validateArgs(ctx: GraphqlRef, args: Arguments) =
     visit isInputType(arg.Node, 2)
     visit inputCoercion(name, arg.typ, arg.defVal, arg.Node, 3)
     visit directivesUsage(arg.dirs, dlARGUMENT_DEFINITION)
+    if not nullableType(arg.typ) and arg.defVal.kind == nkEmpty:
+      invalid ctx.hasDeprecated(arg.dirs):
+        ctx.error(ErrInvalidArgDeprecation, parentName, name)
 
 proc visitSchema(ctx: GraphqlRef, node: Schema) =
   # desc, name, dirs, members
@@ -461,7 +470,7 @@ proc visitFields(ctx: GraphqlRef, fields: ObjectFields, sym: Symbol) =
     let name = field.name
     sym.setField(name.name, field.Node)
     noNameDup(name, names)
-    visit validateArgs(field.args)
+    visit validateArgs(field.args, name)
     visit isOutputType(field.Node, 3)
     visit directivesUsage(field.dirs, dlFIELD_DEFINITION)
 
@@ -692,6 +701,9 @@ proc visitInputObject(ctx: GraphqlRef, inp: InputObject) =
     noNameDup(name, names)
     visit isInputType(field.Node, 2)
     visit directivesUsage(field.dirs, dlINPUT_FIELD_DEFINITION)
+    if not nullableType(field.typ) and field.defVal.kind == nkEmpty:
+      invalid ctx.hasDeprecated(field.dirs):
+        ctx.error(ErrInvalidFieldDeprecation, inp.name, name)
 
 proc directiveFlags(ctx: GraphqlRef, symNode: Node) =
   if symNode.kind == nkEmpty:
@@ -735,8 +747,8 @@ proc directiveDirective(ctx: GraphqlRef, symNode: Node) =
     noCyclicSetup(vb, symNode)
     visit cyclicDirective(arg.typ, vb)
 
-proc visitDirective(ctx: GraphqlRef, node: Directive) =
-  visit validateArgs(node.args)
+proc visitDirective(ctx: GraphqlRef, dir: Directive) =
+  visit validateArgs(dir.args, dir.name)
 
 proc visitTypeCond(ctx: GraphqlRef, parent: Node, idx: int) =
   let node = parent[idx]

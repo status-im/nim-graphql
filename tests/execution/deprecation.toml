@@ -1,0 +1,316 @@
+[[units]]
+  name = "input fields include deprecation default"
+  code = """
+input MyInput {
+  value: Int @deprecated
+  numbers: Int
+}
+type Query {
+  hello: String
+}
+query {
+  __type(name: "MyInput") {
+    name
+    inputFields {
+      name
+      isDeprecated
+      deprecationReason
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"MyInput",
+    "inputFields":[{
+      "name":"numbers",
+      "isDeprecated":false,
+      "deprecationReason":null
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "input fields include deprecation = false"
+  code = """
+input MyInput {
+  value: Int @deprecated
+  numbers: Int
+}
+type Query {
+  hello: String
+}
+query {
+  __type(name: "MyInput") {
+    name
+    inputFields(includeDeprecated: false) {
+      name
+      isDeprecated
+      deprecationReason
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"MyInput",
+    "inputFields":[{
+      "name":"numbers",
+      "isDeprecated":false,
+      "deprecationReason":null
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "input fields include deprecation = true"
+  code = """
+input MyInput {
+  value: Int @deprecated(reason: "use numbers")
+  numbers: Int
+}
+type Query {
+  hello: String
+}
+query {
+  __type(name: "MyInput") {
+    name
+    inputFields(includeDeprecated: true) {
+      name
+      isDeprecated
+      deprecationReason
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"MyInput",
+    "inputFields":[{
+      "name":"value",
+      "isDeprecated":true,
+      "deprecationReason":"use numbers"
+    }, {
+      "name":"numbers",
+      "isDeprecated":false,
+      "deprecationReason":null
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "field args include deprecation default"
+  code = """
+type Query {
+  hello(x: String @deprecated, y: String): String
+}
+query {
+  __type(name: "Query") {
+    name
+    fields {
+      name
+      args {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"Query",
+    "fields":[{
+      "name":"hello",
+      "args":[{
+        "name":"y",
+        "isDeprecated":false,
+        "deprecationReason":null
+      }]
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "field args include deprecation = false"
+  code = """
+type Query {
+  hello(x: String @deprecated, y: String): String
+}
+query {
+  __type(name: "Query") {
+    name
+    fields {
+      name
+      args(includeDeprecated: false) {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"Query",
+    "fields":[{
+      "name":"hello",
+      "args":[{
+        "name":"y",
+        "isDeprecated":false,
+        "deprecationReason":null
+      }]
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "field args include deprecation = true"
+  code = """
+type Query {
+  hello(x: String @deprecated(reason: "blow away"), y: String): String
+}
+query {
+  __type(name: "Query") {
+    name
+    fields {
+      name
+      args(includeDeprecated: true) {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__type":{
+    "name":"Query",
+    "fields":[{
+      "name":"hello",
+      "args":[{
+        "name":"x",
+        "isDeprecated":true,
+        "deprecationReason":"blow away"
+      }, {
+        "name":"y",
+        "isDeprecated":false,
+        "deprecationReason":null
+      }]
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "directive args include deprecation default"
+  code = """
+directive @example(abc: Boolean @deprecated, xyz: String) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+type Query {
+  name: String
+}
+query {
+  __schema {
+    directives(includeBuiltin: false) {
+      name
+      args {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "directives":[{
+      "name":"example",
+      "args":[{"name":"xyz","isDeprecated":false,"deprecationReason":null}]
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "directive args include deprecation = false"
+  code = """
+directive @example(abc: Boolean @deprecated, xyz: String) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+type Query {
+  name: String
+}
+query {
+  __schema {
+    directives(includeBuiltin: false) {
+      name
+      args(includeDeprecated: false) {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "directives":[{
+      "name":"example",
+      "args":[{"name":"xyz","isDeprecated":false,"deprecationReason":null}]
+    }]
+  }
+}
+"""
+
+[[units]]
+  name = "directive args include deprecation = true"
+  code = """
+directive @example(abc: Boolean @deprecated(reason: "wallaby"), xyz: String) on FIELD_DEFINITION | ARGUMENT_DEFINITION
+type Query {
+  name: String
+}
+query {
+  __schema {
+    directives(includeBuiltin: false) {
+      name
+      args(includeDeprecated: true) {
+        name
+        isDeprecated
+        deprecationReason
+      }
+    }
+  }
+}
+"""
+  result = """
+{
+  "__schema":{
+    "directives":[{
+      "name":"example",
+      "args":[{
+        "name":"abc",
+        "isDeprecated":true,
+        "deprecationReason":"wallaby"
+      }, {
+        "name":"xyz","isDeprecated":false,"deprecationReason":null
+      }]
+    }]
+  }
+}
+"""

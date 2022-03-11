@@ -25,7 +25,7 @@ directive @include(
 "Builtin @deprecated directive"
 directive @deprecated(
   reason: String = "No longer supported"
-) on FIELD_DEFINITION | ENUM_VALUE
+) on FIELD_DEFINITION | ENUM_VALUE | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 "Builtin @specifiedBy directive"
 directive @specifiedBy(
@@ -89,7 +89,7 @@ type __Type {
   enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
 
   "should be non-null for INPUT_OBJECT only, must be null for the others"
-  inputFields: [__InputValue!]
+  inputFields(includeDeprecated: Boolean = false): [__InputValue!]
 
   "should be non-null for NON_NULL and LIST only, must be null for the others"
   ofType: __Type
@@ -102,7 +102,7 @@ type __Type {
 type __Field {
   name: String!
   description: String
-  args: [__InputValue!]!
+  args(includeDeprecated: Boolean = false): [__InputValue!]!
   type: __Type!
   isDeprecated: Boolean!
   deprecationReason: String
@@ -114,6 +114,8 @@ type __InputValue {
   description: String
   type: __Type!
   defaultValue: String
+  isDeprecated: Boolean!
+  deprecationReason: String
 }
 
 "Builtin __EnumValue type"
@@ -140,7 +142,7 @@ type __Directive {
   name: String!
   description: String
   locations: [__DirectiveLocation!]!
-  args: [__InputValue!]!
+  args(includeDeprecated: Boolean = false): [__InputValue!]!
   isRepeatable: Boolean!
 }
 

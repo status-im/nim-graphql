@@ -43,6 +43,8 @@ type
     ErrEnumError
     ErrDirNotAllowed
     ErrInstrument
+    ErrInvalidArgDeprecation
+    ErrInvalidFieldDeprecation
 
   InstrumentFlag* = enum
     iValidationBegin
@@ -256,6 +258,10 @@ proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string,
         "'$1' got '$2'('$3'), expect '$4'" % [$node, msg[0], msg[1], msg[2]]
       of ErrDirNotAllowed:
         "directive '$1' is not allowed at subscription root field" % [$node]
+      of ErrInvalidArgDeprecation:
+        "argument '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
+      of ErrInvalidFieldDeprecation:
+        "field '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
       else:
         "ASSERT: UNSPECIFIED ERR KIND: " & $err
   )

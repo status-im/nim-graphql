@@ -786,3 +786,27 @@ input myinput {
 }
 """
 
+[[units]]
+  name = "valid input field deprecation: nullable"
+  code = """
+input MyInput {
+  value: Int @deprecated
+}
+"""
+
+[[units]]
+  name = "valid input field deprecation: non-nullable without def val"
+  error = "[1, 7]: Error: field 'value' of 'MyInput' can't be deprecated: non null or no default value"
+  code = """
+input MyInput {
+  value: Int! @deprecated
+}
+"""
+
+[[units]]
+  name = "valid input field deprecation: non-nullable with def val"
+  code = """
+input MyInput {
+  value: Int! = 123 @deprecated
+}
+"""

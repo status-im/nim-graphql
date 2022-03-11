@@ -830,3 +830,27 @@ type Query implements TreeA & TreeB {
 }
 """
 
+[[units]]
+  name = "valid field arg deprecation: nullable arg"
+  code = """
+type Query {
+  example(abc: Boolean @deprecated): String
+}
+"""
+
+[[units]]
+  name = "invalid field arg deprecation: non-nullable arg without def val"
+  error = "[2, 3]: Error: argument 'abc' of 'example' can't be deprecated: non null or no default value"
+  code = """
+type Query {
+  example(abc: Boolean! @deprecated): String
+}
+"""
+
+[[units]]
+  name = "valid field arg deprecation: non-nullable arg with def val"
+  code = """
+type Query {
+  example(abc: Boolean @deprecated): String
+}
+"""

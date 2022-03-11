@@ -247,10 +247,15 @@ proc typeEnumValues(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
     ok(respNull())
 
 proc typeInputFields(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var ctx = GraphqlRef(ud)
+  let arg = params[0].val
+  let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
   if parent.kind == nkSym and parent.sym.kind in {skInputObject}:
     var list = respList()
     let fields = InputObject(parent.sym.ast).fields
     for n in fields:
+      if ctx.skipDeprecated(n.dirs, includeDeprecated):
+        continue
       list.add Node(n)
     ok(list)
   else:
@@ -289,9 +294,14 @@ proc fieldDescription(ud: RootRef, params: Args, parent: Node): RespResult {.api
   ok(ObjectField(parent).desc.toDesc)
 
 proc fieldArgs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var ctx = GraphqlRef(ud)
+  let arg = params[0].val
+  let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
   var list = respList()
   let args = ObjectField(parent).args
   for arg in args:
+    if ctx.skipDeprecated(arg.dirs, includeDeprecated):
+      continue
     list.add Node(arg)
   ok(list)
 
@@ -330,11 +340,19 @@ proc invalDefVal(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   of nkEmpty: ok(respNull())
   else: ok(resp($val))
 
+proc invalDeprecated(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  deprecated(ObjectField(parent).dirs)
+
+proc invalDeprecatedReason(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  directiveValue(ObjectField(parent).dirs, kwDeprecated, kwReason)
+
 const inputValueProtos* = {
   "name"        : invalName,
   "description" : invalDescription,
   "type"        : invalType,
-  "defaultValue": invalDefVal
+  "defaultValue": invalDefVal,
+  "isDeprecated"     : invalDeprecated,
+  "deprecationReason": invalDeprecatedReason
 }
 
 proc enumValName(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -372,9 +390,14 @@ proc dirLocations(ud: RootRef, params: Args, parent: Node): RespResult {.apiPrag
   ok(list)
 
 proc dirArgs(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  var ctx = GraphqlRef(ud)
+  let arg = params[0].val
+  let includeDeprecated = if arg.kind == nkBoolean: arg.boolVal else: false
   let args = Directive(parent.sym.ast).args
   var list = respList()
   for arg in args:
+    if ctx.skipDeprecated(arg.dirs, includeDeprecated):
+      continue
     list.add Node(arg)
   ok(list)
 
