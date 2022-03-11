@@ -15,7 +15,7 @@ directive @include(
 
 directive @deprecated(
   reason: String = "No longer supported"
-) on FIELD_DEFINITION | ENUM_VALUE
+) on FIELD_DEFINITION | ENUM_VALUE | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @specifiedByURL(
   url: String!
