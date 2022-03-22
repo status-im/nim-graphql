@@ -21,7 +21,7 @@ export
   response, results, types, names, errors, ast
 
 const
-  builtinSchema = staticRead("builtin" / "schema.ql")
+  builtinSchema = staticRead("builtin/schema.ql")
 
 proc registerBuiltinScalars(ctx: GraphqlRef)
 proc loadBuiltinSchema(ctx: GraphqlRef)
