@@ -215,7 +215,7 @@ proc directiveDef(q: var Parser, desc: Node, def: var Node) =
   args    := argumentDefs
 
   var repeatable = q.emptyNode
-  if isKeyWord(kwRepeatable):
+  if isKeyword(kwRepeatable):
     repeatable ::= name
 
   expect kwOn

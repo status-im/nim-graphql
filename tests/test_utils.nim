@@ -92,7 +92,7 @@ proc queryEchoString(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
     ok(text)
   else:
     ok(respNull())
-  
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
@@ -184,7 +184,7 @@ const droidProtos = {
   "color": colorImpl
 }
 
-proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.} =
+proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   if node.kind == nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
   else:
@@ -200,12 +200,12 @@ proc initMockApi*(ctx: GraphqlRef) =
   ctx.addResolvers(tc, "Human", [("name", nameImpl)])
   ctx.addResolvers(tc, "Droid", droidProtos)
   ctx.addResolvers(tc, "Starship", [("name", nameImpl)])
-  
+
   ctx.addResolvers(tc, "Query", queryProtos)
   ctx.addResolvers(ctx, "Tree", treeProtos)
   ctx.addResolvers(ctx, "Creature", creatureProtos)
   ctx.addResolvers(ctx, "Bird", birdProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)
-  ctx.customCoercion("Fruits", coerceEnum)  
+  ctx.customCoercion("Fruits", coerceEnum)
 
 {.pop.}

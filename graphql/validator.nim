@@ -153,7 +153,7 @@ proc coerceEnum(ctx: GraphqlRef, locType, nameNode, parent: Node, idx: int, isVa
     visit coerceVar(nameNode, locType, parent, idx)
   let inVal = parent[idx]
   invalid inVal.kind != nkEnum:
-    if inval.kind == nkList:
+    if inVal.kind == nkList:
       ctx.error(ErrTypeMismatch, nameNode, inVal.kind, locType)
     else:
       ctx.error(ErrEnumError, nameNode, inVal, inVal.kind, locType)
@@ -186,7 +186,7 @@ proc areTypesCompatible(varType, locType: Node): bool =
       return false
     let itemLocType = locType[0]
     let itemVarType = varType[0]
-    return areTypesCompatible(itemVarType, itemlocType)
+    return areTypesCompatible(itemVarType, itemLocType)
 
   if varType.kind == nkListType:
     return false

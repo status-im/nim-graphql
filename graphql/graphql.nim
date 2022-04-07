@@ -80,7 +80,7 @@ type
   RespResult* = Result[Node, string]
 
   CoercionProc* = proc(ctx: GraphqlRef,
-    typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
+    typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.}
 
   ResolverProc* = proc(ud: RootRef, params: Args,
     parent: Node): RespResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}

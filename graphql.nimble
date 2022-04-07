@@ -33,7 +33,7 @@ proc test(env, path: string, shouldRun = true) =
   let run = if shouldRun: " -r" else: ""
 
   exec "nim " & lang & " " & env & run &
-    " --hints:off --warnings:off " & path
+    " --styleCheck:usages --styleCheck:error --hints:off --warnings:off " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"

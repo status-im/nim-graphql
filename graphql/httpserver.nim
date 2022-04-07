@@ -66,7 +66,7 @@ proc getContentTypes(request: HttpRequestRef): set[ContentType] =
   let conType = request.headers.getList("content-type")
   for n in conType:
     if n == "application/graphql":
-      result.incl ctGraphql
+      result.incl ctGraphQl
     elif n == "application/json":
       result.incl ctJson
 
@@ -116,7 +116,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
 
   if request.hasBody:
     let body = await request.getBody()
-    if ctGraphql in contentTypes:
+    if ctGraphQl in contentTypes:
       ro.query = toQueryNode(cast[string](body))
     else:
       let res = ctx.parseLiteral(body)

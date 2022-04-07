@@ -138,7 +138,7 @@ type
 
   NodeResult* = Result[Node, string]
   # Should  be identical to CoercionProc in graphql.nim
-  ScalarProc* = proc(ctx: RootRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, nosideEffect.}
+  ScalarProc* = proc(ctx: RootRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.}
 
   Symbol* = ref SymObj
 
