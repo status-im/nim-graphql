@@ -1190,28 +1190,28 @@ type Query {
   name: String
 }
 query IntrospectionQuery {
-	__schema {
-		types {
-			...FullType
-		}
-	}
+  __schema {
+    types {
+      ...FullType
+    }
+  }
 }
 fragment FullType on __Type {
-	fields(includeDeprecated: true) {
-	 	type {
-	 		...TypeRef
-	 	}
-	}
+  fields(includeDeprecated: true) {
+    type {
+      ...TypeRef
+    }
+  }
   inputFields {
-		...InputValue
-	}
+    ...InputValue
+  }
 }
 fragment InputValue on __InputValue {
-	type { ...TypeRef }
+  type { ...TypeRef }
 }
 fragment TypeRef on __Type {
-	kind
-	name
+  kind
+  name
 }
 """
 
