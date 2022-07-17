@@ -36,7 +36,7 @@ const
   caseFolder = "tests" / "serverclient"
   serverAddress = initTAddress("127.0.0.1:8547")
 
-proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
+proc createServer(serverAddress: TransportAddress, authHooks: seq[AuthHook] = @[]): GraphqlHttpServerRef =
   let socketFlags = {ServerFlags.TcpNoDelay, ServerFlags.ReuseAddr}
   var ctx = GraphqlRef.new()
   ctx.initMockApi()
@@ -65,9 +65,16 @@ proc createServer(serverAddress: TransportAddress): GraphqlHttpServerRef =
       address = serverAddress,
       tlsPrivateKey = TLSPrivateKey.init(SecureKey),
       tlsCertificate = TLSCertificate.init(SecureCrt),
-      socketFlags = socketFlags)
+      socketFlags = socketFlags,
+      authHooks = authHooks
+    )
   else:
-    let res = GraphqlHttpServerRef.new(ctx, serverAddress, socketFlags = socketFlags)
+    let res = GraphqlHttpServerRef.new(
+      graphql = ctx,
+      address = serverAddress,
+      socketFlags = socketFlags,
+      authHooks = authHooks
+    )
 
   if res.isErr():
     debugEcho res.error
@@ -133,11 +140,59 @@ proc executeCases() =
   waitFor server.closeWait()
   debugEcho counter[]
 
+proc testHooks() =
+  proc mockAuth(req: HttpRequestRef): Future[HttpResponseRef] {.async.} =
+    if req.headers.getString("Auth-Token") == "Good Token":
+      return HttpResponseRef(nil)
+
+    return await req.respond(Http401, "Unauthorized access")
+
+  let server = createServer(serverAddress, @[AuthHook(mockAuth)])
+  server.start()
+
+  const
+    query = """{ __type(name: "ID") { kind }}"""
+    headers = [
+
+      ("Auth-Token", "Good Token")
+    ]
+
+  suite "Test Hooks":
+    test "no auth token":
+      let client = setupClient(serverAddress)
+
+      let res = waitFor client.sendRequest(query)
+      check res.isOk
+      if res.isErr:
+        debugEcho res.error
+        return
+
+      let resp = res.get()
+      check resp.status == 401
+      check resp.reason == "Unauthorized"
+      check resp.response == "Unauthorized access"
+
+    test "good auth token":
+      let client = setupClient(serverAddress)
+      let res = waitFor client.sendRequest(query, @headers)
+      check res.isOk
+      if res.isErr:
+        debugEcho res.error
+        return
+
+      let resp = res.get()
+      check resp.status == 200
+      check resp.reason == "OK"
+      check resp.response == """{"data":{"__type":{"kind":"SCALAR"}}}"""
+
+  waitFor server.closeWait()
+
 when isMainModule:
   proc main() =
     let conf = getConfiguration()
     if conf.testFile.len == 0:
       executeCases()
+      testHooks()
       return
 
     # disable unittest param handler
@@ -175,3 +230,4 @@ when isMainModule:
   main()
 else:
   executeCases()
+  testHooks()

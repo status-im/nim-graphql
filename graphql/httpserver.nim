@@ -20,6 +20,15 @@ type
     ctGraphQl
     ctJson
 
+  # AuthHook: handle CORS, JWT auth, etc. in HTTP header
+  # before actual request processed
+  # return value:
+  # - nil: auth success, continue execution
+  # - HttpResponse: could not authenticate, stop execution
+  #   and return the response
+  AuthHook* = proc(request: HttpRequestRef): Future[HttpResponseRef]
+                  {.gcsafe, raises: [Defect, CatchableError].}
+
   GraphqlHttpServerState* {.pure.} = enum
     Closed
     Stopped
@@ -32,6 +41,7 @@ type
     graphql*: GraphqlRef
     savePoint: NameCounter
     defRespHeader: HttpTable
+    authHooks: seq[AuthHook]
 
   GraphqlHttpServerRef* = ref GraphqlHttpServer
 
@@ -167,6 +177,14 @@ proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpR
     return dumbResponse()
 
   let request = r.get()
+
+  # if hook result is not nil,
+  # it means we should return immediately
+  for hook in server.authHooks:
+    let res = await hook(request)
+    if not res.isNil:
+      return res
+
   case request.uri.path
   of "/graphql":
     return await processGraphqlRequest(server, request)
@@ -188,11 +206,13 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
           bufferSize: int = 4096,
           httpHeadersTimeout = 10.seconds,
           maxHeadersSize: int = 8192,
-          maxRequestBodySize: int = 1_048_576): GraphqlHttpResult[GraphqlHttpServerRef] =
+          maxRequestBodySize: int = 1_048_576,
+          authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
   var server = GraphqlHttpServerRef(
     graphql: graphql,
     savePoint: graphql.getNameCounter,
-    defRespHeader: HttpTable.init([("Content-Type", "application/json")])
+    defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
+    authHooks: authHooks
   )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
@@ -224,11 +244,13 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
           bufferSize: int = 4096,
           httpHeadersTimeout = 10.seconds,
           maxHeadersSize: int = 8192,
-          maxRequestBodySize: int = 1_048_576): GraphqlHttpResult[GraphqlHttpServerRef] =
+          maxRequestBodySize: int = 1_048_576,
+          authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
   var server = GraphqlHttpServerRef(
     graphql: graphql,
     savePoint: graphql.getNameCounter,
-    defRespHeader: HttpTable.init([("Content-Type", "application/json")])
+    defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
+    authHooks: authHooks
   )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] =

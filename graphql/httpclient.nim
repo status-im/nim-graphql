@@ -241,7 +241,8 @@ proc clearAll*(ctx: GraphqlHttpClientRef) =
   ctx.varTable.setLen(0)
   ctx.opName = ""
 
-proc sendRequest*(ctx: GraphqlHttpClientRef, query: string): Future[HttpResult[ClientResp]] {.async.} =
+proc sendRequest*(ctx: GraphqlHttpClientRef, query: string,
+                  headers: seq[HttpHeaderTuple] = @[]): Future[HttpResult[ClientResp]] {.async.} =
   # TODO: implement content-type: graphql
 
   var r = JsonRespStream.new()
@@ -257,17 +258,19 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string): Future[HttpResult[C
         r.serialize(n.value)
 
   let body = r.getBytes()
-  let headers = [
-       ("Content-Type", "application/json")#,
-       #("Accept-Encoding", "gzip"),
-      ]
+  var newHeaders = if headers.len > 0:
+                     headers
+                   else:
+                     @[]
+
+  newHeaders.add(("Content-Type", "application/json"))
 
   try:
     let request =
       HttpClientRequestRef.new(
         ctx.session, ctx.address,
         ctx.meth, ctx.version, {},
-        headers, body
+        newHeaders, body
       )
 
     let resp = await request.send()
