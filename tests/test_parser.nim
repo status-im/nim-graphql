@@ -85,7 +85,8 @@ proc suite3() =
     for fileName in walkDirRec("tests" / "schemas"):
       fileNames.add fileName
 
-    for fileName in fileNames:
+    for x in fileNames:
+      let fileName = x # prevent nim >= 1.6 cannot capture lent
       test fileName:
         check runGoodDoc(fileName) == true
 

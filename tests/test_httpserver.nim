@@ -116,7 +116,8 @@ proc runSuite(client: GraphqlHttpClientRef, fileName: string, counter: Counter) 
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
-    for unit in cases.units:
+    for x in cases.units:
+      let unit = x # prevent nim >= 1.6 cannot capture lent
       test unit.name:
         if unit.skip:
           skip()
@@ -211,7 +212,8 @@ when isMainModule:
     let cases = Toml.loadFile(fileName, TestCase)
     let server = createServer(serverAddress)
     server.start()
-    for unit in cases.units:
+    for x in cases.units:
+      let unit = x # prevent nim >= 1.6 cannot capture lent
       if unit.name != conf.unit:
         continue
       test unit.name:

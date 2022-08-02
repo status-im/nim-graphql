@@ -8,6 +8,7 @@ jobs:
       max-parallel: 20
       matrix:
         test_lang: [c]
+        branch: [version-1-2, version-1-4, version-1-6, devel]
         target:
           - os: linux
             cpu: amd64
@@ -30,7 +31,7 @@ jobs:
               os: windows
             builder: windows-2019
 
-    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ matrix.test_lang }}'
+    name: '${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ matrix.test_lang }}-(Nim ${{ matrix.branch }})'
     runs-on: ${{ matrix.builder }}
     steps:
       - name: Checkout nim-graphql
@@ -143,7 +144,9 @@ jobs:
           else
             MAKE_CMD="make"
           fi
-          env MAKE="$MAKE_CMD -j2" ARCH_OVERRIDE=$PLATFORM CC=gcc bash build_nim.sh nim csources dist/nimble NimBinaries
+          env MAKE="$MAKE_CMD -j2" ARCH_OVERRIDE=$PLATFORM NIM_COMMIT=${{ matrix.branch }} \
+            QUICK_AND_DIRTY_COMPILER=1 QUICK_AND_DIRTY_NIMBLE=1 CC=gcc \
+            bash build_nim.sh nim csources dist/nimble NimBinaries
           echo '${{ github.workspace }}/nim/bin' >> $GITHUB_PATH
 
       - name: Run nim-graphql tests

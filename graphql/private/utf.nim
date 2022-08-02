@@ -31,7 +31,7 @@ const
   Utf16Shift = 10
   Utf16Base  = 0x0010000
   Utf16Mask  = 0x3FF
-  Utf16Maxbmp= 0xFFFF
+  Utf16MaxBmp= 0xFFFF
   MaxUtf     = 0x10FFFF
 
   DefaultReplacement* = 0xFFFD
@@ -93,7 +93,7 @@ proc utf*(_: type Utf16, c1, c2: int): int =
   ((c1 - highBegin) shl Utf16Shift) + (c2 - lowBegin) + Utf16Base
 
 proc inc*(_: type Utf16, cp: int, res: var int): bool =
-  if cp <= Utf16Maxbmp:
+  if cp <= Utf16MaxBmp:
     if cp >= highBegin and cp <= lowBegin:
       return false
     else:
@@ -164,19 +164,19 @@ proc utf8Len*(_: type Utf16, text: openArray[uint16]): Result[int, string] =
     if c1 >= highBegin and c1 <= highEnd:
       inc i
       if i >= text.len:
-        return err(InvalidUtf16)
+        return err(InvalidUTF16)
       # surrogate pairs
       let c2 = text[i]
       if c2 < lowBegin or c2 > lowEnd:
-        return err(InvalidUtf16)
+        return err(InvalidUTF16)
       let cp = Utf16.utf(c1, c2)
       if not Utf8.inc(cp, res):
-        return err(InvalidUtf16)
+        return err(InvalidUTF16)
     elif c1 >= lowBegin and c1 <= lowEnd:
-      return err(InvalidUtf16)
+      return err(InvalidUTF16)
     inc i
     if not Utf8.inc(c1, res):
-      return err(InvalidUtf16)
+      return err(InvalidUTF16)
 
   ok(res)
 
@@ -237,7 +237,7 @@ proc append*(_: type Utf8, text: var (string | seq[byte]), c1, c2: int): bool =
   Utf8.append(text, Utf16.utf(c1, c2))
 
 proc append*(_: type Utf16, text: var seq[uint16], cp: int): bool =
-  if cp <= Utf16Maxbmp:
+  if cp <= Utf16MaxBmp:
     if cp >= highBegin and cp <= lowBegin:
       return false
     else:
@@ -318,7 +318,7 @@ type
       lo*: uint16
 
 proc toPair*(_: type Utf16, cp: int): Utf16Pair =
-  if cp <= Utf16Maxbmp:
+  if cp <= Utf16MaxBmp:
     if cp >= highBegin and cp <= lowBegin:
       Utf16Pair(state: Utf16Error)
     else:

@@ -57,7 +57,8 @@ proc main() =
         continue
       fileNames.add fileName
 
-    for fileName in fileNames:
+    for x in fileNames:
+      let fileName = x # prevent nim >= 1.6 cannot capture lent
       let parts = splitFile(fileName)
       test parts.name:
         ctx.runValidator(fileName, testStatusIMPL)

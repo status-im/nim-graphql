@@ -25,6 +25,15 @@ requires "nim >= 1.2.0",
          "https://github.com/status-im/nim-unittest2"
 
 proc test(env, path: string, shouldRun = true) =
+  # nnkArglist was changed to nnkArgList, so can't always use --styleCheck:error
+  # https://github.com/nim-lang/Nim/pull/17529
+  # https://github.com/nim-lang/Nim/pull/19822
+  let styleCheckStyle =
+    if (NimMajor, NimMinor) < (1, 6):
+      "hint"
+    else:
+      "error"
+
   # Compilation language is controlled by TEST_LANG
   var lang = "c"
   if existsEnv"TEST_LANG":
@@ -33,7 +42,8 @@ proc test(env, path: string, shouldRun = true) =
   let run = if shouldRun: " -r" else: ""
 
   exec "nim " & lang & " " & env & run &
-    " --styleCheck:usages --styleCheck:error --hints:off --warnings:off " & path
+    " --styleCheck:usages --styleCheck:" & styleCheckStyle &
+    " --hints:off --warnings:off " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"

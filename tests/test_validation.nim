@@ -144,7 +144,8 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
-    for unit in cases.units:
+    for x in cases.units:
+      let unit = x # prevent nim >= 1.6 cannot capture lent
       test unit.name:
         if unit.skip:
           skip()
