@@ -44,7 +44,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
   try:
     let jsonRes = parseJson(resp.getString())
     check ($jsonRes).len != 0
-  except:
+  except CatchableError:
     check false
 
 proc main() =

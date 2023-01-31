@@ -34,7 +34,10 @@ proc decodeResponse*(input: string): ServerResponse =
   except JsonReaderError as e:
     debugEcho e.formatMsg("")
 
-{.push hint[XDeclaredButNotUsed]: off.}
+when (NimMajor, NimMinor, NimPatch) >= (1, 6, 0):
+  {.push hint[XCannotRaiseY]: off.}
+else:
+  {.push hint[XDeclaredButNotUsed]: off.}
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 
 proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =

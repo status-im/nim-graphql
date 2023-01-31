@@ -8,8 +8,7 @@
 # those terms.
 
 import
-  std/[os, strutils],
-  pkg/[toml_serialization, unittest2],
+  std/[os],
   ../graphql, ../graphql/test_common, ./test_utils
 
 const

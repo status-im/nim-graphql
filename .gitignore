@@ -10,3 +10,5 @@
 *.la
 *.exe
 *.dll
+nimble.develop
+nimble.paths

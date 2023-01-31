@@ -10,7 +10,6 @@
 import
   std/[os, strutils],
   pkg/[toml_serialization, unittest2],
-  ./common/response,
   ../graphql, ./test_config
 
 type
@@ -166,7 +165,8 @@ proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
     return
 
   let cases = Toml.loadFile(fileName, TestCase)
-  for unit in cases.units:
+  for unitx in cases.units:
+    let unit = unitx # silence cannot capture <lent Unit>
     if unit.name != conf.unit:
       continue
     test unit.name:

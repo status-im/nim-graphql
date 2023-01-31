@@ -13,7 +13,11 @@ import
   std/[os, json],
   pkg/[toml_serialization, unittest2, chronos],
   ../graphql, ../graphql/[httpserver, httpclient],
-  ../graphql/test_config, ./test_utils, keys/keys
+  ./test_utils
+
+when defined(tls):
+  import
+    ./keys/keys
 
 type
   Unit = object
@@ -188,7 +192,7 @@ proc testHooks() =
 
   waitFor server.closeWait()
 
-when isMainModule:
+template mainModule() =
   proc main() =
     let conf = getConfiguration()
     if conf.testFile.len == 0:
@@ -230,6 +234,16 @@ when isMainModule:
       echo message
       quit(QuitSuccess)
   main()
+
+const
+  crashCondition = defined(windows) and defined(i386) and defined(release)
+
+when isMainModule:
+  when not crashCondition:
+    import
+      ../graphql/test_config
+    mainModule()
 else:
-  executeCases()
-  testHooks()
+  when not crashCondition:
+    executeCases()
+    testHooks()

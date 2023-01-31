@@ -197,7 +197,8 @@ proc validateSchemas() =
     for fileName in walkDirRec("tests" / "schemas"):
       fileNames.add fileName
 
-    for fileName in fileNames:
+    for namex in fileNames:
+      let fileName = namex # 'fileName' is of type <lent string> 
       test fileName:
         ctx.runValidator(fileName, testStatusIMPL)
         ctx.purgeQueries(true)
@@ -229,7 +230,8 @@ when isMainModule:
       return
 
     let cases = Toml.loadFile(fileName, TestCase)
-    for unit in cases.units:
+    for unitx in cases.units:
+      let unit = unitx # 'unit' is of type <lent Unit>
       if unit.name != conf.unit:
         continue
       test unit.name:

@@ -13,8 +13,12 @@ import
   ../common/[ast, ast_helper, response, names],
   ../graphql
 
+when (NimMajor, NimMinor, NimPatch) >= (1, 6, 0):
+  {.push hint[XCannotRaiseY]: off.}
+else:
+  {.push hint[XDeclaredButNotUsed]: off.}
+  
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
-{.push hint[XDeclaredButNotUsed]: off.}
 
 proc findType(ctx: GraphqlRef, nameStr: string): Node =
   let name = ctx.names.insert(nameStr)
@@ -81,8 +85,11 @@ const queryProtos* = {
   "__typename" : queryTypename
 }
 
+template unused(x: untyped) =
+  discard x
+  
 proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  var ctx = GraphqlRef(ud)
+  unused(ud)
   if parent.kind == nkSym:
     ok(toDesc(parent.sym.ast[0]))
   else:
@@ -217,7 +224,7 @@ proc typeInterfaces(ud: RootRef, params: Args, parent: Node): RespResult {.apiPr
     ok(respNull())
 
 proc typePossibleTypes(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
-  var ctx = GraphqlRef(ud)
+  unused(ud)
   if parent.kind == nkSym and parent.sym.kind in {skUnion, skInterface}:
     var list = respList()
     if parent.sym.kind == skUnion:

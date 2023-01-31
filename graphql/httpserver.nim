@@ -268,7 +268,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
   else:
     err("Could not create HTTP server instance: " & sres.error())
 
-proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [Defect].} =
+proc state*(rs: GraphqlHttpServerRef): GraphqlHttpServerState {.raises: [].} =
   ## Returns current GraphQL server's state.
   case rs.server.state
   of HttpServerState.ServerClosed:

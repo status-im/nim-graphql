@@ -10,7 +10,7 @@
 import
   std/tables,
   stew/results, faststreams/inputs,
-  common/[respstream, errors, response, ast, names, types],
+  common/[respstream, errors, ast, types],
   lexer, common_parser, graphql,
   builtin/json_respstream
 

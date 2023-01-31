@@ -10,7 +10,7 @@
 # DFA based UTF8 decoder/validator
 # See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
 
-import stew/ranges/ptr_arith
+import stew/ptrops
 import stew/results
 
 type

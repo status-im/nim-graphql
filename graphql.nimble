@@ -22,7 +22,8 @@ requires "nim >= 1.2.0",
          "json_serialization",
          "chronicles",
          "https://github.com/status-im/nim-zlib",
-         "https://github.com/status-im/nim-unittest2"
+         "unittest2",
+         "chronos"
 
 proc test(env, path: string, shouldRun = true) =
   # nnkArglist was changed to nnkArgList, so can't always use --styleCheck:error

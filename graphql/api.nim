@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[os, tables, sets],
+  std/[tables, sets],
   faststreams/inputs,
   stew/[results],
   ./common/[ast, types, names, ast_helper, response, errors],
