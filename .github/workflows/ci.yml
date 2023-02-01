@@ -121,7 +121,7 @@ jobs:
             git ls-remote "https://github.com/$1" "${2:-HEAD}" | cut -f 1
           }
           nbsHash=$(getHash status-im/nimbus-build-system)
-          echo "::set-output name=nimbus_build_system::$nbsHash"
+          echo "nimbus_build_system=$nbsHash" >> $GITHUB_OUTPUT
 
       - name: Restore prebuilt Nim from cache
         id: nim-cache
