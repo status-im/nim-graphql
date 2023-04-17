@@ -12,3 +12,4 @@
 *.dll
 nimble.develop
 nimble.paths
+vendor

@@ -10,7 +10,7 @@
 mode = ScriptMode.Verbose
 
 packageName   = "graphql"
-version       = "0.2.24"
+version       = "0.2.26"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
@@ -25,26 +25,24 @@ requires "nim >= 1.2.0",
          "unittest2",
          "chronos"
 
-proc test(env, path: string, shouldRun = true) =
+proc test(args, path: string, shouldRun = true) =
   # nnkArglist was changed to nnkArgList, so can't always use --styleCheck:error
   # https://github.com/nim-lang/Nim/pull/17529
   # https://github.com/nim-lang/Nim/pull/19822
-  let styleCheckStyle =
-    if (NimMajor, NimMinor) < (1, 6):
-      "hint"
-    else:
-      "error"
+  let styleCheckStyle = if (NimMajor, NimMinor) < (1, 6): "hint" else: "error"
 
   # Compilation language is controlled by TEST_LANG
-  var lang = "c"
-  if existsEnv"TEST_LANG":
-    lang = getEnv"TEST_LANG"
+  let nimc = getEnv("NIMC", "nim") # Which nim compiler to use
+  let lang = getEnv("NIMLANG", "c") # Which backend (c/cpp/js)
+  let flags = getEnv("NIMFLAGS", "") # Extra flags for the compiler
+  let verbose = getEnv("V", "") notin ["", "0"]
 
   let run = if shouldRun: " -r" else: ""
+  let cfg = " --styleCheck:usages --styleCheck:" & styleCheckStyle &
+            (if verbose: "" else: " --verbosity:0 --hints:off") & run &
+            " -d:unittest2DisableParamFiltering"
 
-  exec "nim " & lang & " " & env & run &
-    " --styleCheck:usages --styleCheck:" & styleCheckStyle &
-    " --hints:off --warnings:off " & path
+  exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"

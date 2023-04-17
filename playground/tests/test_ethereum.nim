@@ -16,6 +16,11 @@ import
 const
   caseFolder = "playground" / "tests" / "ethereum"
 
+when (NimMajor, NimMinor) < (1, 6):
+  {.pragma: ccRaises, raises: [Defect, CatchableError].}
+else:
+  {.pragma: ccRaises, raises: [].}
+
 proc setupContext(): GraphqlRef =
   var ctx = new(GraphqlRef)
   ctx.initEthApi()
@@ -25,7 +30,7 @@ proc setupContext(): GraphqlRef =
     quit(QuitFailure)
   ctx
 
-proc calcQC(qc: QueryComplexity, field: FieldRef): int {.cdecl, gcsafe, raises: [Defect, CatchableError].} =
+proc calcQC(qc: QueryComplexity, field: FieldRef): int {.cdecl, gcsafe, ccRaises.} =
   if $field.parentType == "__Type" and $field.field.name == "fields":
     return 100
   elif $field.parentType == "Transaction" and $field.field.name == "block":
@@ -39,11 +44,6 @@ const
 """
   query2 = """
 { block { transactions { block { transactions { block { number }}}}}}
-"""
-  query3 = """
-query eth_protocolVersion {
-  protocolVersion
-}
 """
 
 proc executeQC(ctx: GraphqlRef, query: string): Result[string, string] =

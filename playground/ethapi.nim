@@ -30,7 +30,12 @@ type
     blocks: Node
     accounts: Node
 
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+when (NimMajor, NimMinor) < (1, 6):
+  {.pragma: apiRaises, raises: [Defect, CatchableError].}
+else:
+  {.pragma: apiRaises, raises: [].}
+
+{.pragma: apiPragma, cdecl, gcsafe, apiRaises.}
 {.push hint[XDeclaredButNotUsed]: off.}
 
 proc validateHex(x: Node, minLen = 0): NodeResult =
@@ -152,16 +157,22 @@ proc findLong(node: Node, key: string): RespResult =
   if res.isErr:
     return res
   let node = res.get()
-  let intVal = parseHexInt(node.stringVal)
-  ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+  try:
+    let intVal = parseHexInt(node.stringVal)
+    ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+  except ValueError as ex:
+    err("parseHexInt error: " & ex.msg)
 
 proc findMapLong(node: Node, key: string): RespResult =
   let res = findMap(node, key)
   if res.isErr:
     return res
   let node = res.get()
-  let intVal = parseHexInt(node.stringVal)
-  ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+  try:
+    let intVal = parseHexInt(node.stringVal)
+    ok(Node(kind: nkInt, intVal: $intVal, pos: node.pos))
+  except ValueError as ex:
+    err("parseHexInt error: " & ex.msg)
 
 proc accountAddress(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   var ctx = EthServer(ud)

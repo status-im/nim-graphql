@@ -201,7 +201,6 @@ template mainModule() =
       return
 
     # disable unittest param handler
-    disableParamFiltering()
     var counter = Counter()
     let fileName = caseFolder / conf.testFile
     var client = setupClient(serverAddress)

@@ -8,12 +8,16 @@
 # those terms.
 
 import
-  std/strutils,
   ../../graphql
+
+when (NimMajor, NimMinor) < (1, 6):
+  {.pragma: ccRaises, raises: [Defect, CatchableError].}
+else:
+  {.pragma: ccRaises, raises: [].}
 
 type
   ComplexityCalculator* = proc(qc: QueryComplexity, field: FieldRef): int {.cdecl,
-                  gcsafe, raises: [Defect, CatchableError].}
+                  gcsafe, ccRaises.}
   QueryComplexity* = ref object of InstrumentRef
     maxComplexity: int
     calculator: ComplexityCalculator
@@ -25,13 +29,13 @@ proc traverse(qc: QueryComplexity, fieldSet: FieldSet): int =
 
 proc queryComplexity(ud: InstrumentRef, flag: InstrumentFlag,
                      params, node: Node): InstrumentResult {.cdecl,
-                     gcsafe, raises: [Defect, CatchableError].} =
+                     gcsafe, ccRaises.} =
 
   let qc = QueryComplexity(ud)
   let exec = ExecRef(node.sym.exec)
   let total = qc.traverse(exec.fieldSet)
   if total > qc.maxComplexity:
-    return err("query complexity exceed max($1), got $2" % [$qc.maxComplexity, $total])
+    return err("query complexity exceed max(" & $qc.maxComplexity & "), got " & $total)
   ok()
 
 proc init*(qc: QueryComplexity, calc: ComplexityCalculator, maxComplexity: int) =

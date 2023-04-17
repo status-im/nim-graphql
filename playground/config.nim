@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[parseopt, strutils, uri],
+  std/[parseopt, strutils],
   stew/results, chronos
 
 type
@@ -46,14 +46,14 @@ proc processArguments*(): Result[Configuration, string] =
     of cmdArgument:
       try:
         config.schema = parseEnum[Schema](key)
-      except Exception as e:
+      except ValueError as e:
         return err(e.msg)
     of cmdLongOption, cmdShortOption:
       case key.toLowerAscii()
       of "bind", "b":
         try:
           config.bindAddress = initTAddress(value)
-        except Exception as e:
+        except TransportAddressError as e:
           return err(e.msg)
       of "secure", "s":
         config.secure = true

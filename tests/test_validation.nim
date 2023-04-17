@@ -10,7 +10,7 @@
 import
   std/[os, strutils, tables],
   pkg/[toml_serialization, unittest2],
-  ../graphql, ../graphql/test_config,
+  ../graphql,
   ../graphql/graphql as context,
   ../graphql/validator
 
@@ -198,7 +198,7 @@ proc validateSchemas() =
       fileNames.add fileName
 
     for namex in fileNames:
-      let fileName = namex # 'fileName' is of type <lent string> 
+      let fileName = namex # 'fileName' is of type <lent string>
       test fileName:
         ctx.runValidator(fileName, testStatusIMPL)
         ctx.purgeQueries(true)
@@ -206,6 +206,9 @@ proc validateSchemas() =
         ctx.purgeNames(savePoint)
 
 when isMainModule:
+  import
+    ../graphql/test_config
+
   proc main() =
     let conf = getConfiguration()
     if conf.convertPath.len != 0:
@@ -219,7 +222,6 @@ when isMainModule:
       return
 
     # disable unittest param handler
-    disableParamFiltering()
     var counter = Counter()
     var ctx = setupContext()
     var savePoint = ctx.getNameCounter()

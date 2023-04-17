@@ -262,7 +262,12 @@ proc search(ctx: Starwars, text: string): Node =
 
   list
 
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+when (NimMajor, NimMinor) < (1, 6):
+  {.pragma: apiRaises, raises: [Defect, CatchableError].}
+else:
+  {.pragma: apiRaises, raises: [].}
+
+{.pragma: apiPragma, cdecl, gcsafe, apiRaises.}
 {.push hint[XDeclaredButNotUsed]: off.}
 
 proc queryHero(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -361,7 +366,10 @@ proc humanHeight(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragm
   let height = parent.map[5].val
   let unit = params[0].val
   if $unit == "FOOT":
-    ok(resp(3.28084 * parseFloat(height.floatVal)))
+    try:
+      ok(resp(3.28084 * parseFloat(height.floatVal)))
+    except ValueError as ex:
+      err("parseFloat error: " & ex.msg)
   else:
     ok(height)
 

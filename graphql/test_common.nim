@@ -155,7 +155,6 @@ proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
     return
 
   # disable unittest param handler
-  disableParamFiltering()
   var counter = Counter()
   let fileName = caseFolder / conf.testFile
   let savePoint = ctx.getNameCounter()
