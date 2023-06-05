@@ -156,5 +156,4 @@ jobs:
           nimble install -y --depsOnly
           # toml_serialization is a test suite dependency
           nimble install -y toml_serialization
-          rm -f nimble.lock
           env NIMLANG="${{ matrix.test_lang }}" nimble test
