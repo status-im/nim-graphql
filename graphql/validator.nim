@@ -312,7 +312,7 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
       for i in 0..<inVal.len:
         invalid locType[0].kind == nkListType and inVal[i].kind != nkList:
           ctx.error(ErrValueError, nameNode, nkList)
-        visit inputCoercion(nameNode, locType[0], locDefVal, inVal, i, scope, isVar):
+        visit inputCoercion(nameNode, locType[0], locDefVal, inVal, i, scope, isVar)
     else:
       var newList = newTree(nkList, inVal)
       parent[idx] = newList
@@ -332,9 +332,9 @@ proc inputCoercion(ctx: GraphqlRef, nameNode, locType, locDefVal,
         ctx.error(ErrScalarError, nameNode, inVal, res.error)
       parent[idx] = res.get()
     of skEnum:
-      visit coerceEnum(locType, nameNode, parent, idx, isVar):
+      visit coerceEnum(locType, nameNode, parent, idx, isVar)
     of skInputObject:
-      visit coerceInputObject(nameNode, sym, inVal, scope, isVar):
+      visit coerceInputObject(nameNode, sym, inVal, scope, isVar)
     else:
       unreachable()
   else:
