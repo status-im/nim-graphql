@@ -30,11 +30,7 @@ type
     blocks: Node
     accounts: Node
 
-when (NimMajor, NimMinor) < (1, 6):
-  {.pragma: apiRaises, raises: [Defect, CatchableError].}
-else:
-  {.pragma: apiRaises, raises: [].}
-
+{.pragma: apiRaises, raises: [].}
 {.pragma: apiPragma, cdecl, gcsafe, apiRaises.}
 {.push hint[XDeclaredButNotUsed]: off.}
 

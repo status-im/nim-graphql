@@ -13,11 +13,7 @@ import
   ../common/[ast, ast_helper, response, names],
   ../graphql
 
-when (NimMajor, NimMinor, NimPatch) >= (1, 6, 0):
-  {.push hint[XCannotRaiseY]: off.}
-else:
-  {.push hint[XDeclaredButNotUsed]: off.}
-  
+{.push hint[XCannotRaiseY]: off.}
 {.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
 
 proc findType(ctx: GraphqlRef, nameStr: string): Node =
@@ -87,7 +83,7 @@ const queryProtos* = {
 
 template unused(x: untyped) =
   discard x
-  
+
 proc schemaDescription(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   unused(ud)
   if parent.kind == nkSym:

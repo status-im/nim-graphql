@@ -16,10 +16,7 @@ import
 const
   caseFolder = "playground" / "tests" / "ethereum"
 
-when (NimMajor, NimMinor) < (1, 6):
-  {.pragma: ccRaises, raises: [Defect, CatchableError].}
-else:
-  {.pragma: ccRaises, raises: [].}
+{.pragma: ccRaises, raises: [].}
 
 proc setupContext(): GraphqlRef =
   var ctx = new(GraphqlRef)

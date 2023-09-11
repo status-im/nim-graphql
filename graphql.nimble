@@ -26,11 +26,6 @@ requires "nim >= 1.2.0",
          "chronos"
 
 proc test(args, path: string, shouldRun = true) =
-  # nnkArglist was changed to nnkArgList, so can't always use --styleCheck:error
-  # https://github.com/nim-lang/Nim/pull/17529
-  # https://github.com/nim-lang/Nim/pull/19822
-  let styleCheckStyle = if (NimMajor, NimMinor) < (1, 6): "hint" else: "error"
-
   # Compilation language is controlled by TEST_LANG
   let nimc = getEnv("NIMC", "nim") # Which nim compiler to use
   let lang = getEnv("NIMLANG", "c") # Which backend (c/cpp/js)
@@ -38,7 +33,7 @@ proc test(args, path: string, shouldRun = true) =
   let verbose = getEnv("V", "") notin ["", "0"]
 
   let run = if shouldRun: " -r" else: ""
-  let cfg = " --styleCheck:usages --styleCheck:" & styleCheckStyle &
+  let cfg = " --styleCheck:usages --styleCheck: error" &
             (if verbose: "" else: " --verbosity:0 --hints:off") & run &
             " -d:unittest2DisableParamFiltering"
 

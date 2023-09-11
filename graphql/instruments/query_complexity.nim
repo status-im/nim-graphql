@@ -10,10 +10,7 @@
 import
   ../../graphql
 
-when (NimMajor, NimMinor) < (1, 6):
-  {.pragma: ccRaises, raises: [Defect, CatchableError].}
-else:
-  {.pragma: ccRaises, raises: [].}
+{.pragma: ccRaises, raises: [].}
 
 type
   ComplexityCalculator* = proc(qc: QueryComplexity, field: FieldRef): int {.cdecl,
