@@ -1020,3 +1020,33 @@ query intros {
   }
 }
 """
+
+# Issue #1044, what is the expected behavior of where.name?, null, empty or error?
+[[units]]
+  name = "input no default value, variable no default value, variable no value"
+  code = """
+input Where {
+  id: ID
+  name: String
+}
+
+type Object {
+  id: ID
+  name: String
+}
+
+type Query {
+  object(where: Where): Object
+}
+
+query Query($name: String) {
+  object(where: {name: $name}) {
+    id
+  }
+}
+"""
+  result = """
+{
+  "object": null
+}
+"""

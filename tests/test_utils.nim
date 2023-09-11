@@ -96,6 +96,27 @@ proc queryEchoString(ud: RootRef, params: Args, parent: Node): RespResult {.apiP
   else:
     ok(respNull())
 
+proc queryObjectImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  # TODO:
+  # Issue #1044, what is the expected behavior of where.name?, null, empty or error?
+  # see also the test case in tests/execution/engine.toml
+  var tc = TestContext(ud)
+  let arg = params[0].val
+
+  if arg[1][1].kind == nkEmpty:
+    return ok(respNull())
+
+  if arg[1][1].kind != nkString:
+    return err("BUG? why the where.name type is not string?")
+
+  if arg[1][1].stringVal != "hardwood":
+    return ok(respNull())
+
+  let en = respMap(tc.names[tnEntity])
+  en["id"] = resp(123)
+  en["name"] = resp("hardwood")
+  ok(en)
+
 const queryProtos = {
   "name": queryNameImpl,
   "color": queryColorImpl,
@@ -106,7 +127,8 @@ const queryProtos = {
   "creatures": queryCreatures,
   "search": querySearchImpl,
   "example": queryExampleImpl,
-  "echoString": queryEchoString
+  "echoString": queryEchoString,
+  "object": queryObjectImpl
 }
 
 proc creatureNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
@@ -193,6 +215,18 @@ proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
   else:
     err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
 
+proc objectIDImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  if parent.kind == nkNull:
+    ok(respNull())
+  else:
+    ok(parent.map[0].val)
+
+proc objectNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
+  if parent.kind == nkNull:
+    ok(respNull())
+  else:
+    ok(parent.map[1].val)
+
 proc initMockApi*(ctx: GraphqlRef) =
   var tc = TestContext()
   for c in TestNames:
@@ -210,5 +244,7 @@ proc initMockApi*(ctx: GraphqlRef) =
   ctx.addResolvers(ctx, "Bird", birdProtos)
   ctx.addResolvers(ctx, "Echo", echoProtos)
   ctx.customCoercion("Fruits", coerceEnum)
+
+  ctx.addResolvers(tc, "Object", [("id", objectIDImpl), ("name", objectNameImpl)])
 
 {.pop.}
