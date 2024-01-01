@@ -23,7 +23,8 @@ requires "nim >= 1.2.0",
          "chronicles",
          "https://github.com/status-im/nim-zlib",
          "unittest2",
-         "https://github.com/status-im/nim-chronos#head"
+         "https://github.com/status-im/nim-chronos#head",
+         "https://github.com/status-im/nim-bearssl#head"
 
 proc test(args, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG
