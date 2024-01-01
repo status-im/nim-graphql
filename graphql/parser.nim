@@ -20,6 +20,8 @@ export
   common_parser.defaultParserConf,
   ast
 
+{.push gcsafe, raises: [IOError] .}
+
 proc definition(q: var Parser, def: var Node) =
   case currToken
   of tokLCurly:
@@ -52,3 +54,5 @@ proc parseDocument*(q: var Parser, doc: var FullDocument) =
   repeatUntil(q.conf.maxDefinitions, tokEof):
     def := definition
     doc.root <- def
+
+{.pop.}

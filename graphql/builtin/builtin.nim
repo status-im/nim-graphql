@@ -8,10 +8,12 @@
 # those terms.
 
 import
-  std/[strutils, parseutils],
+  std/[parseutils],
   stew/results,
   ../common/[ast],
   ../graphql
+
+{.push gcsafe, raises: [] .}
 
 proc validateInt32(x: string): Result[void, string] =
   var pos  = 0
@@ -43,7 +45,7 @@ proc scalarInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsaf
     else:
       ok(node)
   else:
-    err("expect int, but got '$1'" % [$node.kind])
+    err("expect int, but got '" & $node.kind & "'")
 
 proc scalarFloat(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   case node.kind
@@ -54,22 +56,22 @@ proc scalarFloat(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcs
     var number: float
     let L = parseFloat(node.floatVal, number)
     if L != node.floatVal.len or L == 0:
-      return err("'$1' is not a valid float" % [node.floatVal])
+      return err("'" & node.floatVal & "' is not a valid float")
     ok(node)
   else:
-    err("expect int or float, but got '$1'" % [$node.kind])
+    err("expect int or float, but got '" & $node.kind & "'")
 
 proc scalarString(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   if node.kind == nkString:
     ok(node)
   else:
-    err("expect string, but got '$1'" % [$node.kind])
+    err("expect string, but got '" & $node.kind & "'")
 
 proc scalarBoolean(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   if node.kind == nkBoolean:
     ok(node)
   else:
-    err("expect boolean, but got '$1'" % [$node.kind])
+    err("expect boolean, but got '" & $node.kind & "'")
 
 proc scalarID(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   case node.kind
@@ -83,7 +85,7 @@ proc scalarID(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe
   of nkString:
     ok(node)
   else:
-    err("expect int or string, but got '$1'" % [$node.kind])
+    err("expect int or string, but got '" & $node.kind & "'")
 
 const
   builtinScalars* = {
@@ -93,3 +95,5 @@ const
     "Boolean": scalarBoolean,
     "ID": scalarID
   }
+
+{.pop.}

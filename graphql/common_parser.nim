@@ -92,7 +92,9 @@ const
     tokBlockString
     }
 
-proc defaultParserConf*(): ParserConf =
+{.push gcsafe, raises: [IOError] .}
+
+proc defaultParserConf*(): ParserConf {.gcsafe, raises: [].} =
   result.lexerConf = defaultLexConf()
   result.maxRecursionLimit = 25
   result.maxListElems      = 128
@@ -103,7 +105,7 @@ proc defaultParserConf*(): ParserConf =
   result.maxDefinitions    = 512
   result.maxChoices        = 64
 
-proc toInternalConf(conf: ParserConf): ParserConfInternal =
+proc toInternalConf(conf: ParserConf): ParserConfInternal {.gcsafe, raises: [].} =
   result.maxRecursionLimit = conf.maxRecursionLimit
   result.maxListElems   = LoopGuard(maxLoop: conf.maxListElems, desc: "max list elements")
   result.maxFields      = LoopGuard(maxLoop: conf.maxFields, desc: "max fields")
@@ -113,7 +115,7 @@ proc toInternalConf(conf: ParserConf): ParserConfInternal =
   result.maxDefinitions = LoopGuard(maxLoop: conf.maxDefinitions, desc: "max definitions")
   result.maxChoices     = LoopGuard(maxLoop: conf.maxChoices, desc: "max choices and concats")
 
-proc init*(T: type Parser, stream: InputStream, conf = defaultParserConf()): T =
+proc init*(T: type Parser, stream: InputStream, conf = defaultParserConf()): T {.gcsafe, raises: [].} =
   let names = newNameCache()
   T(lex: Lexer.init(stream, names, conf.lexerConf),
     emptyNode: Node(kind: nkEmpty, pos: Pos()),
@@ -121,7 +123,10 @@ proc init*(T: type Parser, stream: InputStream, conf = defaultParserConf()): T =
     flags: conf.flags
    )
 
-proc init*(T: type Parser, stream: InputStream, names: NameCache, conf = defaultParserConf()): T =
+proc init*(T: type Parser,
+           stream: InputStream,
+           names: NameCache,
+           conf = defaultParserConf()): T {.gcsafe, raises: [].} =
   T(lex: Lexer.init(stream, names, conf.lexerConf),
     emptyNode: Node(kind: nkEmpty, pos: Pos()),
     conf: toInternalConf(conf),
@@ -143,7 +148,7 @@ template currToken*: TokKind =
 template currName*: Keyword =
   toKeyword(q.lex.name)
 
-proc parserError*(q: var Parser, err: ParserError, args: varargs[string, `$`]) =
+proc parserError*(q: var Parser, err: ParserError, args: varargs[string, `$`]) {.gcsafe, raises: [].} =
   q.error = err
   if currToken == tokError:
     q.err = q.lex.err
@@ -151,30 +156,35 @@ proc parserError*(q: var Parser, err: ParserError, args: varargs[string, `$`]) =
 
   q.err.pos = q.pos
   q.err.level = elError
-  case err
-  of errUnexpectedToken, errExpectToken:
-    doAssert(args.len >= 1)
-    q.err.message = "get $1, expect $2" % [$currToken, args[0]]
-  of errUnexpectedName, errExpectName, errInvalidDirectiveLoc, errInvalidName:
-    doAssert(args.len >= 1)
-    if currToken != tokName:
+  try:
+    case err
+    of errUnexpectedToken, errExpectToken:
+      doAssert(args.len >= 1)
       q.err.message = "get $1, expect $2" % [$currToken, args[0]]
+    of errUnexpectedName, errExpectName, errInvalidDirectiveLoc, errInvalidName:
+      doAssert(args.len >= 1)
+      if currToken != tokName:
+        q.err.message = "get $1, expect $2" % [$currToken, args[0]]
+      else:
+        q.err.message = "get '$1', expect $2" % [q.lex.name.s, args[0]]
+    of errRecursionLimit:
+      doAssert(args.len >= 2)
+      q.err.message = "recursion limit $1 reached for $2" % [args[0], args[1]]
+    of errLoopLimit:
+      doAssert(args.len >= 2)
+      q.err.message = "loop limit $1 reached for $2" % [args[0], args[1]]
     else:
-      q.err.message = "get '$1', expect $2" % [q.lex.name.s, args[0]]
-  of errRecursionLimit:
-    doAssert(args.len >= 2)
-    q.err.message = "recursion limit $1 reached for $2" % [args[0], args[1]]
-  of errLoopLimit:
-    doAssert(args.len >= 2)
-    q.err.message = "loop limit $1 reached for $2" % [args[0], args[1]]
-  else:
-    doAssert(false, "unimplemented parser error " & $err)
+      doAssert(false, "unimplemented parser error " & $err)
+  except ValueError as exc:
+    doAssert(false, exc.msg)
 
 template nextToken* =
   q.lex.next()
 
 template isKeyword*(x: Keyword): bool =
   q.lex.tok == tokName and currName() == x
+
+{.push hint[XCannotRaiseY]: off.}
 
 macro callParser*(parserInst, parser, dest: untyped): untyped =
   case parser.kind
@@ -188,6 +198,8 @@ macro callParser*(parserInst, parser, dest: untyped): untyped =
     result = newCall(parser, parserInst, dest)
   else:
     error("unsupported parser")
+
+{.pop.}
 
 # will inject new 'destination' symbol and
 # shadow available symbol with same name
@@ -328,7 +340,7 @@ template rgPop(x: RecursionGuard, v: int): untyped =
 proc valueLiteral*(q: var Parser, isConst: bool, val: var Node)
 
 # reserved word(prefixed with '__') used exclusively for instrospection
-proc validName(q: var Parser, name: Name): bool =
+proc validName(q: var Parser, name: Name): bool {.gcsafe, raises: [].} =
   if pfAcceptReservedWords in q.flags:
     return true
 
@@ -506,3 +518,5 @@ proc typeRef*(q: var Parser, resType: var Node) =
 
   expectOptional tokBang:
     resType = newTree(nkNonNullType, resType)
+
+{.pop.}

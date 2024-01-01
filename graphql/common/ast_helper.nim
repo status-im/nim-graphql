@@ -43,6 +43,8 @@ type
 
   Types* = Directive | InputObject | Enum | Union | Interface | Object | Scalar
 
+{.push gcsafe, raises: [] .}
+
 func desc*(n: Types): Node = Node(n)[0]
 func name*(n: Types): Node = Node(n)[1]
 func dirs*(n: InputObject): Dirs = Dirs(Node(n)[2])
@@ -137,3 +139,5 @@ proc findArg*(name: Node, args: Arguments): Node =
     if arg.name.name == name.name:
       return arg.typ
   return nil
+
+{.pop.}

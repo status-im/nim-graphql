@@ -10,7 +10,7 @@
 import
   ./ast
 
-{.pragma: respPragma, gcsafe, raises: [Defect, CatchableError].}
+{.pragma: respPragma, gcsafe, raises: [CatchableError].}
 
 type
   serializeProc = proc(x: RootRef, n: Node) {.respPragma.}
@@ -20,7 +20,9 @@ type
     obj: RootRef
     serializeP: serializeProc
 
-proc serializeImpl[T](x: RootRef, n: Node) =
+{.push gcsafe, raises: [].}
+
+proc serializeImpl[T](x: RootRef, n: Node) {.gcsafe, raises: [IOError].} =
   mixin serialize
   serialize(T(x), n)
 
@@ -30,7 +32,7 @@ proc respStream*[T: RootRef](x: T): RespStream =
   result.obj = x
   result.serializeP = serializeImpl[T]
 
-proc serialize*(x: RespStream, n: Node) =
+proc serialize*(x: RespStream, n: Node) {.gcsafe, raises: [CatchableError].} =
   x.serializeP(x.obj, n)
 
 proc to*(x: RespStream, T: type): T =
@@ -45,3 +47,5 @@ template respList*(x, body: untyped) =
   beginList(x)
   body
   endList(x)
+
+{.pop.}

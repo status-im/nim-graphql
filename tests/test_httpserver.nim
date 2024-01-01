@@ -192,7 +192,7 @@ proc testHooks() =
 
   waitFor server.closeWait()
 
-template mainModule() =
+template mainModule() {.used.} =
   proc main() =
     let conf = getConfiguration()
     if conf.testFile.len == 0:

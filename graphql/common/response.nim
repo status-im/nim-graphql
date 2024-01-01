@@ -10,6 +10,8 @@
 import
   ./ast, ./types, ./names
 
+{.push gcsafe, raises: [] .}
+
 proc respMap*(name: Name): Node =
   Node(kind: nkMap, pos: Pos(), typeName: name)
 
@@ -36,3 +38,5 @@ proc resp*(x: bool): Node =
 
 proc resp*(x: float64): Node =
   Node(kind: nkFloat, floatVal: $x, pos: Pos())
+
+{.pop.}

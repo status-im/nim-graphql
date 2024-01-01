@@ -8,13 +8,13 @@
 # those terms.
 
 import
-  std/[tables, strutils],
+  std/[tables],
   stew/[results],
   ../common/[ast, ast_helper, response, names],
   ../graphql
 
-{.push hint[XCannotRaiseY]: off.}
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+{.push gcsafe, raises: [] .}
+{.pragma: apiPragma, cdecl, gcsafe, raises: [].}
 
 proc findType(ctx: GraphqlRef, nameStr: string): Node =
   let name = ctx.names.insert(nameStr)
@@ -63,15 +63,16 @@ proc queryType(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.
   let name = params[0].val
   let sym = ctx.findType(name.stringVal)
   if sym.isNil:
-    err("'$1' not defined" % [name.stringVal])
+    err("'" & name.stringVal & "' not defined")
   elif sym.sym.kind == skDirective:
-    err("'$1' is a directive, not a type" % [name.stringVal])
+    err("'" & name.stringVal & "' is a directive, not a type")
   else:
     ok(sym)
 
 proc queryTypename(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind notin resObjValidKind:
-    return err("__typename expect one of $1 but got '$2'" % [$resObjValidKind, $parent.kind])
+    return err("__typename expect one of " &
+      $resObjValidKind & " but got '" & $parent.kind & "'")
 
   ok(resp($parent))
 

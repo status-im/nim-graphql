@@ -23,7 +23,7 @@ requires "nim >= 1.2.0",
          "chronicles",
          "https://github.com/status-im/nim-zlib",
          "unittest2",
-         "chronos"
+         "https://github.com/status-im/nim-chronos#head"
 
 proc test(args, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG

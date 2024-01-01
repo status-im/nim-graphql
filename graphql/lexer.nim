@@ -81,17 +81,22 @@ type
     conf       : LexConfInternal
     flags*     : set[LexerFlag]
 
-proc defaultLexConf*(): LexConf =
+{.push gcsafe, raises: [IOError].}
+
+proc defaultLexConf*(): LexConf {.gcsafe, raises: [].} =
   result.maxIdentChars  = 128
   result.maxDigits      = 128
   result.maxStringChars = 2048
 
-proc toInternalConf(conf: LexConf): LexConfInternal =
+proc toInternalConf(conf: LexConf): LexConfInternal {.gcsafe, raises: [].} =
   result.maxIdentChars  = LoopGuard(maxLoop: conf.maxIdentChars , desc: "max chars in ident")
   result.maxDigits      = LoopGuard(maxLoop: conf.maxDigits     , desc: "max digits in number")
   result.maxStringChars = LoopGuard(maxLoop: conf.maxStringChars, desc: "max chars in string")
 
-proc init*(T: type Lexer, stream: InputStream, names: NameCache, conf = defaultLexConf()): T =
+proc init*(T: type Lexer,
+           stream: InputStream,
+           names: NameCache,
+           conf = defaultLexConf()): T {.gcsafe, raises: [].} =
   result = Lexer(
     stream: stream,
     names: names,
@@ -106,19 +111,19 @@ template peek(s: InputStream): char =
 template read(s: InputStream): char =
   char inputs.read(s)
 
-func peekSpecial(lex: Lexer): string =
+func peekSpecial(lex: Lexer): string {.gcsafe, raises: [].} =
   "\\" & $int(lex.stream.peek)
 
-proc col*(lex: Lexer): int =
+proc col*(lex: Lexer): int {.gcsafe, raises: [].} =
   lex.stream.pos - lex.lineStart
 
-proc tokenStartCol*(lex: Lexer): int =
+proc tokenStartCol*(lex: Lexer): int {.gcsafe, raises: [].} =
   1 + lex.tokenStart - lex.lineStart
 
-func pos*(lex: Lexer): Pos =
+func pos*(lex: Lexer): Pos {.gcsafe, raises: [].} =
   Pos(line: lex.line.uint16, col: lex.tokenStartCol.uint16)
 
-proc lexerError(lex: var Lexer, errKind: LexerError, args: varargs[string, `$`]) =
+proc lexerError(lex: var Lexer, errKind: LexerError, args: varargs[string, `$`]) {.gcsafe, raises: [].} =
   lex.error = errKind
   lex.tok = tokError
   lex.tokenStart = lex.stream.pos
@@ -129,13 +134,16 @@ proc lexerError(lex: var Lexer, errKind: LexerError, args: varargs[string, `$`])
   lex.err.level = elError
   lex.err.message = $errKind
 
-  case errKind
-  of errInvalidEscape, errInvalidUnicode, errInvalidChar, errOrphanSurrogate:
-    lex.err.message = $errKind % [args[0]]
-  of errLoopLimit:
-    lex.err.message = $errKind % [args[0], args[1]]
-  else:
-    lex.err.message = $errKind
+  try:
+    case errKind
+    of errInvalidEscape, errInvalidUnicode, errInvalidChar, errOrphanSurrogate:
+      lex.err.message = $errKind % [args[0]]
+    of errLoopLimit:
+      lex.err.message = $errKind % [args[0], args[1]]
+    else:
+      lex.err.message = $errKind
+  except ValueError as exc:
+    doAssert(false, exc.msg)
 
 template safePeek(lex: Lexer, x: char): bool =
   lex.stream.readable and lex.stream.peek == x
@@ -146,7 +154,7 @@ template safePeek(lex: Lexer, x: set[char]): bool =
 template safePeekNotIn(lex: Lexer, x: set[char]): bool =
   lex.stream.readable and lex.stream.peek notin x
 
-proc skipBOM*(lex: var Lexer): bool =
+proc skipBOM*(lex: var Lexer): bool {.gcsafe, raises: [].} =
   if lex.stream.peek == char(0xFE):
     advance lex.stream
     if lex.stream.peek == char(0xFF):
@@ -158,7 +166,7 @@ proc skipBOM*(lex: var Lexer): bool =
   else:
     return true
 
-proc handleLF(lex: var Lexer) {.inline.} =
+proc handleLF(lex: var Lexer) {.gcsafe, raises: [].} =
   advance lex.stream
   lex.line += 1
   lex.lineStart = lex.stream.pos
@@ -278,7 +286,7 @@ proc scanNumber(lex: var Lexer) =
     lex.lexerError(errNoDotOrName)
     return
 
-func charTo(T: type, c: char): T {.inline.} =
+func charTo(T: type, c: char): T {.gcsafe, raises: [].} =
   case c
   of {'0'..'9'}: result = T(c) - T('0')
   of {'a'..'f'}: result = T(c) - T('a') + T(10)
@@ -560,3 +568,5 @@ proc next*(lex: var Lexer) =
   else:
     lex.lexerError(errInvalidChar, lex.peekSpecial)
     advance lex.stream
+
+{.pop.}

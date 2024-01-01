@@ -19,6 +19,8 @@ export
   common_parser.defaultParserConf,
   ast
 
+{.push gcsafe, raises: [IOError].}
+
 # forward declaration
 proc selectionSet(q: var Parser, sels: var Node)
 
@@ -171,3 +173,5 @@ proc parseDocument*(q: var Parser, doc: var QueryDocument) =
   repeatUntil(q.conf.maxDefinitions, tokEof):
     def := definition
     doc.root <- def
+
+{.pop.}

@@ -17,6 +17,8 @@ type
     cloneTree: bool
     node: Node
 
+{.push gcsafe, raises: [] .}
+
 proc serialize*(resp: NodeRespStream, n: Node) =
   if resp.cloneTree:
     resp.node = copyTree(n)
@@ -35,3 +37,5 @@ proc new*(_: type NodeRespStream, cloneTree: bool = false): NodeRespStream =
   let v = NodeRespStream()
   v.init(cloneTree)
   v
+
+{.pop.}

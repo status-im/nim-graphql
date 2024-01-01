@@ -28,6 +28,8 @@ type
     stack: seq[State]
     fldName: string
 
+{.push gcsafe, raises: [IOError] .}
+
 template top(x: seq[State]): State =
   x[^1]
 
@@ -202,11 +204,11 @@ proc write*(x: TomlRespStream, v: float64) =
   append $v
   writeEOL(x)
 
-proc writeNull*(x: TomlRespStream) =
+proc writeNull*(x: TomlRespStream) {.gcsafe, raises:[].} =
   # really, just do nothing
   discard
 
-proc field*(x: TomlRespStream, v: string) =
+proc field*(x: TomlRespStream, v: string) {.gcsafe, raises:[].} =
   x.fldName = v
 
 proc serialize*(resp: TomlRespStream, n: Node) =
@@ -240,20 +242,22 @@ proc serialize*(resp: TomlRespStream, n: Node) =
 proc write*(x: TomlRespStream, v: openArray[byte]) =
   x.stream.write(v)
 
-proc getString*(x: TomlRespStream): string =
+proc getString*(x: TomlRespStream): string {.gcsafe, raises:[].} =
   x.stream.getOutput(string)
 
-proc getBytes*(x: TomlRespStream): seq[byte] =
+proc getBytes*(x: TomlRespStream): seq[byte] {.gcsafe, raises:[].} =
   x.stream.getOutput(seq[byte])
 
-proc len*(x: TomlRespStream): int =
+proc len*(x: TomlRespStream): int {.gcsafe, raises:[].} =
   x.stream.pos()
 
-proc init*(v: TomlRespStream) =
+proc init*(v: TomlRespStream) {.gcsafe, raises:[].} =
   v.stream = memoryOutput()
   v.stack  = @[StateTop]
 
-proc new*(_: type TomlRespStream): TomlRespStream =
+proc new*(_: type TomlRespStream): TomlRespStream {.gcsafe, raises:[].} =
   let v = TomlRespStream()
   v.init()
   v
+
+{.pop.}

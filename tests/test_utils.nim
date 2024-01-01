@@ -8,7 +8,7 @@
 # those terms.
 
 import
-  std/[json, strutils],
+  std/[json],
   json_serialization,
   ../graphql
 
@@ -35,7 +35,7 @@ proc decodeResponse*(input: string): ServerResponse =
     debugEcho e.formatMsg("")
 
 {.push hint[XCannotRaiseY]: off.}
-{.pragma: apiPragma, cdecl, gcsafe, raises: [Defect, CatchableError].}
+{.pragma: apiPragma, cdecl, gcsafe, raises: [].}
 
 proc queryNameImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   ok(resp("superman"))
@@ -206,11 +206,11 @@ const droidProtos = {
   "color": colorImpl
 }
 
-proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].} =
   if node.kind == nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
   else:
-    err("cannot coerce '$1' to $2" % [$node.kind, $typeNode.sym.name])
+    err("cannot coerce '" & $node.kind & "' to " & $typeNode.sym.name)
 
 proc objectIDImpl(ud: RootRef, params: Args, parent: Node): RespResult {.apiPragma.} =
   if parent.kind == nkNull:

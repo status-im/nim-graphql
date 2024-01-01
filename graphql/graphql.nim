@@ -53,7 +53,7 @@ type
 
   InstrumentResult* = Result[void, string]
   InstrumentProc* = proc(ud: InstrumentRef, flag: InstrumentFlag,
-    params, node: Node): InstrumentResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
+    params, node: Node): InstrumentResult {.cdecl, gcsafe, raises: [].}
 
   InstrumentRef* = ref InstrumentObj
   InstrumentObj* = object of RootObj
@@ -80,10 +80,10 @@ type
   RespResult* = Result[Node, string]
 
   CoercionProc* = proc(ctx: GraphqlRef,
-    typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.}
+    typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].}
 
   ResolverProc* = proc(ud: RootRef, params: Args,
-    parent: Node): RespResult {.cdecl, gcsafe, raises: [Defect, CatchableError].}
+    parent: Node): RespResult {.cdecl, gcsafe, raises:[].}
 
   ResolverRef* = ref ResolverObj
   ResolverObj* = object
@@ -111,6 +111,8 @@ type
     path*         : Node # always a one dimension nkList
 
 const resObjValidKind* = {nkString, nkSym, nkName, nkNamedType, nkMap}
+
+{.push gcsafe, raises: [] .}
 
 template findType*(name: Name): Node =
   ctx.typeTable.getOrDefault(name)
@@ -164,31 +166,34 @@ proc nonEmptyPos(node: Node): Pos =
 
 proc fatal*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
-  ctx.errors.add ErrorDesc(
-    level: elFatal,
-    pos: node.nonEmptyPos,
-    path: copyTree(ctx.path),
-    message:
-      case err
-      of ErrNoRoot:
-        "Have more than one root operation, requires operationName"
-      of ErrOperationNotFound:
-        "Operation not found: '$1'" % [msg[0]]
-      of ErrTypeUndefined:
-        "Resolver not found: '$1'" % [msg[0]]
-      of ErrNoImpl:
-        "Implementation not found: '$1' of '$2'" % [msg[0], msg[1]]
-      of ErrValueError:
-        "Field '$1' cannot be resolved: \"$2\"" % [msg[0], msg[1]]
-      of ErrNotNullable:
-        "Field '$1' should not return null" % [msg[0]]
-      of ErrIncompatType:
-        "Field '$1' expect '$2' but got '$3'" % [msg[0], msg[1], msg[2]]
-      of ErrInstrument:
-        "Instrument Error: " & msg[0]
-      else:
-        "ASSERT: UNSPECIFIED ERR KIND: " & $err
-  )
+  try:
+    ctx.errors.add ErrorDesc(
+      level: elFatal,
+      pos: node.nonEmptyPos,
+      path: copyTree(ctx.path),
+      message:
+        case err
+        of ErrNoRoot:
+          "Have more than one root operation, requires operationName"
+        of ErrOperationNotFound:
+          "Operation not found: '$1'" % [msg[0]]
+        of ErrTypeUndefined:
+          "Resolver not found: '$1'" % [msg[0]]
+        of ErrNoImpl:
+          "Implementation not found: '$1' of '$2'" % [msg[0], msg[1]]
+        of ErrValueError:
+          "Field '$1' cannot be resolved: \"$2\"" % [msg[0], msg[1]]
+        of ErrNotNullable:
+          "Field '$1' should not return null" % [msg[0]]
+        of ErrIncompatType:
+          "Field '$1' expect '$2' but got '$3'" % [msg[0], msg[1], msg[2]]
+        of ErrInstrument:
+          "Instrument Error: " & msg[0]
+        else:
+          "ASSERT: UNSPECIFIED ERR KIND: " & $err
+    )
+  except ValueError as exc:
+    doAssert(false, exc.msg)
 
 func getArticle(x: string): string =
   const vowels = {'a','A','i','I','e','E','o','O'}
@@ -200,71 +205,74 @@ func getArticle(x: string): string =
 
 proc error*(ctx: GraphqlRef, err: GraphqlError, node: Node, msg: varargs[string, `$`]) =
   ctx.errKind = err
-  ctx.errors.add ErrorDesc(
-    pos: node.nonEmptyPos,
-    level: elError,
-    path: copyTree(ctx.path),
-    message:
-      case err
-      of ErrDuplicateName:
-        "duplicate name '$1'" % [$node]
-      of ErrDirNoRepeat:
-        "directive is non repeatable '$1'" % [$node]
-      of ErrOnlyOne:
-        "only one '$1' allowed" % [msg[0]]
-      of ErrTypeUndefined:
-        "type not defined '$1'" % [$node]
-      of ErrTypeMismatch:
-        let typ = msg[0]
-        let an = getArticle(typ)
-        "'$1' is $2 '$3', expect '$4'" % [$node, an, typ, msg[1]]
-      of ErrCyclicReference:
-        "cyclic reference detected for '$1'"  % [$node]
-      of ErrDirectiveMisLoc:
-        "directive '$1' doesn't specify '$2' location"  % [$node, msg[0]]
-      of ErrNoImpl:
-        "no '$2' '$1' implementation found" % [$node, msg[0]]
-      of ErrValueError:
-        "the value of '$1' can't be '$2'" % [$node, msg[0]]
-      of ErrNoArg:
-        "field '$1' need argument '$2'" % [$node, msg[0]]
-      of ErrArgTypeMismatch:
-        "arg '$1' of field '$2' type mismatch with '$3'" % [$node, msg[0], msg[1]]
-      of ErrIncompatType:
-        "'$1' has incompatible type with '$2'" % [$node, msg[0]]
-      of ErrNotUsed:
-        "'$1' is not used" % [$node]
-      of ErrNotPartOf:
-        "'$1' is not part of '$2'" % [$node, msg[0]]
-      of ErrFieldIsRequired:
-        "field '$1' is required in '$2', see '$3'" % [$node, msg[0], msg[1]]
-      of ErrNoRoot:
-        "no root operation '$1' available" % [msg[0]]
-      of ErrFieldArgUndefined:
-        "arg '$1' not defined in field '$2' of '$3'" % [$node, msg[0], msg[1]]
-      of ErrFieldNotinArg:
-        "field '$1' of arg '$2' should not empty" % [msg[0], $node]
-      of ErrNotNullable:
-        "$1 '$2' of '$3' should not nullable" % [msg[1], $node, msg[0]]
-      of ErrRequireSelection:
-        "field '$1' return type is '$2' requires selection set" % [$node, msg[0]]
-      of ErrDirArgUndefined:
-        "arg '$1' not defined in directive '$2'" % [$node, msg[0]]
-      of ErrMergeConflict:
-        "field '$1' have merge conflict: $2" % [$node, msg[0]]
-      of ErrScalarError:
-        "'$1' got '$2': $3" % [$node, msg[0], msg[1]]
-      of ErrEnumError:
-        "'$1' got '$2'('$3'), expect '$4'" % [$node, msg[0], msg[1], msg[2]]
-      of ErrDirNotAllowed:
-        "directive '$1' is not allowed at subscription root field" % [$node]
-      of ErrInvalidArgDeprecation:
-        "argument '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
-      of ErrInvalidFieldDeprecation:
-        "field '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
-      else:
-        "ASSERT: UNSPECIFIED ERR KIND: " & $err
-  )
+  try:
+    ctx.errors.add ErrorDesc(
+      pos: node.nonEmptyPos,
+      level: elError,
+      path: copyTree(ctx.path),
+      message:
+        case err
+        of ErrDuplicateName:
+          "duplicate name '$1'" % [$node]
+        of ErrDirNoRepeat:
+          "directive is non repeatable '$1'" % [$node]
+        of ErrOnlyOne:
+          "only one '$1' allowed" % [msg[0]]
+        of ErrTypeUndefined:
+          "type not defined '$1'" % [$node]
+        of ErrTypeMismatch:
+          let typ = msg[0]
+          let an = getArticle(typ)
+          "'$1' is $2 '$3', expect '$4'" % [$node, an, typ, msg[1]]
+        of ErrCyclicReference:
+          "cyclic reference detected for '$1'"  % [$node]
+        of ErrDirectiveMisLoc:
+          "directive '$1' doesn't specify '$2' location"  % [$node, msg[0]]
+        of ErrNoImpl:
+          "no '$2' '$1' implementation found" % [$node, msg[0]]
+        of ErrValueError:
+          "the value of '$1' can't be '$2'" % [$node, msg[0]]
+        of ErrNoArg:
+          "field '$1' need argument '$2'" % [$node, msg[0]]
+        of ErrArgTypeMismatch:
+          "arg '$1' of field '$2' type mismatch with '$3'" % [$node, msg[0], msg[1]]
+        of ErrIncompatType:
+          "'$1' has incompatible type with '$2'" % [$node, msg[0]]
+        of ErrNotUsed:
+          "'$1' is not used" % [$node]
+        of ErrNotPartOf:
+          "'$1' is not part of '$2'" % [$node, msg[0]]
+        of ErrFieldIsRequired:
+          "field '$1' is required in '$2', see '$3'" % [$node, msg[0], msg[1]]
+        of ErrNoRoot:
+          "no root operation '$1' available" % [msg[0]]
+        of ErrFieldArgUndefined:
+          "arg '$1' not defined in field '$2' of '$3'" % [$node, msg[0], msg[1]]
+        of ErrFieldNotinArg:
+          "field '$1' of arg '$2' should not empty" % [msg[0], $node]
+        of ErrNotNullable:
+          "$1 '$2' of '$3' should not nullable" % [msg[1], $node, msg[0]]
+        of ErrRequireSelection:
+          "field '$1' return type is '$2' requires selection set" % [$node, msg[0]]
+        of ErrDirArgUndefined:
+          "arg '$1' not defined in directive '$2'" % [$node, msg[0]]
+        of ErrMergeConflict:
+          "field '$1' have merge conflict: $2" % [$node, msg[0]]
+        of ErrScalarError:
+          "'$1' got '$2': $3" % [$node, msg[0], msg[1]]
+        of ErrEnumError:
+          "'$1' got '$2'('$3'), expect '$4'" % [$node, msg[0], msg[1], msg[2]]
+        of ErrDirNotAllowed:
+          "directive '$1' is not allowed at subscription root field" % [$node]
+        of ErrInvalidArgDeprecation:
+          "argument '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
+        of ErrInvalidFieldDeprecation:
+          "field '$2' of '$1' can't be deprecated: non null or no default value" % [$node, msg[0]]
+        else:
+          "ASSERT: UNSPECIFIED ERR KIND: " & $err
+    )
+  except ValueError as exc:
+    doAssert(false, exc.msg)
 
 proc getScalar*(ctx: GraphqlRef, locType: Node): CoercionProc =
   if locType.sym.scalar.isNil:
@@ -314,3 +322,5 @@ template execInstrument*(flag: InstrumentFlag, params, node: Node) =
   if res.isErr:
     ctx.fatal(ErrInstrument, node, res.error)
     return
+
+{.pop.}

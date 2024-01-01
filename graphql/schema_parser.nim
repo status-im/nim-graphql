@@ -19,6 +19,8 @@ export
   common_parser.defaultParserConf,
   ast
 
+{.push gcsafe, raises: [IOError].}
+
 proc operationKind*(q: var Parser, opKind: var Node) =
   if currToken == tokName and currName in OperationNames:
     opKind ::= name
@@ -283,3 +285,5 @@ proc parseDocument*(q: var Parser, doc: var SchemaDocument) =
   repeatUntil(q.conf.maxDefinitions, tokEof):
     def := definition
     doc.root <- def
+
+{.pop.}

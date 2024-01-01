@@ -30,6 +30,7 @@ type
     blocks: Node
     accounts: Node
 
+{.push gcsafe, raises: [] .}
 {.pragma: apiRaises, raises: [].}
 {.pragma: apiPragma, cdecl, gcsafe, apiRaises.}
 {.push hint[XDeclaredButNotUsed]: off.}
@@ -38,7 +39,8 @@ proc validateHex(x: Node, minLen = 0): NodeResult =
   if x.stringVal.len < 2:
     return err("hex is too short")
   if x.stringVal.len > 2 + minLen * 2 and minLen != 0:
-    return err("expect hex with len '$1', got '$2'" % [$(2 * minLen + 2), $x.stringVal.len])
+    return err("expect hex with len '" &
+      $(2 * minLen + 2) & "', got '" & $x.stringVal.len & "'")
   if x.stringVal.len mod 2 != 0:
     return err("hex must have even number of nibbles")
   if x.stringVal[0] != '0' or x.stringVal[1] notin {'x', 'X'}:
@@ -48,33 +50,33 @@ proc validateHex(x: Node, minLen = 0): NodeResult =
       return err("invalid chars in hex")
   ok(x)
 
-proc scalarBytes32(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc scalarBytes32(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].} =
   ## Bytes32 is a 32 byte binary string,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
-    return err("expect hex string, but got '$1'" % [$node.kind])
+    return err("expect hex string, but got '" & $node.kind & "'")
   validateHex(node, 32)
 
-proc scalarAddress(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc scalarAddress(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].} =
   ## Address is a 20 byte Ethereum address,
   ## represented as 0x-prefixed hexadecimal.
   if node.kind != nkString:
-    return err("expect hex string, but got '$1'" % [$node.kind])
+    return err("expect hex string, but got '" & $node.kind & "'")
   validateHex(node, 20)
 
-proc scalarBytes(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc scalarBytes(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].} =
   ## Bytes is an arbitrary length binary string,
   ## represented as 0x-prefixed hexadecimal.
   ## An empty byte string is represented as '0x'.
   ## Byte strings must have an even number of hexadecimal nybbles.
   if node.kind != nkString:
-    return err("expect hex string, but got '$1'" % [$node.kind])
+    return err("expect hex string, but got '" & $node.kind & "'")
   validateHex(node)
 
 proc validateInt(node: Node): NodeResult =
   for c in node.stringVal:
     if c notin Digits:
-      return err("invalid char in int: '$1'" % [$c])
+      return err("invalid char in int: '" & $c & "'")
 
   node.stringVal = "0x" & convertBase(node.stringVal, 10, 16)
   if node.stringVal.len > 66:
@@ -102,7 +104,7 @@ proc scalarBigInt(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gc
       # convert it into hex nkString node
       validateInt(node)
   else:
-    return err("expect hex/dec string or int, but got '$1'" % [$node.kind])
+    return err("expect hex/dec string or int, but got '" & $node.kind & "'")
 
 proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
   ## Long is a 64 bit unsigned integer.
@@ -111,7 +113,7 @@ proc scalarLong(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsa
     # convert it into nkString node
     ok(node)
   else:
-    err("expect int, but got '$1'" % [$node.kind])
+    err("expect int, but got '" & $node.kind & "'")
 
 proc findKey(node: Node, key: string): RespResult =
   for n in node:
@@ -644,12 +646,16 @@ proc initEthApi*(ctx: GraphqlRef) =
     let name = ctx.createName($n)
     ud.names[n] = name
 
-  let res = ctx.parseLiteralFromFile("playground" / "data" / "ConstantinopleFixTransition.json", {pfJsonCompatibility})
-  if res.isErr:
-    debugEcho res.error
-    quit(QuitFailure)
+  try:
+    let res = ctx.parseLiteralFromFile("playground" / "data" / "ConstantinopleFixTransition.json", {pfJsonCompatibility})
+    if res.isErr:
+      debugEcho res.error
+      quit(QuitFailure)
 
-  extractData(ud, res.get())
+    extractData(ud, res.get())
+  except IOError as exc:
+    debugEcho exc.msg
+    quit(QuitFailure)
 
   ctx.addResolvers(ud, ud.names[ethAccount    ], accountProcs)
   ctx.addResolvers(ud, ud.names[ethLog        ], logProcs)
@@ -659,3 +665,5 @@ proc initEthApi*(ctx: GraphqlRef) =
   ctx.addResolvers(ud, ud.names[ethSyncState  ], syncStateProcs)
   ctx.addResolvers(ud, ud.names[ethPending    ], pendingProcs)
   ctx.addResolvers(ud, ud.names[ethQuery      ], queryProcs)
+
+{.pop.}

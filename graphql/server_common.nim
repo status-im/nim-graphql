@@ -21,6 +21,8 @@ type
     operationName*: Node
     variables*: Node
 
+{.push gcsafe, raises: [IOError].}
+
 proc errorResp*(r: JsonRespStream, msg: string) =
   respMap(r):
     r.field("errors")
@@ -85,7 +87,7 @@ proc jsonOkResp*(data: openArray[byte]): string =
   okResp(resp, data)
   resp.getString()
 
-proc addVariables*(ctx: GraphqlRef, vars: Node) =
+proc addVariables*(ctx: GraphqlRef, vars: Node) {.gcsafe, raises: [].} =
   if vars.kind != nkInput:
     return
   for n in vars:
@@ -134,16 +136,16 @@ proc decodeRequest*(ctx: GraphqlRef, ro: var RequestObject, k, v: string): Parse
   of "variables":     ro.variables = res.get()
   else: discard
 
-proc toQueryNode*(data: string): Node =
+proc toQueryNode*(data: string): Node {.gcsafe, raises: [].} =
   Node(kind: nkString, stringVal: data, pos: Pos())
 
-proc init*(_: type RequestObject): RequestObject =
+proc init*(_: type RequestObject): RequestObject {.gcsafe, raises: [].} =
   let empty = Node(kind: nkEmpty, pos: Pos())
   result.query         = empty
   result.operationName = empty
   result.variables     = empty
 
-proc requestNodeToObject*(node: Node, ro: var RequestObject) =
+proc requestNodeToObject*(node: Node, ro: var RequestObject) {.gcsafe, raises: [].} =
   for n in node:
     if n.len != 2: continue
     case $n[0]
@@ -151,7 +153,7 @@ proc requestNodeToObject*(node: Node, ro: var RequestObject) =
     of "operationName": ro.operationName = n[1]
     of "variables": ro.variables = n[1]
 
-proc toString*(node: Node): string =
+proc toString*(node: Node): string {.gcsafe, raises: [].} =
   if node.isNil:
     return ""
   case node.kind
@@ -161,3 +163,5 @@ proc toString*(node: Node): string =
     return node.stringVal
   else:
     $node
+
+{.pop.}

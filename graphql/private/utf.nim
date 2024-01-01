@@ -61,6 +61,8 @@ const
     12,36,12,12,12,12,12,12,12,12,12,12
   ]
 
+{.push gcsafe, raises: [] .}
+
 proc validate*[T: byte | char](_: type Utf8, text: openArray[T]): bool =
   var state = 0
   for c in text:
@@ -331,3 +333,5 @@ proc toPair*(_: type Utf16, cp: int): Utf16Pair =
       hi: uint16((c shr Utf16Shift) + highBegin),
       lo: uint16((c and Utf16Mask) + lowBegin)
     )
+
+{.pop.}

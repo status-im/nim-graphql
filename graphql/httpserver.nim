@@ -45,10 +45,15 @@ type
 
   GraphqlHttpServerRef* = ref GraphqlHttpServer
 
+{.push gcsafe, raises: [] .}
+
 template exec(executor: untyped) =
   let res = callValidator(ctx, executor)
   if res.isErr:
     return (Http400, jsonErrorResp(res.error))
+
+proc errorResp(msg: string): string =
+  """{"errors":[{"message":""" & escapeJson(msg) & "}]}"
 
 proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
   let ctx = server.graphql
@@ -59,18 +64,21 @@ proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, st
 
   ctx.addVariables(ro.variables)
 
-  let query = toString(ro.query)
-  exec parseQuery(query)
-  let resp = JsonRespStream.new()
-  let opName = if ro.operationName.kind == nkNull:
-                 ""
-               else:
-                 toString(ro.operationName)
-  let res = ctx.executeRequest(respStream(resp), opName)
-  if res.isErr:
-    (Http400, jsonErrorResp(res.error, resp.getBytes()))
-  else:
-    (Http200, jsonOkResp(resp.getBytes()))
+  try:
+    let query = toString(ro.query)
+    exec parseQuery(query)
+    let resp = JsonRespStream.new()
+    let opName = if ro.operationName.kind == nkNull:
+                  ""
+                else:
+                  toString(ro.operationName)
+    let res = ctx.executeRequest(respStream(resp), opName)
+    if res.isErr:
+      (Http400, jsonErrorResp(res.error, resp.getBytes()))
+    else:
+      (Http200, jsonOkResp(resp.getBytes()))
+  except IOError as exc:
+    (Http400, errorResp(exc.msg))
 
 proc getContentTypes(request: HttpRequestRef): set[ContentType] =
   let conType = request.headers.getList("content-type")
@@ -174,7 +182,7 @@ proc processUIRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Fu
 
 proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
   if r.isErr():
-    return dumbResponse()
+    return defaultResponse()
 
   let request = r.get()
 
@@ -215,8 +223,12 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
     authHooks: authHooks
   )
 
-  proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
-    routingRequest(server, rf)
+  proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
+        async: (raises: [CancelledError]).} =
+    try:
+      return await routingRequest(server, rf)
+    except CatchableError:
+      return defaultResponse()
 
   let sres = HttpServerRef.new(address, processCallback, serverFlags,
                                socketFlags, serverUri, serverIdent,
@@ -253,8 +265,12 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
     authHooks: authHooks
   )
 
-  proc processCallback(rf: RequestFence): Future[HttpResponseRef] =
-    routingRequest(server, rf)
+  proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
+        async: (raises: [CancelledError]).} =
+    try:
+      return await routingRequest(server, rf)
+    except CatchableError:
+      return defaultResponse()
 
   let sres = SecureHttpServerRef.new(address, processCallback,
                                tlsPrivateKey, tlsCertificate, serverFlags,
@@ -302,3 +318,5 @@ proc closeWait*(rs: GraphqlHttpServerRef) {.async.} =
 proc join*(rs: GraphqlHttpServerRef): Future[void] =
   ## Wait until GraphQL server will not be closed.
   rs.server.join()
+
+{.pop.}

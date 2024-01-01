@@ -150,6 +150,9 @@ let starships = [
   )
 ]
 
+{.push gcsafe, raises: [] .}
+{.pragma: ccRaises, raises: [].}
+
 proc charToResp(ctx: Starwars, c: Character): Node =
   var resp = respMap(ctx.names[c.kind])
   resp["id"]   = resp(c.id)
@@ -496,15 +499,16 @@ const starshipProcs = {
   "coordinates": starshipCoordinates
 }
 
-proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc coerceEnum(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect, raises:[].} =
   case node.kind
   of nkString:
     ok(Node(kind: nkEnum, name: ctx.createName(node.stringVal), pos: node.pos))
   of nkEnum:
     ok(node)
   else:
-    err("cannot coerce '$1' to $2" % [$node.kind, $typeNode])
+    err("cannot coerce '" & $node.kind & "' to " & $typeNode)
 
+{.pop.}
 {.pop.}
 
 proc initStarWarsApi*(ctx: GraphqlRef) =

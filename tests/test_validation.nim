@@ -34,11 +34,14 @@ type
 const
   caseFolder = "tests" / "validation"
 
-proc scalarMyScalar(ctx: GraphqlRef, typeNode, node: Node): NodeResult {.cdecl, gcsafe, noSideEffect.} =
+proc scalarMyScalar(ctx: GraphqlRef,
+                    typeNode,
+                    node: Node): NodeResult
+                    {.cdecl, gcsafe, noSideEffect, raises:[].} =
   if node.kind == nkString:
     ok(node)
   else:
-    err("expect string, but got '$1'" % [$node.kind])
+    err("expect string, but got '" & $node.kind & "'")
 
 proc setupContext(): GraphqlRef =
   var ctx {.inject.} = new(GraphqlRef)
@@ -118,7 +121,7 @@ proc runConverter(ctx: GraphqlRef, savePoint: NameCounter, path, output: string)
 
   f.close()
 
-proc convertCases(output: string) =
+proc convertCases(output: string) {.used.} =
   var ctx = setupContext()
   let savePoint = ctx.getNameCounter()
   for fileName in walkDirRec(caseFolder):
@@ -187,7 +190,7 @@ proc runValidator(ctx: GraphqlRef, fileName: string, testStatusIMPL: var TestSta
     debugEcho $ctx.errors
     return
 
-proc validateSchemas() =
+proc validateSchemas() {.used.} =
   suite "validate schemas":
     var ctx = new(GraphqlRef)
     var savePoint = ctx.getNameCounter()

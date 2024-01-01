@@ -30,6 +30,8 @@ type
     fail: int
     ok: int
 
+{.push gcsafe, raises: [].}
+
 proc removeWhitespaces(x: string): string =
   const whites = {' ', '\t', '\r', '\n'}
   type
@@ -70,7 +72,7 @@ proc checkErrors(ctx: GraphqlRef, errors: openArray[ErrorDesc],
   for i in 0..<min(errors.len, unit.errors.len):
     check $errors[i] == unit.errors[i]
 
-proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
+proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) {.gcsafe, raises: [IOError].} =
   var stream = unsafeMemoryInput(unit.code)
   var parser = Parser.init(stream, ctx.names)
   parser.flags.incl pfExperimentalFragmentVariables
@@ -109,7 +111,11 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) =
   let execRes = removeWhitespaces(js.getString)
   check unitRes == execRes
 
-proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter: Counter, purgeSchema: bool) =
+proc runSuite(ctx: GraphqlRef,
+              savePoint: NameCounter,
+              fileName: string,
+              counter: Counter,
+              purgeSchema: bool) {.gcsafe, raises: [SerializationError, IOError].} =
   let parts = splitFile(fileName)
   let cases = Toml.loadFile(fileName, TestCase)
   suite parts.name:
@@ -134,7 +140,9 @@ proc runSuite(ctx: GraphqlRef, savePoint: NameCounter, fileName: string, counter
           else:
             inc counter.fail
 
-proc executeCases*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
+proc executeCases*(ctx: GraphqlRef,
+                   caseFolder: string,
+                   purgeSchema: bool) {.gcsafe, raises: [SerializationError, OSError, IOError].} =
   let savePoint = ctx.getNameCounter()
   var counter = Counter()
   var fileNames: seq[string]
@@ -148,7 +156,9 @@ proc executeCases*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
 
   debugEcho counter[]
 
-proc main*(ctx: GraphqlRef, caseFolder: string, purgeSchema: bool) =
+proc main*(ctx: GraphqlRef,
+           caseFolder: string,
+           purgeSchema: bool) {.gcsafe, raises: [SerializationError, OSError, IOError].} =
   let conf = getConfiguration()
   if conf.testFile.len == 0:
     executeCases(ctx, caseFolder, purgeSchema)
@@ -185,3 +195,5 @@ proc processArguments*() =
     if len(message) > 0:
       echo message
       quit(QuitSuccess)
+
+{.pop.}

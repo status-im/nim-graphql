@@ -201,6 +201,8 @@ const
 
   unreachableCode* = "unreachableCode"
 
+{.push gcsafe, raises: [] .}
+
 template unreachable*() =
   assert(false, unreachableCode)
 
@@ -390,3 +392,5 @@ proc setField*(sym: Symbol, name: Name, node: Node) =
     sym.interfaceFields[name] = node
   else:
     unreachable()
+    
+{.pop.}

@@ -25,13 +25,18 @@ type
     message*: string
     path*: Node
 
+{.push gcsafe, raises: [] .}
+
 proc `$`*(x: ErrorDesc): string =
-  if x.path.isNil:
-    "[$1, $2]: $3: $4" % [$x.pos.line,
-      $x.pos.col, $x.level, x.message]
-  else:
-    "[$1, $2]: $3: $4: $5" % [$x.pos.line,
-      $x.pos.col, $x.level, x.message, $x.path.sons]
+  try:
+    if x.path.isNil:
+      return "[$1, $2]: $3: $4" % [$x.pos.line,
+        $x.pos.col, $x.level, x.message]
+    else:
+      return "[$1, $2]: $3: $4: $5" % [$x.pos.line,
+        $x.pos.col, $x.level, x.message, $x.path.sons]
+  except ValueError as exc:
+    doAssert(false, exc.msg)
 
 proc fatalError*(msg: string): ErrorDesc =
   ErrorDesc(
@@ -39,3 +44,12 @@ proc fatalError*(msg: string): ErrorDesc =
     pos: Pos(),
     message: msg
   )
+
+proc errorError*(msg: string): ErrorDesc =
+  ErrorDesc(
+    level: elError,
+    pos: Pos(),
+    message: msg
+  )
+
+{.pop.}

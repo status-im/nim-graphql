@@ -26,7 +26,6 @@ proc loadSchema(ctx: GraphqlRef, schema: config.Schema): GraphqlResult =
     ctx.parseSchemaFromFile("tests" / "schemas" / "star_wars_schema.ql", conf = conf)
 
 proc main() =
-  var message: string
   ## Processing command line arguments
   let r = processArguments()
 

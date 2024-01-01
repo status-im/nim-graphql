@@ -25,6 +25,8 @@ type
     unit*: string
     convertPath*: string
 
+{.push gcsafe, raises: [].}
+
 var testConfig {.threadvar.}: Configuration
 
 proc initConfiguration(): Configuration =
@@ -56,3 +58,5 @@ proc processArguments*(msg: var string): ConfigStatus =
         break
     of cmdEnd:
       doAssert(false)
+
+{.pop.}

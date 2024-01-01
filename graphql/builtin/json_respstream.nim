@@ -28,6 +28,8 @@ type
     doubleEscape: bool
     escapeUnicode: bool
 
+{.push gcsafe, raises: [IOError] .}
+
 template top(x: seq[State]): State =
   x[^1]
 
@@ -146,7 +148,7 @@ proc writeNull*(x: JsonRespStream) =
   writeSeparator(x)
   append "null"
 
-proc field*(x: JsonRespStream, v: string) =
+proc field*(x: JsonRespStream, v: string){.gcsafe, raises: [IOError].} =
   let top = x.stack.top
   if x.doubleEscape:
     case top
@@ -210,26 +212,28 @@ proc serialize*(resp: JsonRespStream, n: Node) =
 proc write*(x: JsonRespStream, v: openArray[byte]) =
   x.stream.write(v)
 
-proc getString*(x: JsonRespStream): string =
+proc getString*(x: JsonRespStream): string {.gcsafe, raises:[].} =
   x.stream.getOutput(string)
 
-proc getBytes*(x: JsonRespStream): seq[byte] =
+proc getBytes*(x: JsonRespStream): seq[byte] {.gcsafe, raises:[].} =
   x.stream.getOutput(seq[byte])
 
-proc len*(x: JsonRespStream): int =
+proc len*(x: JsonRespStream): int {.gcsafe, raises:[].} =
   x.stream.pos()
 
 proc init*(v: JsonRespStream,
            doubleEscape: bool = false,
-           escapeUnicode: bool = false) =
+           escapeUnicode: bool = false) {.gcsafe, raises:[].} =
   v.stream = memoryOutput()
-  v.stack  = @[StateTop]
+  v.stack = @[StateTop]
   v.doubleEscape = doubleEscape
   v.escapeUnicode = escapeUnicode
 
 proc new*(_: type JsonRespStream,
           doubleEscape: bool = false,
-          escapeUnicode: bool = false): JsonRespStream =
+          escapeUnicode: bool = false): JsonRespStream {.gcsafe, raises: [].} =
   let v = JsonRespStream()
   v.init(doubleEscape, escapeUnicode)
   v
+
+{.pop.}

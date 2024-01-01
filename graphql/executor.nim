@@ -8,10 +8,12 @@
 # those terms.
 
 import
-  std/[tables, strutils],
+  std/[tables],
   stew/[results],
-  ./common/[names, ast, ast_helper, response, respstream],
+  ./common/[names, ast, ast_helper, response, respstream, errors],
   ./graphql, ./validator
+
+{.push gcsafe, raises: [] .}
 
 template `@=`(dest: untyped, validator: untyped) =
   let dest {.inject.} = callValidator(ctx, validator)
@@ -38,7 +40,7 @@ proc coerceScalar(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
 proc coerceEnum(ctx: GraphqlRef, fieldName, fieldType, resval: Node): Node =
   if resval.kind != nkString:
     ctx.error(ErrScalarError, fieldName, resval,
-              "expect '$1' got '$2'" % [$fieldType, $resval.kind])
+              "expect '" & $fieldType & "' got '" & $resval.kind & "'")
     return respNull()
   let name = ctx.names.insert(resval.stringVal)
   if fieldType.sym.enumVals.hasKey(name):
@@ -262,9 +264,15 @@ proc executeRequest*(ctx: GraphqlRef, resp: RespStream,
   {.gcsafe.}:
     var res = respNull()
     ctx.executeRequestImpl(res, opName)
-    resp.serialize(res)
+
+    try:
+      resp.serialize(res)
+    except CatchableError as exc:
+      return err(@[errorError(exc.msg)])
 
   if ctx.errKind == ErrNone:
     ok()
   else:
     err(ctx.errors)
+
+{.pop.}

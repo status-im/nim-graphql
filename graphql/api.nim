@@ -23,6 +23,8 @@ export
 const
   builtinSchema = staticRead("builtin/schema.ql")
 
+{.push gcsafe, raises: [].}
+
 proc registerBuiltinScalars(ctx: GraphqlRef)
 proc loadBuiltinSchema(ctx: GraphqlRef)
 proc registerInstrospection(ctx: GraphqlRef)
@@ -82,7 +84,7 @@ proc addVar*(ctx: GraphqlRef, name: string) =
   let node = Node(kind: nkNull, pos: Pos())
   ctx.varTable[name] = node
 
-proc parseVariable(q: var Parser): Node =
+proc parseVariable(q: var Parser): Node {.gcsafe, raises: [IOError].} =
   nextToken
   if currToken == tokEof:
     return
@@ -90,13 +92,16 @@ proc parseVariable(q: var Parser): Node =
   q.valueLiteral(isConst = true, result)
 
 proc parseVariable(ctx: GraphqlRef, name: string, input: InputStream): GraphqlResult =
-  var parser = Parser.init(input, ctx.names)
-  let node = parser.parseVariable()
-  if parser.error != errNone:
-    return err(@[parser.err])
-  let varname = ctx.names.insert(name)
-  ctx.varTable[varname] = node
-  ok()
+  try:
+    var parser = Parser.init(input, ctx.names)
+    let node = parser.parseVariable()
+    if parser.error != errNone:
+      return err(@[parser.err])
+    let varname = ctx.names.insert(name)
+    ctx.varTable[varname] = node
+    ok()
+  except IOError as exc:
+    err(@[errorError(exc.msg)])
 
 proc parseVar*(ctx: GraphqlRef, name: string,
                value: string): GraphqlResult {.gcsafe.} =
@@ -110,29 +115,31 @@ proc parseVar*(ctx: GraphqlRef, name: string,
     var stream = unsafeMemoryInput(value)
     ctx.parseVariable(name, stream)
 
-proc parseVars(ctx: GraphqlRef, input: InputStream): GraphqlResult  =
-  var parser = Parser.init(input, ctx.names)
-  parser.lex.next()
-  if parser.lex.tok == tokEof:
-    return ok()
+proc parseVars(ctx: GraphqlRef, input: InputStream): GraphqlResult {.gcsafe, raises: [].} =
+  try:
+    var parser = Parser.init(input, ctx.names)
+    parser.lex.next()
+    if parser.lex.tok == tokEof:
+      return ok()
 
-  var values: Node
-  parser.rgReset(rgValueLiteral) # recursion guard
-  parser.valueLiteral(isConst = true, values)
-  if parser.error != errNone:
-    return err(@[parser.err])
+    var values: Node
+    parser.rgReset(rgValueLiteral) # recursion guard
+    parser.valueLiteral(isConst = true, values)
+    if parser.error != errNone:
+      return err(@[parser.err])
 
-  for n in values:
-    ctx.varTable[n[0].name] = n[1]
+    for n in values:
+      ctx.varTable[n[0].name] = n[1]
+    ok()
+  except IOError as exc:
+    err(@[errorError(exc.msg)])
 
-  ok()
-
-proc parseVars*(ctx: GraphqlRef, input: string): GraphqlResult  {.gcsafe.} =
+proc parseVars*(ctx: GraphqlRef, input: string): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
     ctx.parseVars(stream)
 
-proc parseVars*(ctx: GraphqlRef, input: openArray[byte]): GraphqlResult  {.gcsafe.} =
+proc parseVars*(ctx: GraphqlRef, input: openArray[byte]): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
     ctx.parseVars(stream)
@@ -169,16 +176,19 @@ proc markAsStored(ctx: GraphqlRef, root: Node) =
 
 template validation(ctx: GraphqlRef, parser: Parser,
                     stream: InputStream, doc, store: untyped): untyped =
-  parser.parseDocument(doc)
-  close stream
-  if parser.error != errNone:
-    return err(@[parser.err])
-  ctx.validate(doc.root)
-  if store:
-    ctx.markAsStored(doc.root)
-  if ctx.errKind != ErrNone:
-    return err(ctx.errors)
-  ok()
+  try:
+    parser.parseDocument(doc)
+    close stream
+    if parser.error != errNone:
+      return err(@[parser.err])
+    ctx.validate(doc.root)
+    if store:
+      ctx.markAsStored(doc.root)
+    if ctx.errKind != ErrNone:
+      return err(ctx.errors)
+    ok()
+  except IOError as exc:
+    err(@[errorError(exc.msg)])
 
 template parseSchemaImpl(schema, store, conf: untyped): untyped =
   var stream = unsafeMemoryInput(schema)
@@ -187,17 +197,17 @@ template parseSchemaImpl(schema, store, conf: untyped): untyped =
   ctx.validation(parser, stream, doc, store)
 
 proc parseSchema*(ctx: GraphqlRef, schema: string, store = false,
-                  conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                  conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     parseSchemaImpl(schema, store, conf)
 
 proc parseSchema*(ctx: GraphqlRef, schema: openArray[byte], store = false,
-                  conf = defaultParserConf()): GraphqlResult =
+                  conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     parseSchemaImpl(schema, store, conf)
 
 proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string, store = false,
-                          conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                          conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     try:
       var stream = memFileInput(fileName)
@@ -208,21 +218,24 @@ proc parseSchemaFromFile*(ctx: GraphqlRef, fileName: string, store = false,
       err(@[fatalError("parseSchemaFromFile: " & e.msg)])
 
 proc parseSchema(ctx: GraphqlRef, stream: InputStream,
-                 root: var Node, conf: ParserConf): GraphqlResult =
-  var parser = Parser.init(stream, ctx.names, conf)
-  var doc: SchemaDocument
-  parser.parseDocument(doc)
-  close stream
-  if parser.error != errNone:
-    return err(@[parser.err])
-  if root.isNil: root = doc.root
-  else: root.sons.add doc.root.sons
-  ok()
+                 root: var Node, conf: ParserConf): GraphqlResult {.gcsafe, raises: [].} =
+  try:
+    var parser = Parser.init(stream, ctx.names, conf)
+    var doc: SchemaDocument
+    parser.parseDocument(doc)
+    close stream
+    if parser.error != errNone:
+      return err(@[parser.err])
+    if root.isNil: root = doc.root
+    else: root.sons.add doc.root.sons
+    ok()
+  except IOError as exc:
+    err(@[errorError(exc.msg)])
 
 proc parseSchemas*[T: string | seq[byte]](ctx: GraphqlRef,
                   files: openArray[string],
                   schemas: openArray[T], store = false,
-                  conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                  conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     var root: Node
     try:
@@ -254,17 +267,17 @@ template parseQueryImpl(schema, store, conf: untyped): untyped =
   ctx.validation(parser, stream, doc, store)
 
 proc parseQuery*(ctx: GraphqlRef, query: string, store = false,
-                 conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                 conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     parseQueryImpl(query, store, conf)
 
 proc parseQuery*(ctx: GraphqlRef, query: openArray[byte], store = false,
-                 conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                 conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     parseQueryImpl(query, store, conf)
 
 proc parseQueryFromFile*(ctx: GraphqlRef, fileName: string, store = false,
-                         conf = defaultParserConf()): GraphqlResult {.gcsafe.} =
+                         conf = defaultParserConf()): GraphqlResult {.gcsafe, raises: [].} =
   {.gcsafe.}:
     try:
       var stream = memFileInput(fileName)
@@ -345,3 +358,5 @@ proc registerInstrospection(ctx: GraphqlRef) =
   ctx.addResolvers(ctx, "__InputValue", inputValueProtos)
   ctx.addResolvers(ctx, "__EnumValue", enumValueProtos)
   ctx.addResolvers(ctx, "__Directive", directiveProtos)
+
+{.pop.}

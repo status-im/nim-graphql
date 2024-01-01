@@ -16,6 +16,8 @@ import
 const
   introsKeywords = {introsSchema, introsType, introsTypeName}
 
+{.push gcsafe, raises: [] .}
+
 proc `$$`(node: Node): string =
   case node.kind
   of nkNonNullType:
@@ -1510,3 +1512,5 @@ proc getOperation*(ctx: GraphqlRef, opName: string): Node =
 
   execInstrument(iExecBegin, ctx.emptyNode, op)
   op
+
+{.pop.}

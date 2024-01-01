@@ -47,6 +47,8 @@ type
 const
   GraphQLPath* = "/graphql"
 
+{.push gcsafe, raises: [].}
+
 proc createSession(secure: bool,
                    maxRedirections = HttpMaxRedirections,
                    connectTimeout = HttpConnectTimeout,
@@ -204,29 +206,31 @@ proc addEnumVar*(ctx: GraphqlHttpClientRef, name: string, val: string) =
     value: Node(kind: nkEnum, pos: Pos(), name: ctx.names.insert(val))
   )
 
-proc parseVars(ctx: GraphqlHttpClientRef, input: InputStream): ParseResult  =
-  var parser = Parser.init(input, ctx.names)
-  parser.lex.next()
-  if parser.lex.tok == tokEof:
-    return ok()
+proc parseVars(ctx: GraphqlHttpClientRef, input: InputStream): ParseResult =
+  try:
+    var parser = Parser.init(input, ctx.names)
+    parser.lex.next()
+    if parser.lex.tok == tokEof:
+      return ok()
 
-  var values: Node
-  parser.rgReset(rgValueLiteral) # recursion guard
-  parser.valueLiteral(isConst = true, values)
-  if parser.error != errNone:
-    return err(parser.err)
+    var values: Node
+    parser.rgReset(rgValueLiteral) # recursion guard
+    parser.valueLiteral(isConst = true, values)
+    if parser.error != errNone:
+      return err(parser.err)
 
-  for n in values:
-    ctx.varTable.add VarPair(name: $n[0].name, value: n[1])
+    for n in values:
+      ctx.varTable.add VarPair(name: $n[0].name, value: n[1])
+    ok()
+  except IOError as exc:
+    err(errorError(exc.msg))
 
-  ok()
-
-proc parseVars*(ctx: GraphqlHttpClientRef, input: string): ParseResult  {.gcsafe.} =
+proc parseVars*(ctx: GraphqlHttpClientRef, input: string): ParseResult {.gcsafe.} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
     ctx.parseVars(stream)
 
-proc parseVars*(ctx: GraphqlHttpClientRef, input: openArray[byte]): ParseResult  {.gcsafe.} =
+proc parseVars*(ctx: GraphqlHttpClientRef, input: openArray[byte]): ParseResult {.gcsafe.} =
   {.gcsafe.}:
     var stream = unsafeMemoryInput(input)
     ctx.parseVars(stream)
@@ -298,3 +302,5 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string,
 proc closeWait*(ctx: GraphqlHttpClientRef) {.async.} =
   if ctx.session.isNil.not:
     await ctx.session.closeWait()
+
+{.pop.}

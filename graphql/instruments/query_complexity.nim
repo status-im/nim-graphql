@@ -19,6 +19,8 @@ type
     maxComplexity: int
     calculator: ComplexityCalculator
 
+{.push gcsafe, raises: [] .}
+
 proc traverse(qc: QueryComplexity, fieldSet: FieldSet): int =
   for field in fieldSet:
     inc(result, qc.calculator(qc, field))
@@ -46,3 +48,5 @@ proc new*(_: type QueryComplexity, calc: ComplexityCalculator,
   var qc = QueryComplexity()
   qc.init(calc, maxComplexity)
   qc
+
+{.pop.}

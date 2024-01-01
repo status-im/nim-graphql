@@ -94,6 +94,8 @@ type
 
 const MaxKeyword = Keyword.high.int
 
+{.push gcsafe, raises: [] .}
+
 proc insert*(nc: NameCache, name: string): Name
 
 proc newNameCache*(): NameCache =
@@ -214,3 +216,5 @@ func toKeyword*(x: Name): Keyword =
 
 proc `$`*(x: Name): string =
   if x.isNil: ":nil" else: x.s
+
+{.pop.}
