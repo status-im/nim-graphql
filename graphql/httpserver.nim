@@ -27,7 +27,7 @@ type
   # - HttpResponse: could not authenticate, stop execution
   #   and return the response
   AuthHook* = proc(request: HttpRequestRef): Future[HttpResponseRef]
-                  {.gcsafe, raises: [Defect, CatchableError].}
+                  {.gcsafe, raises: [CatchableError].}
 
   GraphqlHttpServerState* {.pure.} = enum
     Closed
@@ -36,11 +36,16 @@ type
 
   GraphqlHttpResult*[T] = Result[T, string]
 
-  GraphqlHttpServer* = object of RootObj
-    server*: HttpServerRef
+  GraphqlHttpHandler* = object of RootObj
     graphql*: GraphqlRef
     savePoint: NameCounter
     defRespHeader: HttpTable
+
+  GraphqlHttpHandlerRef* = ref GraphqlHttpHandler
+
+  GraphqlHttpServer* = object of RootObj
+    server*: HttpServerRef
+    handler*: GraphqlHttpHandlerRef
     authHooks: seq[AuthHook]
 
   GraphqlHttpServerRef* = ref GraphqlHttpServer
@@ -55,7 +60,7 @@ template exec(executor: untyped) =
 proc errorResp(msg: string): string =
   """{"errors":[{"message":""" & escapeJson(msg) & "}]}"
 
-proc execRequest(server: GraphqlHttpServerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
+proc execRequest(server: GraphqlHttpHandlerRef, ro: RequestObject): (HttpCode, string) {.gcsafe.} =
   let ctx = server.graphql
 
   # clean up previous garbage before new execution
@@ -121,7 +126,7 @@ proc sendResponse(res: string, status: HttpCode,
   await response.finish()
   return response
 
-proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+proc processGraphqlRequest(server: GraphqlHttpHandlerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
   let ctx = server.graphql
   let contentTypes = request.getContentTypes()
 
@@ -168,7 +173,7 @@ proc processGraphqlRequest(server: GraphqlHttpServerRef, request: HttpRequestRef
 
   return await sendResponse(res, status, acceptEncoding, request)
 
-proc processUIRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+proc processUIRequest(request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
   if request.meth != MethodGet:
     let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
     let header = HttpTable.init([
@@ -179,6 +184,15 @@ proc processUIRequest(server: GraphqlHttpServerRef, request: HttpRequestRef): Fu
 
   let header = HttpTable.init([("Content-Type", "text/html")])
   return await request.respond(Http200, graphiql_html, header)
+
+proc serveHTTP*(server: GraphqlHttpHandlerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+  case request.uri.path
+  of "/graphql":
+    return await processGraphqlRequest(server, request)
+  of "/graphql/ui":
+    return await processUIRequest(request)
+  else:
+    return nil
 
 proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
   if r.isErr():
@@ -193,16 +207,14 @@ proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpR
     if not res.isNil:
       return res
 
-  case request.uri.path
-  of "/graphql":
-    return await processGraphqlRequest(server, request)
-  of "/graphql/ui":
-    return await processUIRequest(server, request)
-  else:
+  let res = await server.handler.serveHTTP(request)
+  if res.isNil:
     let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
-    return await request.respond(Http404, error, server.defRespHeader)
+    return await request.respond(Http404, error, server.handler.defRespHeader)
+  else:
+    return res
 
-proc new*(t: typedesc[GraphqlHttpServerRef],
+proc new*(_: typedesc[GraphqlHttpServerRef],
           graphql: GraphqlRef,
           address: TransportAddress,
           serverIdent: string = "",
@@ -216,11 +228,16 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
           maxHeadersSize: int = 8192,
           maxRequestBodySize: int = 1_048_576,
           authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
-  var server = GraphqlHttpServerRef(
+
+  let handler = GraphqlHttpHandlerRef(
     graphql: graphql,
     savePoint: graphql.getNameCounter,
     defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
-    authHooks: authHooks
+  )
+
+  let server = GraphqlHttpServerRef(
+    handler: handler,
+    authHooks: authHooks,
   )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
@@ -241,7 +258,7 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
   else:
     err("Could not create HTTP server instance: " & sres.error())
 
-proc new*(t: typedesc[GraphqlHttpServerRef],
+proc new*(_: typedesc[GraphqlHttpServerRef],
           graphql: GraphqlRef,
           address: TransportAddress,
           tlsPrivateKey: TLSPrivateKey,
@@ -258,11 +275,16 @@ proc new*(t: typedesc[GraphqlHttpServerRef],
           maxHeadersSize: int = 8192,
           maxRequestBodySize: int = 1_048_576,
           authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
-  var server = GraphqlHttpServerRef(
+
+  let handler = GraphqlHttpHandlerRef(
     graphql: graphql,
     savePoint: graphql.getNameCounter,
     defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
-    authHooks: authHooks
+  )
+
+  let server = GraphqlHttpServerRef(
+    handler: handler,
+    authHooks: authHooks,
   )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
