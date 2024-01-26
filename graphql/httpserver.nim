@@ -214,6 +214,14 @@ proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpR
   else:
     return res
 
+func new*(_: type GraphqlHttpHandlerRef,
+          graphql: GraphqlRef): GraphqlHttpHandlerRef =
+  GraphqlHttpHandlerRef(
+    graphql: graphql,
+    savePoint: graphql.getNameCounter,
+    defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
+  )
+
 proc new*(_: typedesc[GraphqlHttpServerRef],
           graphql: GraphqlRef,
           address: TransportAddress,
@@ -229,16 +237,12 @@ proc new*(_: typedesc[GraphqlHttpServerRef],
           maxRequestBodySize: int = 1_048_576,
           authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
 
-  let handler = GraphqlHttpHandlerRef(
-    graphql: graphql,
-    savePoint: graphql.getNameCounter,
-    defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
-  )
-
-  let server = GraphqlHttpServerRef(
-    handler: handler,
-    authHooks: authHooks,
-  )
+  let
+    handler = GraphqlHttpHandlerRef.new(graphql)
+    server = GraphqlHttpServerRef(
+      handler: handler,
+      authHooks: authHooks,
+    )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
         async: (raises: [CancelledError]).} =
@@ -276,16 +280,12 @@ proc new*(_: typedesc[GraphqlHttpServerRef],
           maxRequestBodySize: int = 1_048_576,
           authHooks: seq[AuthHook] = @[]): GraphqlHttpResult[GraphqlHttpServerRef] =
 
-  let handler = GraphqlHttpHandlerRef(
-    graphql: graphql,
-    savePoint: graphql.getNameCounter,
-    defRespHeader: HttpTable.init([("Content-Type", "application/json")]),
-  )
-
-  let server = GraphqlHttpServerRef(
-    handler: handler,
-    authHooks: authHooks,
-  )
+  let
+    handler = GraphqlHttpHandlerRef.new(graphql)
+    server = GraphqlHttpServerRef(
+      handler: handler,
+      authHooks: authHooks,
+    )
 
   proc processCallback(rf: RequestFence): Future[HttpResponseRef] {.
         async: (raises: [CancelledError]).} =
