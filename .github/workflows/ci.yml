@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.builder }}
     steps:
       - name: Checkout nim-graphql
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: nim-graphql
           submodules: false
@@ -67,7 +67,7 @@ jobs:
       - name: Restore llvm-mingw (Windows) from cache
         if: runner.os == 'Windows'
         id: windows-mingw-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: external/mingw-${{ matrix.target.cpu }}
           key: 'mingw-llvm-17-${{ matrix.target.cpu }}'
@@ -93,7 +93,7 @@ jobs:
       - name: Restore Nim DLLs dependencies (Windows) from cache
         if: runner.os == 'Windows'
         id: windows-dlls-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: external/dlls-${{ matrix.target.cpu }}
           key: 'dlls-${{ matrix.target.cpu }}'
@@ -125,7 +125,7 @@ jobs:
 
       - name: Restore prebuilt Nim from cache
         id: nim-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: NimBinaries
           key: '${{ matrix.test_lang }}-${{ matrix.target.os }}-${{ matrix.target.cpu }}-${{ steps.versions.outputs.nimbus_build_system }}'
