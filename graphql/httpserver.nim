@@ -27,7 +27,7 @@ type
   # - HttpResponse: could not authenticate, stop execution
   #   and return the response
   AuthHook* = proc(request: HttpRequestRef): Future[HttpResponseRef]
-                  {.gcsafe, raises: [CatchableError].}
+                  {.gcsafe, async: (raises: [CatchableError]).}
 
   GraphqlHttpServerState* {.pure.} = enum
     Closed
@@ -95,97 +95,116 @@ proc getContentTypes(request: HttpRequestRef): set[ContentType] =
 
 proc sendResponse(res: string, status: HttpCode,
                   acceptEncoding: set[ContentEncodingFlags],
-                  request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+                  request: HttpRequestRef): Future[HttpResponseRef] {.
+                    gcsafe, async: (raises: [CancelledError]).} =
 
   const chunkSize = 1024 * 4
 
-  if res.len <= chunkSize:
-    # don't split it into chunks if it's a small content
-    var header = HttpTable.init([("Content-Type", "application/json")])
+  try:
+    if res.len <= chunkSize:
+      # don't split it into chunks if it's a small content
+      var header = HttpTable.init([("Content-Type", "application/json")])
+      if ContentEncodingFlags.Gzip in acceptEncoding:
+        header.add("Content-Encoding", "gzip")
+      return await request.respond(status, res, header)
+
+    # chunked transfer
+    let response = request.getResponse()
+    response.status = status
+    response.addHeader("Content-Type", "application/json")
     if ContentEncodingFlags.Gzip in acceptEncoding:
-      header.add("Content-Encoding", "gzip")
-    return await request.respond(status, res, header)
+      response.addHeader("Content-Encoding", "gzip")
 
-  # chunked transfer
-  let response = request.getResponse()
-  response.status = status
-  response.addHeader("Content-Type", "application/json")
-  if ContentEncodingFlags.Gzip in acceptEncoding:
-    response.addHeader("Content-Encoding", "gzip")
+    await response.prepare()
 
-  await response.prepare()
+    let maxLen = res.len
+    var len = res.len
+    while len > chunkSize:
+      await response.sendChunk(res[maxLen - len].unsafeAddr, chunkSize)
+      len -= chunkSize
 
-  let maxLen = res.len
-  var len = res.len
-  while len > chunkSize:
-    await response.sendChunk(res[maxLen - len].unsafeAddr, chunkSize)
-    len -= chunkSize
+    if len > 0:
+      await response.sendChunk(res[maxLen - len].unsafeAddr, len)
+    await response.finish()
+    return response
+  except CatchableError as exc:
+    return defaultResponse(exc)
 
-  if len > 0:
-    await response.sendChunk(res[maxLen - len].unsafeAddr, len)
-  await response.finish()
-  return response
-
-proc processGraphqlRequest(server: GraphqlHttpHandlerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+proc processGraphqlRequest(server: GraphqlHttpHandlerRef,
+                           request: HttpRequestRef):
+                              Future[HttpResponseRef] {.
+                               gcsafe, async: (raises: []).} =
   let ctx = server.graphql
   let contentTypes = request.getContentTypes()
 
   var ro = RequestObject.init()
-  for k, v in request.query.stringItems():
-    let res = ctx.decodeRequest(ro, k, v)
-    if res.isErr:
-      let error = jsonErrorResp(res.error)
-      return await request.respond(Http400, error, server.defRespHeader)
 
-  if request.hasBody:
-    let body = await request.getBody()
-    if ctGraphQl in contentTypes:
-      ro.query = toQueryNode(cast[string](body))
-    else:
-      let res = ctx.parseLiteral(body)
+  try:
+    for k, v in request.query.stringItems():
+      let res = ctx.decodeRequest(ro, k, v)
       if res.isErr:
         let error = jsonErrorResp(res.error)
         return await request.respond(Http400, error, server.defRespHeader)
-      requestNodeToObject(res.get(), ro)
 
-  let (status, res) = server.execRequest(ro)
+    if request.hasBody:
+      let body = await request.getBody()
+      if ctGraphQl in contentTypes:
+        ro.query = toQueryNode(cast[string](body))
+      else:
+        let res = ctx.parseLiteral(body)
+        if res.isErr:
+          let error = jsonErrorResp(res.error)
+          return await request.respond(Http400, error, server.defRespHeader)
+        requestNodeToObject(res.get(), ro)
 
-  if request.version == HttpVersion10:
-    return await request.respond(status, res, server.defRespHeader)
+    let (status, res) = server.execRequest(ro)
 
-  let acceptEncoding =
-    block:
-      let res = getContentEncoding(
-                                   request.headers.getList("accept-encoding"))
-      if res.isErr():
-        let error = jsonErrorResp("Incorrect Accept-Encoding value")
+    if request.version == HttpVersion10:
+      return await request.respond(status, res, server.defRespHeader)
+
+    let acceptEncoding =
+      block:
+        let res = getContentEncoding(
+                                    request.headers.getList("accept-encoding"))
+        if res.isErr():
+          let error = jsonErrorResp("Incorrect Accept-Encoding value")
+          return await request.respond(Http400, error, server.defRespHeader)
+        else:
+          res.get()
+
+    if ContentEncodingFlags.Gzip in acceptEncoding:
+      let res = string.gzip(res)
+      if res.isErr:
+        let error = jsonErrorResp("compression error")
         return await request.respond(Http400, error, server.defRespHeader)
       else:
-        res.get()
+        return await sendResponse(res.get(), status, acceptEncoding, request)
 
-  if ContentEncodingFlags.Gzip in acceptEncoding:
-    let res = string.gzip(res)
-    if res.isErr:
-      let error = jsonErrorResp("compression error")
-      return await request.respond(Http400, error, server.defRespHeader)
-    else:
-      return await sendResponse(res.get(), status, acceptEncoding, request)
+    return await sendResponse(res, status, acceptEncoding, request)
+  except CatchableError as exc:
+    return defaultResponse(exc)
 
-  return await sendResponse(res, status, acceptEncoding, request)
+proc processUIRequest(request: HttpRequestRef):
+                        Future[HttpResponseRef] {.
+                          gcsafe, async: (raises: []).} =
+  try:
+    if request.meth != MethodGet:
+      let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
+      let header = HttpTable.init([
+        ("Content-Type", "application/json; charset=utf-8"),
+        ("X-Content-Type-Options", "nosniff")
+      ])
+      return await request.respond(Http405, error, header)
 
-proc processUIRequest(request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
-  if request.meth != MethodGet:
-    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
-    let header = HttpTable.init([
-      ("Content-Type", "application/json; charset=utf-8"),
-      ("X-Content-Type-Options", "nosniff")
-    ])
-    return await request.respond(Http405, error, header)
+    let header = HttpTable.init([("Content-Type", "text/html")])
+    return await request.respond(Http200, graphiql_html, header)
+  except CatchableError as exc:
+    return defaultResponse(exc)
 
-  let header = HttpTable.init([("Content-Type", "text/html")])
-  return await request.respond(Http200, graphiql_html, header)
-
-proc serveHTTP*(server: GraphqlHttpHandlerRef, request: HttpRequestRef): Future[HttpResponseRef] {.gcsafe, async.} =
+proc serveHTTP*(server: GraphqlHttpHandlerRef,
+                request: HttpRequestRef):
+                  Future[HttpResponseRef] {.
+                    gcsafe, async: (raises: []).} =
   case request.uri.path
   of "/graphql":
     return await processGraphqlRequest(server, request)
@@ -194,25 +213,30 @@ proc serveHTTP*(server: GraphqlHttpHandlerRef, request: HttpRequestRef): Future[
   else:
     return nil
 
-proc routingRequest(server: GraphqlHttpServerRef, r: RequestFence): Future[HttpResponseRef] {.gcsafe, async.} =
+proc routingRequest(server: GraphqlHttpServerRef,
+                    r: RequestFence): Future[HttpResponseRef] {.
+                      gcsafe, async: (raises: []).} =
   if r.isErr():
     return defaultResponse()
 
   let request = r.get()
 
-  # if hook result is not nil,
-  # it means we should return immediately
-  for hook in server.authHooks:
-    let res = await hook(request)
-    if not res.isNil:
-      return res
+  try:
+    # if hook result is not nil,
+    # it means we should return immediately
+    for hook in server.authHooks:
+      let res = await hook(request)
+      if not res.isNil:
+        return res
 
-  let res = await server.handler.serveHTTP(request)
-  if res.isNil:
-    let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
-    return await request.respond(Http404, error, server.handler.defRespHeader)
-  else:
-    return res
+    let res = await server.handler.serveHTTP(request)
+    if res.isNil:
+      let error = jsonErrorResp("path '$1' not found" % [request.uri.path])
+      return await request.respond(Http404, error, server.handler.defRespHeader)
+    else:
+      return res
+  except CatchableError as exc:
+    return defaultResponse(exc)
 
 func new*(_: type GraphqlHttpHandlerRef,
           graphql: GraphqlRef): GraphqlHttpHandlerRef =
