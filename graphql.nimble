@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2024 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -16,7 +16,7 @@ description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
 skipDirs      = @["tests", "resources", "fuzzer", "docs", "playground"]
 
-requires "nim >= 1.2.0",
+requires "nim >= 1.6.0",
          "faststreams",
          "stew",
          "json_serialization",
@@ -39,6 +39,8 @@ proc test(args, path: string, shouldRun = true) =
             " -d:unittest2DisableParamFiltering"
 
   exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
+  if (NimMajor, NimMinor) > (1, 6):
+    exec nimc & " " & lang & " " & cfg & " --mm:refc " & flags & " " & args & " " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"
@@ -54,7 +56,7 @@ task test, "Run all tests":
 proc playground(server: string) =
   exec "nim c -r -d:release playground/swserver " & server
 
-task ethereum, "run ethereum playground server":
+task ethereum, "run Ethereum playground server":
   playground("ethereum")
 
 task starwars, "run starwars playground server":
