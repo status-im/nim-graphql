@@ -274,7 +274,7 @@ proc sendRequest*(ctx: GraphqlHttpClientRef, query: string,
       HttpClientRequestRef.new(
         ctx.session, ctx.address,
         ctx.meth, ctx.version, {},
-        HttpMaxHeadersSize, newHeaders, body
+        headers = newHeaders, body = body
       )
 
     let resp = await request.send()
