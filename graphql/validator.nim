@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -9,8 +9,8 @@
 
 import
   std/[tables, sets, os],
-  stew/results,
-  ./common/[ast, names, errors, ast_helper],
+  results,
+  ./common/[ast, names, errors, ast_helper, types],
   ./graphql
 
 const
@@ -1480,7 +1480,15 @@ proc pickOpName(ctx: GraphqlRef, opName: string): Name =
   for name, opSym in ctx.opTable:
     if opSym.sym.kind != skFragment:
       result = name
-      sym = opSym.sym
+      if sym.isNil:
+        sym = opSym.sym
+      else:
+        # For consistency of error message line number across different Nim version.
+        # Table hash may change the order of `ctx.opTable` iterator.
+        # We only use the first or symbol with the smallest line number
+        # for error reporting
+        if opSym.sym.ast.pos < sym.ast.pos:
+          sym = opSym.sym
       inc i
 
   invalid i > 1:
