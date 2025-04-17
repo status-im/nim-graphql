@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -10,7 +10,7 @@
 import
   std/[uri],
   faststreams/inputs, zlib/gzip,
-  stew/results, chronicles, stew/byteutils,
+  results, chronicles, stew/byteutils,
   chronos, httputils, chronos/apps/http/[httpcommon, httptable, httpclient],
   chronos/streams/tlsstream,
   ./common/[ast, names, response, types, errors],

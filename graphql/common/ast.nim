@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -9,7 +9,7 @@
 
 import
   std/[tables, hashes],
-  stew/results,
+  results,
   ./types, ./names
 
 type
@@ -373,6 +373,68 @@ proc copyTree*(n: Node): Node =
     for c in n.sons:
       result.sons.add copyTree(c)
 
+proc compareTree*(a: Node, b: Node): bool =
+  if a.isNil:
+    if b.isNil: return true
+    return false
+  elif b.isNil:
+    return false
+  elif a.kind != b.kind:
+    return false
+
+  case a.kind
+  of nkInt:
+    if a.intVal != b.intVal:
+      return false
+  of nkFloat:
+    if a.floatVal != b.floatVal:
+      return false
+  of nkBoolean:
+    if a.boolVal != b.boolVal:
+      return false
+  of nkString:
+    if a.stringVal != b.stringVal:
+      return false
+  of nkEnum, nkVariable, nkName, nkNamedType:
+    if a.name != b.name:
+      return false
+  of nkSym:
+    if a.sym != b.sym:
+      return false
+  of nkMap:
+    if a.typeName != b.typeName:
+      return false
+
+    var
+      aFields = initTable[string, Node]()
+      bFields = initTable[string, Node]()
+
+    for x in a.map:
+      if x.val.kind != nkNull:
+        aFields[x.key] = x.val
+
+    for x in b.map:
+      if x.val.kind != nkNull:
+        bFields[x.key] = x.val
+
+    if aFields.len != bFields.len:
+      return false
+
+    for key, val in aFields:
+      var bVal = bFields.getOrDefault(key, Node(nil))
+      if bVal.isNil:
+        return false
+      if not compareTree(val, bVal):
+        return false
+  else:
+    if a.sons.len != b.sons.len:
+      return false
+    for i, x in a.sons:
+      if not compareTree(x, b.sons[i]):
+        return false
+
+  true
+
 proc getField*(sym: Symbol, name: Name): Node =
   case sym.kind
   of skInterface:
@@ -392,5 +454,5 @@ proc setField*(sym: Symbol, name: Name, node: Node) =
     sym.interfaceFields[name] = node
   else:
     unreachable()
-    
+
 {.pop.}

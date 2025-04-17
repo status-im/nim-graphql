@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -9,8 +9,11 @@
 
 import
   std/[os, strutils],
-  pkg/[toml_serialization, unittest2],
-  ../graphql, ./test_config
+  pkg/[toml_serialization, unittest2, results],
+  ../graphql, ./test_config,
+  ./common_parser,
+  ./lexer,
+  ./common/types
 
 type
   Unit = object
@@ -72,6 +75,47 @@ proc checkErrors(ctx: GraphqlRef, errors: openArray[ErrorDesc],
   for i in 0..<min(errors.len, unit.errors.len):
     check $errors[i] == unit.errors[i]
 
+proc parseQueryResult(text: string): Result[Node, string] =
+  try:
+    var
+      emptyNode = Node(kind: nkEmpty, pos: Pos())
+      input = unsafeMemoryInput(text)
+      parser = Parser.init(input)
+      values: Node
+
+    # we want to parse a json object
+    parser.flags.incl {pfJsonCompatibility, pfJsonKeyToName}
+    parser.lex.next()
+    if parser.lex.tok == tokEof:
+      return ok(emptyNode)
+    parser.rgReset(rgValueLiteral) # recursion guard
+    parser.valueLiteral(isConst = true, values)
+    if parser.error != errNone:
+      return err($parser.err)
+    ok(values)
+  except IOError as exc:
+    err(exc.msg)
+
+proc compareQueryResult(unitRes: string, execRes: string): bool =
+  template printError(unitRes, execRes, msg) =
+    echo "Error when comparing result: ", msg
+    echo unitRes
+    echo execRes
+
+  let unitNode = parseQueryResult(unitRes).valueOr:
+    printError(unitRes, execRes, error)
+    return false
+
+  let execNode = parseQueryResult(execRes).valueOr:
+    printError(unitRes, execRes, error)
+    return false
+
+  if not compareTree(unitNode, execNode):
+    printError(unitRes, execRes, "compareTree")
+    return false
+
+  true
+
 proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) {.gcsafe, raises: [IOError].} =
   var stream = unsafeMemoryInput(unit.code)
   var parser = Parser.init(stream, ctx.names)
@@ -109,7 +153,7 @@ proc runExecutor(ctx: GraphqlRef, unit: Unit, testStatusIMPL: var TestStatus) {.
   # don't skip result comparison even though there are errors
   let unitRes = removeWhitespaces(unit.result)
   let execRes = removeWhitespaces(js.getString)
-  check unitRes == execRes
+  check compareQueryResult(unitRes, execRes)
 
 proc runSuite(ctx: GraphqlRef,
               savePoint: NameCounter,

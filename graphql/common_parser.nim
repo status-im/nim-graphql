@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -317,7 +317,7 @@ template repeat*(lg: LoopGuard, tok: TokKind, body: untyped) =
       break
 
 # warning!! cannot protect against cross recursion
-# reset recurssion guard before call recursive proc
+# reset recursion guard before call recursive proc
 template rgReset*(x: RecursionGuard) =
   q.rgCount[x] = 0
 
