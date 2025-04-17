@@ -17,4 +17,6 @@ type
     desc*: string
 
 func `<`*(a: Pos, b: Pos): bool =
-  a.line < b.line and a.col < b.col
+  if a.line == b.line:
+    return a.col < b.col
+  a.line < b.line
