@@ -13,7 +13,8 @@ import
   ../graphql, ./test_config,
   ./common_parser,
   ./lexer,
-  ./common/types
+  ./common/types,
+  ./common/names
 
 type
   Unit = object
@@ -95,6 +96,64 @@ proc parseQueryResult(text: string): Result[Node, string] =
     ok(values)
   except IOError as exc:
     err(exc.msg)
+
+proc compareTree(a: Node, b: Node): bool
+
+proc findNode(a: tuple[key: string, val: Node], map: var seq[tuple[key: string, val: Node]]): bool =
+  for i, b in map:
+    if a.key == b.key and compareTree(a.val, b.val):
+      map.del(i)
+      return true
+  false
+
+proc compareTree(a: Node, b: Node): bool =
+  if a.isNil:
+    if b.isNil: return true
+    return false
+  elif b.isNil:
+    return false
+  elif a.kind != b.kind:
+    return false
+
+  case a.kind
+  of nkInt:
+    if a.intVal != b.intVal:
+      return false
+  of nkFloat:
+    if a.floatVal != b.floatVal:
+      return false
+  of nkBoolean:
+    if a.boolVal != b.boolVal:
+      return false
+  of nkString:
+    if a.stringVal != b.stringVal:
+      return false
+  of nkEnum, nkVariable, nkName, nkNamedType:
+    if a.name != b.name:
+      return false
+  of nkSym:
+    if a.sym != b.sym:
+      return false
+  of nkMap:
+    if a.typeName != b.typeName:
+      return false
+
+    if a.map.len != b.map.len:
+      return false
+
+    var bMap = b.map
+    for x in a.map:
+      if not findNode(x, bMap):
+        return false
+
+  else:
+    if a.sons.len != b.sons.len:
+      return false
+    for i, x in a.sons:
+      if not compareTree(x, b.sons[i]):
+        return false
+
+  true
 
 proc compareQueryResult(unitRes: string, execRes: string): bool =
   template printError(unitRes, execRes, msg) =
@@ -183,6 +242,7 @@ proc runSuite(ctx: GraphqlRef,
             inc counter.ok
           else:
             inc counter.fail
+            quit(1)
 
 proc executeCases*(ctx: GraphqlRef,
                    caseFolder: string,
