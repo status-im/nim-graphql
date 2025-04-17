@@ -10,7 +10,7 @@
 import
   std/[tables, sets, os],
   results,
-  ./common/[ast, names, errors, ast_helper],
+  ./common/[ast, names, errors, ast_helper, types],
   ./graphql
 
 const
@@ -1480,7 +1480,15 @@ proc pickOpName(ctx: GraphqlRef, opName: string): Name =
   for name, opSym in ctx.opTable:
     if opSym.sym.kind != skFragment:
       result = name
-      sym = opSym.sym
+      if sym.isNil:
+        sym = opSym.sym
+      else:
+        # For consistency of error message line number across different Nim version.
+        # Table hash may change the order of `ctx.opTable` iterator.
+        # We only use the first or symbol with the smallest line number
+        # for error reporting
+        if opSym.sym.ast.pos < sym.ast.pos:
+          sym = opSym.sym
       inc i
 
   invalid i > 1:

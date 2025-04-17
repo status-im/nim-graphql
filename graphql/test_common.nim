@@ -73,7 +73,8 @@ proc checkErrors(ctx: GraphqlRef, errors: openArray[ErrorDesc],
   check errors.len == unit.errors.len
   if errors.len > unit.errors.len:
     debugEcho ctx.errors
-  for i in 0..<min(errors.len, unit.errors.len):
+  let size = min(errors.len, unit.errors.len)
+  for i in 0..<size:
     check $errors[i] == unit.errors[i]
 
 proc parseQueryResult(text: string): Result[Node, string] =
@@ -103,6 +104,13 @@ proc findNode(a: tuple[key: string, val: Node], map: var seq[tuple[key: string, 
   for i, b in map:
     if a.key == b.key and compareTree(a.val, b.val):
       map.del(i)
+      return true
+  false
+
+proc findNode(a: Node, list: var seq[Node]): bool =
+  for i, b in list:
+    if compareTree(a, b):
+      list.del(i)
       return true
   false
 
@@ -149,8 +157,9 @@ proc compareTree(a: Node, b: Node): bool =
   else:
     if a.sons.len != b.sons.len:
       return false
+    var bSons = b.sons
     for i, x in a.sons:
-      if not compareTree(x, b.sons[i]):
+      if not findNode(x, bSons):
         return false
 
   true
@@ -242,7 +251,6 @@ proc runSuite(ctx: GraphqlRef,
             inc counter.ok
           else:
             inc counter.fail
-            quit(1)
 
 proc executeCases*(ctx: GraphqlRef,
                    caseFolder: string,

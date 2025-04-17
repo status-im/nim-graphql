@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021 Status Research & Development GmbH
+# Copyright (c) 2021-2025 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -15,3 +15,6 @@ type
   LoopGuard* = object
     maxLoop*: int
     desc*: string
+
+func `<`*(a: Pos, b: Pos): bool =
+  a.line < b.line and a.col < b.col
