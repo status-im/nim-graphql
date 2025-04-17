@@ -16,7 +16,7 @@ null
 
 [[units]]
   name = "have more than one root operation but no opName"
-  errors = ["[7, 7]: Fatal: Have more than one root operation, requires operationName: @[]"]
+  errors = ["[4, 7]: Fatal: Have more than one root operation, requires operationName: @[]"]
   code = """
 type Query {
   name: String
