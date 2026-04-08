@@ -9,7 +9,7 @@
 
 import
   std/[strutils, os],
-  stew/[results],
+  results,
   ../graphql, ../graphql/server_common,
   ./utils
 

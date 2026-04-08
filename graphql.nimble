@@ -19,6 +19,7 @@ skipDirs      = @["tests", "resources", "fuzzer", "docs", "playground"]
 requires "nim >= 1.6.0",
          "faststreams",
          "stew",
+         "results",
          "json_serialization",
          "chronicles",
          "https://github.com/status-im/nim-zlib",
