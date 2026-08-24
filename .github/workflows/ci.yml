@@ -3,16 +3,15 @@ on:
   push:
     branches:
       - master
-      - test-minver
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
-    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@minver
+    uses: status-im/nimbus-common-workflow/.github/workflows/common.yml@main
     with:
-      install-command: 'nimble --resolver:minver install -y --depsOnly'
       test-command: |
+          nimble install -y --depsOnly
           # toml_serialization is a test suite dependency
-          nimble --resolver:minver install -y toml_serialization
+          nimble install -y toml_serialization
           nimble test
