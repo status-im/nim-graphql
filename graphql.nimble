@@ -1,5 +1,5 @@
 # nim-graphql
-# Copyright (c) 2021-2024 Status Research & Development GmbH
+# Copyright (c) 2021-2026 Status Research & Development GmbH
 # Licensed under either of
 #  * Apache License, version 2.0, ([LICENSE-APACHE](LICENSE-APACHE))
 #  * MIT license ([LICENSE-MIT](LICENSE-MIT))
@@ -10,22 +10,22 @@
 mode = ScriptMode.Verbose
 
 packageName   = "graphql"
-version       = "0.2.30"
+version       = "0.2.31"
 author        = "Status Research & Development GmbH"
 description   = "GraphQL parser, server and client implementation"
 license       = "Apache License 2.0"
 skipDirs      = @["tests", "resources", "fuzzer", "docs", "playground"]
 
-requires "nim >= 1.6.0",
-         "faststreams",
-         "stew",
-         "results",
-         "json_serialization",
-         "chronicles",
-         "https://github.com/status-im/nim-zlib",
-         "unittest2",
+requires "nim >= 2.0.10",
+         "chronicles >= 0.12.0",
+         "faststreams >= 0.5.0",
+         "https://github.com/status-im/nim-bearssl#head",
          "https://github.com/status-im/nim-chronos#head",
-         "https://github.com/status-im/nim-bearssl#head"
+         "https://github.com/status-im/nim-zlib",
+         "json_serialization >= 0.4.0",
+         "results >= 0.5.0",
+         "stew >= 0.5.0",
+         "unittest2 >= 0.2.0"
 
 proc test(args, path: string, shouldRun = true) =
   # Compilation language is controlled by TEST_LANG
@@ -40,8 +40,7 @@ proc test(args, path: string, shouldRun = true) =
             " -d:unittest2DisableParamFiltering"
 
   exec nimc & " " & lang & " " & cfg & " " & flags & " " & args & " " & path
-  if (NimMajor, NimMinor) > (1, 6):
-    exec nimc & " " & lang & " " & cfg & " --mm:refc " & flags & " " & args & " " & path
+  exec nimc & " " & lang & " " & cfg & " --mm:refc " & flags & " " & args & " " & path
 
 task test, "Run all tests":
   test "--threads:off", "tests/test_all"
